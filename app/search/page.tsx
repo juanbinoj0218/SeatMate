@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import {
   useRouter,
   useSearchParams,
@@ -28,7 +28,7 @@ type SearchResult = {
   latestUpdateMs: number | null;
 };
 
-export default function SearchPage() {
+function SearchPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -610,5 +610,27 @@ export default function SearchPage() {
       </div>
 
     </main>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-[#f7f8f5] flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-12 h-12 bg-green-600 text-white rounded-xl flex items-center justify-center font-bold mx-auto">
+              S
+            </div>
+
+            <p className="text-gray-500 mt-4">
+              Loading SeatMate...
+            </p>
+          </div>
+        </main>
+      }
+    >
+      <SearchPageContent />
+    </Suspense>
   );
 }
