@@ -1,26 +1,331 @@
 @import "tailwindcss";
 
+/* =========================
+   SEATMATE GLOBAL DESIGN
+   ========================= */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --seatmate-bg: #f7f8f5;
+  --seatmate-dark: #101811;
+  --seatmate-green: #16a34a;
+  --seatmate-border: #e3e7e2;
+  --seatmate-muted: #6b7280;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+/* Entire website */
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background: var(--seatmate-bg);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+
+  background:
+    var(--seatmate-bg);
+
+  color:
+    var(--seatmate-dark);
+
+  font-family:
+    var(--font-inter),
+    Arial,
+    Helvetica,
+    sans-serif;
+
+  font-feature-settings:
+    "cv02",
+    "cv03",
+    "cv04",
+    "cv11";
+
+  text-rendering:
+    optimizeLegibility;
+}
+
+/* =========================
+   TYPOGRAPHY
+   ========================= */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color:
+    var(--seatmate-dark);
+
+  font-weight: 700;
+
+  letter-spacing:
+    -0.025em;
+}
+
+h1 {
+  letter-spacing:
+    -0.04em;
+}
+
+p {
+  line-height: 1.6;
+}
+
+/* Better selected text */
+
+::selection {
+  background:
+    #bbf7d0;
+
+  color:
+    #101811;
+}
+
+/* =========================
+   INPUTS
+   ========================= */
+
+input,
+select,
+textarea {
+  font-family:
+    inherit;
+
+  font-size:
+    0.95rem;
+
+  color:
+    var(--seatmate-dark);
+
+  background:
+    white;
+
+  border:
+    1px solid
+    var(--seatmate-border);
+
+  border-radius:
+    12px;
+
+  outline:
+    none;
+
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    background 150ms ease;
+}
+
+/* Normal text inputs */
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+input[type="number"],
+input[type="time"],
+input[type="url"],
+select,
+textarea {
+  min-height:
+    48px;
+
+  padding:
+    0 14px;
+}
+
+/* Text areas */
+
+textarea {
+  padding:
+    12px 14px;
+
+  resize:
+    vertical;
+}
+
+/* Placeholder text */
+
+input::placeholder,
+textarea::placeholder {
+  color:
+    #9ca3af;
+
+  opacity:
+    1;
+}
+
+/* Focus */
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color:
+    #22c55e;
+
+  box-shadow:
+    0 0 0 4px
+    rgba(
+      34,
+      197,
+      94,
+      0.10
+    );
+}
+
+/* Hover */
+
+input:hover,
+select:hover,
+textarea:hover {
+  border-color:
+    #c8d0c8;
+}
+
+/* Disabled */
+
+input:disabled,
+select:disabled,
+textarea:disabled {
+  opacity:
+    0.55;
+
+  cursor:
+    not-allowed;
+
+  background:
+    #f3f4f6;
+}
+
+/* =========================
+   TIME INPUT
+   ========================= */
+
+input[type="time"] {
+  cursor:
+    pointer;
+
+  font-weight:
+    500;
+}
+
+/* =========================
+   SELECT MENUS
+   ========================= */
+
+select {
+  cursor:
+    pointer;
+
+  appearance:
+    auto;
+}
+
+/* =========================
+   CHECKBOXES
+   ========================= */
+
+input[type="checkbox"] {
+  width:
+    18px;
+
+  height:
+    18px;
+
+  accent-color:
+    var(--seatmate-green);
+
+  cursor:
+    pointer;
+}
+
+/* =========================
+   BUTTON POLISH
+   ========================= */
+
+button {
+  font-family:
+    inherit;
+
+  letter-spacing:
+    -0.01em;
+
+  cursor:
+    pointer;
+
+  transition:
+    transform 120ms ease,
+    background-color 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    opacity 150ms ease;
+}
+
+button:active {
+  transform:
+    scale(0.98);
+}
+
+button:disabled {
+  cursor:
+    not-allowed;
+
+  opacity:
+    0.55;
+}
+
+/* =========================
+   LINKS
+   ========================= */
+
+a {
+  color:
+    inherit;
+
+  text-decoration:
+    none;
+}
+
+/* =========================
+   SCROLLBAR
+   ========================= */
+
+::-webkit-scrollbar {
+  width:
+    10px;
+
+  height:
+    10px;
+}
+
+::-webkit-scrollbar-track {
+  background:
+    transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background:
+    #d1d5db;
+
+  border-radius:
+    999px;
+
+  border:
+    3px solid
+    transparent;
+
+  background-clip:
+    padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background:
+    #9ca3af;
+
+  border:
+    3px solid
+    transparent;
+
+  background-clip:
+    padding-box;
 }
