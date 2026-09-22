@@ -4,15 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged, User } from "firebase/auth";
 import BackButton from "@/components/BackButton";
-<BackButton fallback="/business" />
-
-
 
 import {
   addDoc,
   collection,
   deleteDoc,
   doc,
+  getDoc,
   onSnapshot,
   runTransaction,
   serverTimestamp,
@@ -24,6 +22,12 @@ import { auth, db } from "@/lib/firebase";
 type SeatStatus = "available" | "occupied";
 type TableShape = "rectangle" | "round";
 type Mode = "occupancy" | "layout";
+type BusinessStatus =
+  | "draft"
+  | "pending"
+  | "approved"
+  | "suspended"
+  | "rejected";
 
 type Seat = {
   id: number;
@@ -57,6 +61,19 @@ export default function FloorPlanPage() {
   const [creating, setCreating] = useState(false);
   const [message, setMessage] = useState("");
 
+  const [businessStatus, setBusinessStatus] =
+    useState<BusinessStatus | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const [renameTarget, setRenameTarget] =
+    useState<Table | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [savingRename, setSavingRename] = useState(false);
+
+  const [deleteTarget, setDeleteTarget] =
+    useState<Table | null>(null);
+  const [deletingTable, setDeletingTable] = useState(false);
+
   const [dragging, setDragging] = useState<string | null>(
     null
   );
@@ -71,7 +88,7 @@ export default function FloorPlanPage() {
 
     const unsubscribeAuth = onAuthStateChanged(
       auth,
-      (currentUser) => {
+      async (currentUser) => {
         if (!currentUser) {
           router.push("/business/login");
           return;
@@ -79,53 +96,83 @@ export default function FloorPlanPage() {
 
         setUser(currentUser);
 
-        const tablesRef = collection(
-          db,
-          "businesses",
-          currentUser.uid,
-          "tables"
-        );
+        try {
+          const businessRef = doc(
+            db,
+            "businesses",
+            currentUser.uid
+          );
 
-        unsubscribeTables = onSnapshot(
-          tablesRef,
-          (snapshot) => {
-            const data: Table[] = snapshot.docs.map(
-              (tableDoc, index) => {
-                const table = tableDoc.data();
+          const businessSnap = await getDoc(businessRef);
 
-                return {
-                  id: tableDoc.id,
-                  name: table.name || `Table ${index + 1}`,
-                  seats: table.seats || [],
-
-                  xPct:
-                    typeof table.xPct === "number"
-                      ? table.xPct
-                      : 8 + (index % 3) * 30,
-
-                  yPct:
-                    typeof table.yPct === "number"
-                      ? table.yPct
-                      : 10 +
-                        Math.floor(index / 3) * 30,
-
-                  shape:
-                    table.shape === "round"
-                      ? "round"
-                      : "rectangle",
-                };
-              }
-            );
-
-            setTables(data);
-            setLoading(false);
-          },
-          (error) => {
-            console.error(error);
-            setMessage("Could not load floor plan.");
-            setLoading(false);
+          if (!businessSnap.exists()) {
+            router.replace("/business/setup");
+            return;
           }
-        );
+
+          const rawStatus = businessSnap.data().status;
+
+          if (
+            rawStatus === "draft" ||
+            rawStatus === "pending" ||
+            rawStatus === "approved" ||
+            rawStatus === "suspended" ||
+            rawStatus === "rejected"
+          ) {
+            setBusinessStatus(rawStatus);
+          } else {
+            // Older SeatMate businesses created before approvals existed.
+            setBusinessStatus("approved");
+          }
+
+          const tablesRef = collection(
+            db,
+            "businesses",
+            currentUser.uid,
+            "tables"
+          );
+
+          unsubscribeTables = onSnapshot(
+            tablesRef,
+            (snapshot) => {
+              const data: Table[] = snapshot.docs.map(
+                (tableDoc, index) => {
+                  const table = tableDoc.data();
+
+                  return {
+                    id: tableDoc.id,
+                    name: table.name || `Table ${index + 1}`,
+                    seats: table.seats || [],
+                    xPct:
+                      typeof table.xPct === "number"
+                        ? table.xPct
+                        : 8 + (index % 3) * 30,
+                    yPct:
+                      typeof table.yPct === "number"
+                        ? table.yPct
+                        : 10 + Math.floor(index / 3) * 30,
+                    shape:
+                      table.shape === "round"
+                        ? "round"
+                        : "rectangle",
+                  };
+                }
+              );
+
+              setTables(data);
+              setLoading(false);
+            },
+            (error) => {
+              console.error(error);
+              setMessage("Could not load floor plan.");
+              setLoading(false);
+            }
+          );
+        } catch (error) {
+          console.error(error);
+          setMessage("Could not load business setup.");
+          setLoading(false);
+        }
       }
     );
 
@@ -251,31 +298,48 @@ export default function FloorPlanPage() {
     }
   };
 
-  const renameTable = async (
-    table: Table
-  ) => {
-    if (!user) return;
+  const renameTable = (table: Table) => {
+    setMessage("");
+    setRenameTarget(table);
+    setRenameValue(table.name);
+  };
 
-    const newName = window.prompt(
-      "Enter a new table name:",
-      table.name
-    );
+  const saveTableName = async () => {
+    if (!user || !renameTarget) return;
 
-    if (!newName?.trim()) return;
+    const newName = renameValue.trim();
 
-    await updateDoc(
-      doc(
-        db,
-        "businesses",
-        user.uid,
-        "tables",
-        table.id
-      ),
-      {
-        name: newName.trim(),
-        updatedAt: serverTimestamp(),
-      }
-    );
+    if (!newName) {
+      setMessage("Table name cannot be empty.");
+      return;
+    }
+
+    try {
+      setSavingRename(true);
+      setMessage("");
+
+      await updateDoc(
+        doc(
+          db,
+          "businesses",
+          user.uid,
+          "tables",
+          renameTarget.id
+        ),
+        {
+          name: newName,
+          updatedAt: serverTimestamp(),
+        }
+      );
+
+      setRenameTarget(null);
+      setRenameValue("");
+    } catch (error) {
+      console.error(error);
+      setMessage("Could not rename table.");
+    } finally {
+      setSavingRename(false);
+    }
   };
 
   const addSeat = async (table: Table) => {
@@ -375,26 +439,35 @@ export default function FloorPlanPage() {
     );
   };
 
-  const removeTable = async (
-    table: Table
-  ) => {
-    if (!user) return;
+  const removeTable = (table: Table) => {
+    setMessage("");
+    setDeleteTarget(table);
+  };
 
-    const confirmed = window.confirm(
-      `Delete "${table.name}"?`
-    );
+  const confirmDeleteTable = async () => {
+    if (!user || !deleteTarget) return;
 
-    if (!confirmed) return;
+    try {
+      setDeletingTable(true);
+      setMessage("");
 
-    await deleteDoc(
-      doc(
-        db,
-        "businesses",
-        user.uid,
-        "tables",
-        table.id
-      )
-    );
+      await deleteDoc(
+        doc(
+          db,
+          "businesses",
+          user.uid,
+          "tables",
+          deleteTarget.id
+        )
+      );
+
+      setDeleteTarget(null);
+    } catch (error) {
+      console.error(error);
+      setMessage("Could not delete table.");
+    } finally {
+      setDeletingTable(false);
+    }
   };
 
   const startDrag = (
@@ -520,6 +593,48 @@ export default function FloorPlanPage() {
     );
   };
 
+  const submitForApproval = async () => {
+    if (!user) return;
+
+    if (tables.length === 0) {
+      setMessage(
+        "Add at least one table before submitting your business."
+      );
+      return;
+    }
+
+    if (
+      businessStatus !== "draft" &&
+      businessStatus !== "rejected"
+    ) {
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      setMessage("");
+
+      await updateDoc(
+        doc(db, "businesses", user.uid),
+        {
+          status: "pending",
+          submittedAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        }
+      );
+
+      setBusinessStatus("pending");
+      router.push("/business");
+    } catch (error) {
+      console.error(error);
+      setMessage(
+        "Could not submit your business for approval."
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   if (loading) {
     return (
       <main className="min-h-screen bg-[#f7f8f5] flex items-center justify-center">
@@ -553,19 +668,23 @@ export default function FloorPlanPage() {
       <header className="bg-white border-b border-[#e3e7e2]">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
 
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-green-600 text-white flex items-center justify-center font-bold">
-              S
-            </div>
+          <div className="flex items-center gap-5">
+            <BackButton fallback="/business" />
+
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-green-600 text-white flex items-center justify-center font-bold">
+                S
+              </div>
 
             <div>
               <p className="font-bold">
                 SeatMate
               </p>
 
-              <p className="text-xs text-gray-400">
-                Floor Manager
-              </p>
+                <p className="text-xs text-gray-400">
+                  Floor Manager
+                </p>
+              </div>
             </div>
           </div>
 
@@ -575,7 +694,7 @@ export default function FloorPlanPage() {
             }
             className="border border-gray-200 px-4 py-2.5 rounded-xl font-semibold text-sm bg-white hover:bg-gray-50"
           >
-            ← Dashboard
+            Done → Dashboard
           </button>
 
         </div>
@@ -945,7 +1064,196 @@ export default function FloorPlanPage() {
           </div>
         </div>
 
+        {/* APPROVAL STATUS */}
+
+        {(businessStatus === "draft" ||
+          businessStatus === "rejected") && (
+          <div className="bg-[#101811] text-white rounded-3xl p-7 mt-8 flex flex-col md:flex-row md:items-center justify-between gap-5">
+            <div>
+              <p className="text-green-400 text-sm font-bold">
+                READY TO GO LIVE?
+              </p>
+
+              <h2 className="text-2xl font-bold mt-2">
+                {businessStatus === "rejected"
+                  ? "Update and resubmit your business"
+                  : "Submit your business for approval"}
+              </h2>
+
+              <p className="text-white/60 mt-2 max-w-xl">
+                Make sure your floor plan is ready. SeatMate will
+                review your business before customers can find it.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => void submitForApproval()}
+              disabled={submitting}
+              className="bg-green-500 hover:bg-green-400 text-black font-bold px-6 py-3 rounded-xl whitespace-nowrap disabled:opacity-50"
+            >
+              {submitting
+                ? "Submitting..."
+                : businessStatus === "rejected"
+                  ? "Resubmit for Approval →"
+                  : "Submit for Approval →"}
+            </button>
+          </div>
+        )}
+
+        {businessStatus === "pending" && (
+          <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl p-5 mt-8">
+            <p className="font-bold">Pending SeatMate approval</p>
+            <p className="text-sm mt-1">
+              Your business has been submitted and is waiting for review.
+            </p>
+          </div>
+        )}
+
+        {businessStatus === "approved" && (
+          <div className="bg-green-50 border border-green-200 text-green-800 rounded-2xl p-5 mt-8">
+            <p className="font-bold">Business approved</p>
+            <p className="text-sm mt-1">
+              Your location is live on SeatMate.
+            </p>
+          </div>
+        )}
+
+        {businessStatus === "suspended" && (
+          <div className="bg-red-50 border border-red-200 text-red-700 rounded-2xl p-5 mt-8">
+            <p className="font-bold">Business suspended</p>
+            <p className="text-sm mt-1">
+              Your location is currently hidden from SeatMate customers.
+            </p>
+          </div>
+        )}
+
       </div>
+
+      {renameTarget && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/40 flex items-center justify-center px-4"
+          onMouseDown={(event) => {
+            if (event.currentTarget === event.target) {
+              setRenameTarget(null);
+              setRenameValue("");
+            }
+          }}
+        >
+          <div className="w-full max-w-md rounded-3xl bg-white p-7 shadow-2xl">
+            <p className="text-sm font-bold text-green-600">
+              EDIT TABLE
+            </p>
+
+            <h2 className="text-2xl font-bold mt-2">
+              Rename table
+            </h2>
+
+            <p className="text-gray-500 mt-2">
+              Choose a name your staff can easily recognize.
+            </p>
+
+            <input
+              autoFocus
+              value={renameValue}
+              onChange={(event) =>
+                setRenameValue(event.target.value)
+              }
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  void saveTableName();
+                }
+
+                if (event.key === "Escape") {
+                  setRenameTarget(null);
+                  setRenameValue("");
+                }
+              }}
+              placeholder="Table name"
+              className="w-full mt-6 border border-gray-200 rounded-xl px-4 py-3 text-black outline-none focus:ring-2 focus:ring-green-500"
+            />
+
+            <div className="flex gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => {
+                  setRenameTarget(null);
+                  setRenameValue("");
+                }}
+                className="flex-1 border border-gray-200 hover:bg-gray-50 font-semibold py-3 rounded-xl transition"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={() => void saveTableName()}
+                disabled={
+                  savingRename ||
+                  !renameValue.trim()
+                }
+                className="flex-1 bg-[#101811] hover:bg-black text-white font-bold py-3 rounded-xl transition disabled:opacity-40"
+              >
+                {savingRename
+                  ? "Saving..."
+                  : "Save Name"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/40 flex items-center justify-center px-4"
+          onMouseDown={(event) => {
+            if (event.currentTarget === event.target) {
+              setDeleteTarget(null);
+            }
+          }}
+        >
+          <div className="w-full max-w-md rounded-3xl bg-white p-7 shadow-2xl">
+            <p className="text-sm font-bold text-red-600">
+              DELETE TABLE
+            </p>
+
+            <h2 className="text-2xl font-bold mt-2">
+              Delete {deleteTarget.name}?
+            </h2>
+
+            <p className="text-gray-500 mt-2">
+              This removes the table and all of its seats from
+              the floor plan.
+            </p>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() =>
+                  setDeleteTarget(null)
+                }
+                className="flex-1 border border-gray-200 hover:bg-gray-50 font-semibold py-3 rounded-xl transition"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  void confirmDeleteTable()
+                }
+                disabled={deletingTable}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition disabled:opacity-40"
+              >
+                {deletingTable
+                  ? "Deleting..."
+                  : "Delete Table"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

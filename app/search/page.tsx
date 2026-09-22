@@ -6,9 +6,6 @@ import {
   useSearchParams,
 } from "next/navigation";
 
-import BackButton from "@/components/BackButton";
-<BackButton fallback="/business" />
-
 import {
   collection,
   getDocs,
@@ -23,6 +20,7 @@ type SearchResult = {
   name: string;
   address: string;
   type: string;
+  zipcode: string;
   availableSeats: number;
   totalSeats: number;
   latestUpdateMs: number | null;
@@ -35,8 +33,17 @@ function SearchPageContent() {
   const initialQuery =
     searchParams.get("q") || "";
 
+  const initialZip =
+    searchParams.get("zip") || "";
+
   const [search, setSearch] =
     useState(initialQuery);
+
+  const [zipcode, setZipcode] =
+    useState(initialZip);
+
+  const [message, setMessage] =
+    useState("");
 
   const [results, setResults] =
     useState<SearchResult[]>([]);
@@ -70,6 +77,9 @@ function SearchPageContent() {
             .trim()
             .toLowerCase();
 
+        const zipTerm =
+          initialZip.trim();
+
         const businessesSnapshot =
           await getDocs(
             collection(
@@ -84,6 +94,14 @@ function SearchPageContent() {
               const data =
                 businessDoc.data();
 
+              const address =
+                String(data.address || "");
+
+              const zipFromAddress =
+                address.match(
+                  /\b\d{5}(?:-\d{4})?\b/
+                )?.[0]?.slice(0, 5) || "";
+
               return {
                 slug: businessDoc.id,
 
@@ -93,26 +111,37 @@ function SearchPageContent() {
                 name:
                   data.name || "",
 
-                address:
-                  data.address || "",
+                address,
 
                 type:
                   data.type || "",
+
+                zipcode:
+                  String(
+                    data.zipcode ||
+                      data.zip ||
+                      zipFromAddress
+                  ).trim(),
               };
             })
             .filter((business) => {
-              if (!term) {
-                return true;
-              }
-
               const searchableText = `
                 ${business.name}
                 ${business.address}
                 ${business.type}
               `.toLowerCase();
 
-              return searchableText.includes(
-                term
+              const matchesQuery =
+                !term ||
+                searchableText.includes(term);
+
+              const matchesZip =
+                !zipTerm ||
+                business.zipcode === zipTerm;
+
+              return (
+                matchesQuery &&
+                matchesZip
               );
             });
 
@@ -206,21 +235,44 @@ function SearchPageContent() {
     };
 
     loadResults();
-  }, [initialQuery]);
+  }, [initialQuery, initialZip]);
 
   const submitSearch = (
     event: React.FormEvent
   ) => {
     event.preventDefault();
 
-    if (!search.trim()) {
+    const query = search.trim();
+    const zip = zipcode.trim();
+
+    setMessage("");
+
+    if (!query && !zip) {
+      setMessage(
+        "Enter a business name or ZIP code."
+      );
       return;
     }
 
+    if (zip && !/^\d{5}$/.test(zip)) {
+      setMessage(
+        "Enter a valid 5-digit ZIP code."
+      );
+      return;
+    }
+
+    const params = new URLSearchParams();
+
+    if (query) {
+      params.set("q", query);
+    }
+
+    if (zip) {
+      params.set("zip", zip);
+    }
+
     router.push(
-      `/search?q=${encodeURIComponent(
-        search.trim()
-      )}`
+      `/search?${params.toString()}`
     );
   };
 
@@ -281,8 +333,9 @@ function SearchPageContent() {
         </h1>
 
         <p className="text-gray-500 mt-3">
-          Search restaurants and cafés
-          using SeatMate.
+          {initialZip
+            ? `Showing SeatMate locations in ZIP ${initialZip}.`
+            : "Search restaurants and cafés using SeatMate."}
         </p>
 
         {/* SEARCH */}
@@ -292,27 +345,57 @@ function SearchPageContent() {
           className="mt-8 max-w-2xl"
         >
 
-          <div className="bg-white border border-gray-200 rounded-2xl p-2 flex shadow-sm">
+          <div className="bg-white border border-gray-200 rounded-2xl p-2 shadow-sm">
 
-            <input
-              value={search}
-              onChange={(event) =>
-                setSearch(
-                  event.target.value
-                )
-              }
-              placeholder="Restaurant, café, or location"
-              className="flex-1 h-12 px-4 outline-none bg-transparent text-black"
-            />
+            <div className="flex flex-col sm:flex-row gap-2">
 
-            <button
-              type="submit"
-              className="bg-green-600 hover:bg-green-700 text-white px-6 rounded-xl font-semibold transition"
-            >
-              Search
-            </button>
+              <input
+                value={search}
+                onChange={(event) => {
+                  setSearch(
+                    event.target.value
+                  );
+                  setMessage("");
+                }}
+                placeholder="Restaurant, café, or name"
+                className="flex-1 h-12 px-4 outline-none bg-transparent text-black"
+              />
+
+              <div className="hidden sm:block w-px bg-gray-200" />
+
+              <input
+                value={zipcode}
+                onChange={(event) => {
+                  setZipcode(
+                    event.target.value
+                      .replace(/\D/g, "")
+                      .slice(0, 5)
+                  );
+                  setMessage("");
+                }}
+                inputMode="numeric"
+                autoComplete="postal-code"
+                placeholder="ZIP code"
+                maxLength={5}
+                className="sm:w-36 h-12 px-4 outline-none bg-transparent text-black border-t sm:border-t-0 border-gray-100"
+              />
+
+              <button
+                type="submit"
+                className="h-12 bg-green-600 hover:bg-green-700 text-white px-6 rounded-xl font-semibold transition"
+              >
+                Search
+              </button>
+
+            </div>
 
           </div>
+
+          {message && (
+            <p className="text-red-500 text-sm mt-3">
+              {message}
+            </p>
+          )}
 
         </form>
 
@@ -363,8 +446,9 @@ function SearchPageContent() {
               </h3>
 
               <p className="text-gray-500 mt-2">
-                Try another business name
-                or location.
+                {initialZip
+                  ? `No approved SeatMate locations were found in ZIP ${initialZip}.`
+                  : "Try another business name or ZIP code."}
               </p>
 
             </div>

@@ -12,19 +12,21 @@ import {
   updateProfile,
 } from "firebase/auth";
 
-import { auth } from "@/lib/firebase";
-import BackButton from "@/components/BackButton";
-<BackButton fallback="/business" />
+import {
+  doc,
+  getDoc,
+} from "firebase/firestore";
 
-type AuthMode =
-  | "signin"
-  | "signup";
+import { auth, db } from "@/lib/firebase";
+import BackButton from "@/components/BackButton";
+
+type Mode = "signin" | "signup";
 
 export default function BusinessLoginPage() {
   const router = useRouter();
 
   const [mode, setMode] =
-    useState<AuthMode>("signin");
+    useState<Mode>("signin");
 
   const [firstName, setFirstName] =
     useState("");
@@ -38,21 +40,23 @@ export default function BusinessLoginPage() {
   const [password, setPassword] =
     useState("");
 
-  const [
-    confirmPassword,
-    setConfirmPassword,
-  ] = useState("");
-
-  const [message, setMessage] =
-    useState("");
-
-  const [success, setSuccess] =
+  const [confirmPassword, setConfirmPassword] =
     useState("");
 
   const [loading, setLoading] =
     useState(false);
 
-  const getDestination = () => {
+  const [error, setError] =
+    useState("");
+
+  const [message, setMessage] =
+    useState("");
+
+  // --------------------------------
+  // CHECK FOR A SAFE "NEXT" URL
+  // --------------------------------
+
+  const getNextDestination = () => {
     const params =
       new URLSearchParams(
         window.location.search
@@ -69,246 +73,335 @@ export default function BusinessLoginPage() {
       return next;
     }
 
-    return "/business";
+    return null;
   };
+
+  // --------------------------------
+  // DETERMINE WHERE USER GOES
+  // AFTER LOGIN
+  // --------------------------------
+
+  const getPostLoginDestination =
+    async (userId: string) => {
+
+      // If they came from something like
+      // a staff invite, respect that first.
+      const next =
+        getNextDestination();
+
+      if (next) {
+        return next;
+      }
+
+      // Check whether this account is
+      // a SeatMate admin.
+      const adminRef = doc(
+        db,
+        "admins",
+        userId
+      );
+
+      const adminSnap =
+        await getDoc(adminRef);
+
+      if (
+        adminSnap.exists() &&
+        adminSnap.data().active === true
+      ) {
+        return "/admin";
+      }
+
+      // Everyone else goes through
+      // the normal business flow.
+      return "/business";
+    };
+
+  // --------------------------------
+  // FRIENDLY FIREBASE ERRORS
+  // --------------------------------
 
   const getFriendlyError = (
-    error: unknown
+    firebaseError: unknown
   ) => {
-    const code =
-      (
-        error as {
-          code?: string;
-        }
-      )?.code;
+    if (
+      typeof firebaseError === "object" &&
+      firebaseError !== null &&
+      "code" in firebaseError
+    ) {
+      const code = String(
+        firebaseError.code
+      );
 
-    switch (code) {
-      case "auth/invalid-email":
-        return "Enter a valid email address.";
+      if (
+        code ===
+        "auth/invalid-credential"
+      ) {
+        return "Incorrect email or password.";
+      }
 
-      case "auth/invalid-credential":
-        return "The email or password is incorrect.";
+      if (
+        code ===
+        "auth/email-already-in-use"
+      ) {
+        return "An account already exists with this email.";
+      }
 
-      case "auth/email-already-in-use":
-        return "An account with this email already exists.";
-
-      case "auth/weak-password":
+      if (
+        code ===
+        "auth/weak-password"
+      ) {
         return "Choose a stronger password.";
+      }
 
-      case "auth/popup-closed-by-user":
-        return "Google sign-in was canceled.";
+      if (
+        code ===
+        "auth/invalid-email"
+      ) {
+        return "Enter a valid email address.";
+      }
 
-      case "auth/too-many-requests":
-        return "Too many attempts. Try again in a little while.";
+      if (
+        code ===
+        "auth/popup-closed-by-user"
+      ) {
+        return "Google sign-in was cancelled.";
+      }
 
-      default:
-        return "Something went wrong. Please try again.";
+      if (
+        code ===
+        "auth/popup-blocked"
+      ) {
+        return "Your browser blocked the Google sign-in popup.";
+      }
+
+      if (
+        code ===
+        "auth/too-many-requests"
+      ) {
+        return "Too many attempts. Try again later.";
+      }
+
+      if (
+        code ===
+        "auth/network-request-failed"
+      ) {
+        return "Network error. Check your connection and try again.";
+      }
     }
+
+    return "Something went wrong. Please try again.";
   };
 
-  const clearMessages = () => {
-    setMessage("");
-    setSuccess("");
-  };
-
-  const switchMode = (
-    nextMode: AuthMode
-  ) => {
-    setMode(nextMode);
-
-    clearMessages();
-
-    setPassword("");
-    setConfirmPassword("");
-  };
-
-  const handleGoogle = async () => {
-    try {
-      setLoading(true);
-      clearMessages();
-
-      const provider =
-        new GoogleAuthProvider();
-
-      await signInWithPopup(
-        auth,
-        provider
-      );
-
-      router.push(
-        getDestination()
-      );
-    } catch (error) {
-      console.error(error);
-
-      setMessage(
-        getFriendlyError(error)
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+  // --------------------------------
+  // EMAIL SIGN IN
+  // --------------------------------
 
   const handleSignIn = async (
     event: React.FormEvent
   ) => {
     event.preventDefault();
 
-    clearMessages();
+    setError("");
+    setMessage("");
 
     if (!email.trim()) {
-      setMessage(
-        "Enter your email address."
-      );
-
+      setError("Enter your email.");
       return;
     }
 
     if (!password) {
-      setMessage(
-        "Enter your password."
-      );
-
+      setError("Enter your password.");
       return;
     }
 
     try {
       setLoading(true);
 
-      await signInWithEmailAndPassword(
-        auth,
-        email.trim(),
-        password
-      );
+      const credential =
+        await signInWithEmailAndPassword(
+          auth,
+          email.trim(),
+          password
+        );
 
-      router.push(
-        getDestination()
-      );
-    } catch (error) {
-      console.error(error);
+      const destination =
+        await getPostLoginDestination(
+          credential.user.uid
+        );
 
-      setMessage(
-        getFriendlyError(error)
+      router.push(destination);
+    } catch (err) {
+      console.error(err);
+
+      setError(
+        getFriendlyError(err)
       );
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCreateAccount =
-    async (
-      event: React.FormEvent
-    ) => {
-      event.preventDefault();
+  // --------------------------------
+  // CREATE ACCOUNT
+  // --------------------------------
 
-      clearMessages();
+  const handleCreateAccount = async (
+    event: React.FormEvent
+  ) => {
+    event.preventDefault();
 
-      if (!firstName.trim()) {
-        setMessage(
-          "Enter your first name."
+    setError("");
+    setMessage("");
+
+    if (!firstName.trim()) {
+      setError(
+        "Enter your first name."
+      );
+      return;
+    }
+
+    if (!lastName.trim()) {
+      setError(
+        "Enter your last name."
+      );
+      return;
+    }
+
+    if (!email.trim()) {
+      setError("Enter your email.");
+      return;
+    }
+
+    if (password.length < 6) {
+      setError(
+        "Password must be at least 6 characters."
+      );
+      return;
+    }
+
+    if (
+      password !== confirmPassword
+    ) {
+      setError(
+        "Passwords do not match."
+      );
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const credential =
+        await createUserWithEmailAndPassword(
+          auth,
+          email.trim(),
+          password
         );
 
+      await updateProfile(
+        credential.user,
+        {
+          displayName: `${firstName.trim()} ${lastName.trim()}`,
+        }
+      );
+
+      // Staff invite signup?
+      const next =
+        getNextDestination();
+
+      if (next) {
+        router.push(next);
         return;
       }
 
-      if (!lastName.trim()) {
-        setMessage(
-          "Enter your last name."
-        );
+      // Brand-new business accounts go
+      // to /business.
+      //
+      // /business then checks Firestore.
+      // If no business exists, it sends
+      // them to /business/setup.
+      router.push("/business");
 
-        return;
-      }
+    } catch (err) {
+      console.error(err);
 
-      if (!email.trim()) {
-        setMessage(
-          "Enter your email address."
-        );
+      setError(
+        getFriendlyError(err)
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        return;
-      }
+  // --------------------------------
+  // GOOGLE LOGIN
+  // --------------------------------
 
-      if (password.length < 6) {
-        setMessage(
-          "Password must be at least 6 characters."
-        );
-
-        return;
-      }
-
-      if (
-        password !==
-        confirmPassword
-      ) {
-        setMessage(
-          "Your passwords do not match."
-        );
-
-        return;
-      }
+  const handleGoogleSignIn =
+    async () => {
+      setError("");
+      setMessage("");
 
       try {
         setLoading(true);
 
-        const credential =
-          await createUserWithEmailAndPassword(
+        const provider =
+          new GoogleAuthProvider();
+
+        const result =
+          await signInWithPopup(
             auth,
-            email.trim(),
-            password
+            provider
           );
 
-        await updateProfile(
-          credential.user,
-          {
-            displayName:
-              `${firstName.trim()} ${lastName.trim()}`,
-          }
-        );
+        const destination =
+          await getPostLoginDestination(
+            result.user.uid
+          );
 
-        router.push(
-          getDestination()
-        );
-      } catch (error) {
-        console.error(error);
+        router.push(destination);
+      } catch (err) {
+        console.error(err);
 
-        setMessage(
-          getFriendlyError(error)
+        setError(
+          getFriendlyError(err)
         );
       } finally {
         setLoading(false);
       }
     };
 
+  // --------------------------------
+  // PASSWORD RESET
+  // --------------------------------
+
   const handleForgotPassword =
     async () => {
-      clearMessages();
+      setError("");
+      setMessage("");
 
       if (!email.trim()) {
-        setMessage(
+        setError(
           "Enter your email first, then press Forgot password."
         );
-
         return;
       }
 
       try {
-        setLoading(true);
-
         await sendPasswordResetEmail(
           auth,
           email.trim()
         );
 
-        setSuccess(
+        setMessage(
           "Password reset email sent."
         );
-      } catch (error) {
-        console.error(error);
+      } catch (err) {
+        console.error(err);
 
-        setMessage(
-          getFriendlyError(error)
+        setError(
+          getFriendlyError(err)
         );
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -317,127 +410,115 @@ export default function BusinessLoginPage() {
 
       {/* HEADER */}
 
-      <header className="max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
+      <header className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
 
-        <button
-          type="button"
-          onClick={() =>
-            router.push("/")
-          }
-          className="flex items-center gap-3"
-        >
-          <div className="w-10 h-10 bg-green-600 rounded-xl text-white flex items-center justify-center font-bold">
-            S
-          </div>
+          <BackButton fallback="/" />
 
-          <span className="font-bold text-xl text-[#101811]">
-            SeatMate
-          </span>
-        </button>
-
-        <BackButton fallback="/" />
-
-      </header>
-
-      <div className="max-w-7xl mx-auto px-6 py-8 md:py-16 grid lg:grid-cols-[1fr_480px] gap-16 items-center">
-
-        {/* LEFT SIDE */}
-
-        <div className="hidden lg:block">
-
-          <div className="inline-flex items-center gap-2 border border-green-100 bg-green-50 text-green-700 rounded-full px-4 py-2 text-sm font-semibold">
-
-            <span className="w-2 h-2 rounded-full bg-green-500" />
-
-            SeatMate for Business
-
-          </div>
-
-          <h1 className="text-6xl font-bold tracking-[-0.05em] text-[#101811] leading-[1.02] mt-7">
-            Seating,
-            <br />
-            without the
-            <br />
-            guesswork.
-          </h1>
-
-          <p className="text-lg text-gray-500 leading-8 max-w-lg mt-7">
-            Manage your floor plan,
-            give staff secure access,
-            and keep customers updated
-            with live seating
-            availability.
-          </p>
-
-          <div className="grid grid-cols-3 gap-4 max-w-lg mt-10">
-
-            <div className="bg-white border border-[#e3e7e2] rounded-2xl p-4">
-              <p className="text-2xl">
-                ◉
-              </p>
-
-              <p className="font-semibold mt-2">
-                Live
-              </p>
-
-              <p className="text-xs text-gray-400 mt-1">
-                Real-time seating
-              </p>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-green-600 text-white rounded-xl flex items-center justify-center font-bold">
+              S
             </div>
 
-            <div className="bg-white border border-[#e3e7e2] rounded-2xl p-4">
-              <p className="text-2xl">
-                ◫
+            <div>
+              <p className="font-bold">
+                SeatMate
               </p>
 
-              <p className="font-semibold mt-2">
-                Simple
-              </p>
-
-              <p className="text-xs text-gray-400 mt-1">
-                One-tap updates
+              <p className="text-xs text-gray-400">
+                Business Portal
               </p>
             </div>
-
-            <div className="bg-white border border-[#e3e7e2] rounded-2xl p-4">
-              <p className="text-2xl">
-                ✓
-              </p>
-
-              <p className="font-semibold mt-2">
-                Reliable
-              </p>
-
-              <p className="text-xs text-gray-400 mt-1">
-                Staff verified
-              </p>
-            </div>
-
           </div>
+
+          <div className="w-16" />
 
         </div>
+      </header>
 
-        {/* AUTH CARD */}
+      {/* PAGE */}
 
-        <div className="w-full">
+      <div className="max-w-6xl mx-auto px-6 py-12">
 
-          <div className="bg-white border border-[#e3e7e2] rounded-[30px] p-7 md:p-9 shadow-[0_20px_60px_rgba(16,24,17,0.07)]">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
 
-            {/* MODE TOGGLE */}
+          {/* LEFT SIDE */}
 
-            <div className="bg-[#f4f6f2] rounded-xl p-1 grid grid-cols-2">
+          <div>
+
+            <div className="inline-flex items-center gap-2 bg-green-50 border border-green-100 text-green-700 rounded-full px-3 py-1.5 text-sm font-semibold">
+              <span className="w-2 h-2 bg-green-500 rounded-full" />
+              SeatMate for Business
+            </div>
+
+            <h1 className="text-5xl md:text-6xl font-bold tracking-tight mt-6 leading-[1.05]">
+              Manage your
+              <br />
+              space in real time.
+            </h1>
+
+            <p className="text-gray-500 text-lg mt-6 max-w-lg leading-8">
+              Create your business, build your
+              floor plan, manage staff and keep
+              customers updated on live seating
+              availability.
+            </p>
+
+            <div className="mt-10 bg-[#101811] text-white rounded-[28px] p-7 max-w-md">
+
+              <p className="text-green-400 text-sm font-bold">
+                BUSINESS PORTAL
+              </p>
+
+              <h2 className="text-2xl font-bold mt-3">
+                One dashboard.
+                Everything live.
+              </h2>
+
+              <div className="mt-6 space-y-4 text-white/70">
+
+                <p>
+                  ✓ Build your restaurant or
+                  café floor plan
+                </p>
+
+                <p>
+                  ✓ Update live seat occupancy
+                </p>
+
+                <p>
+                  ✓ Invite staff members
+                </p>
+
+                <p>
+                  ✓ Manage business hours
+                </p>
+
+              </div>
+
+            </div>
+
+          </div>
+
+          {/* AUTH CARD */}
+
+          <div className="bg-white border border-gray-200 rounded-[30px] p-7 md:p-9 shadow-sm">
+
+            {/* MODE SWITCH */}
+
+            <div className="grid grid-cols-2 bg-gray-100 rounded-xl p-1">
 
               <button
                 type="button"
-                onClick={() =>
-                  switchMode(
-                    "signin"
-                  )
-                }
-                className={`h-11 rounded-lg text-sm font-semibold transition ${
+                onClick={() => {
+                  setMode("signin");
+                  setError("");
+                  setMessage("");
+                }}
+                className={`py-3 rounded-lg font-semibold text-sm transition ${
                   mode === "signin"
-                    ? "bg-white text-[#101811] shadow-sm"
-                    : "text-gray-500 hover:text-[#101811]"
+                    ? "bg-white shadow-sm text-black"
+                    : "text-gray-500"
                 }`}
               >
                 Sign In
@@ -445,15 +526,15 @@ export default function BusinessLoginPage() {
 
               <button
                 type="button"
-                onClick={() =>
-                  switchMode(
-                    "signup"
-                  )
-                }
-                className={`h-11 rounded-lg text-sm font-semibold transition ${
+                onClick={() => {
+                  setMode("signup");
+                  setError("");
+                  setMessage("");
+                }}
+                className={`py-3 rounded-lg font-semibold text-sm transition ${
                   mode === "signup"
-                    ? "bg-white text-[#101811] shadow-sm"
-                    : "text-gray-500 hover:text-[#101811]"
+                    ? "bg-white shadow-sm text-black"
+                    : "text-gray-500"
                 }`}
               >
                 Create Account
@@ -461,24 +542,18 @@ export default function BusinessLoginPage() {
 
             </div>
 
-            <div className="mt-8">
+            <div className="mt-7">
 
-              <p className="text-xs text-green-600 font-bold tracking-[0.16em]">
+              <h2 className="text-3xl font-bold">
                 {mode === "signin"
-                  ? "WELCOME BACK"
-                  : "GET STARTED"}
-              </p>
-
-              <h2 className="text-3xl font-bold tracking-tight text-[#101811] mt-2">
-                {mode === "signin"
-                  ? "Sign in to SeatMate"
-                  : "Create your account"}
+                  ? "Welcome back."
+                  : "Create your account."}
               </h2>
 
-              <p className="text-gray-500 mt-2 leading-6">
+              <p className="text-gray-500 mt-2">
                 {mode === "signin"
-                  ? "Manage your business or continue to your staff account."
-                  : "Create an account to manage a business or join a SeatMate team."}
+                  ? "Sign in to manage your SeatMate business."
+                  : "Create an account to register and manage your business."}
               </p>
 
             </div>
@@ -487,34 +562,59 @@ export default function BusinessLoginPage() {
 
             <button
               type="button"
-              onClick={handleGoogle}
+              onClick={
+                handleGoogleSignIn
+              }
               disabled={loading}
-              className="w-full h-12 mt-7 border border-[#dde2dc] hover:bg-gray-50 rounded-xl flex items-center justify-center gap-3 font-semibold text-[#101811] disabled:opacity-50"
+              className="w-full mt-7 border border-gray-200 hover:bg-gray-50 rounded-xl py-3.5 px-4 font-semibold flex items-center justify-center gap-3 transition disabled:opacity-50"
             >
 
-              <img
-                src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-                alt=""
-                className="w-5 h-5"
-              />
+              {/* GOOGLE LOGO */}
+
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  fill="#4285F4"
+                  d="M21.6 12.227c0-.709-.064-1.391-.182-2.045H12v3.868h5.382a4.6 4.6 0 0 1-1.996 3.018v2.509h3.232c1.891-1.741 2.982-4.305 2.982-7.35Z"
+                />
+
+                <path
+                  fill="#34A853"
+                  d="M12 22c2.7 0 4.964-.895 6.618-2.423l-3.232-2.509c-.895.6-2.041.955-3.386.955-2.605 0-4.809-1.759-5.595-4.123H3.064v2.591A9.997 9.997 0 0 0 12 22Z"
+                />
+
+                <path
+                  fill="#FBBC05"
+                  d="M6.405 13.9A6.01 6.01 0 0 1 6.091 12c0-.659.114-1.3.314-1.9V7.509H3.064A10.005 10.005 0 0 0 2 12c0 1.614.386 3.141 1.064 4.491L6.405 13.9Z"
+                />
+
+                <path
+                  fill="#EA4335"
+                  d="M12 5.977c1.468 0 2.786.505 3.823 1.496l2.868-2.868C16.959 2.991 14.695 2 12 2a9.997 9.997 0 0 0-8.936 5.509L6.405 10.1C7.191 7.736 9.395 5.977 12 5.977Z"
+                />
+              </svg>
 
               Continue with Google
 
             </button>
 
-            {/* DIVIDER */}
-
             <div className="flex items-center gap-4 my-6">
 
               <div className="h-px bg-gray-200 flex-1" />
 
-              <span className="text-xs font-semibold text-gray-400">
+              <span className="text-xs text-gray-400 font-semibold">
                 OR
               </span>
 
               <div className="h-px bg-gray-200 flex-1" />
 
             </div>
+
+            {/* FORM */}
 
             <form
               onSubmit={
@@ -524,52 +624,46 @@ export default function BusinessLoginPage() {
               }
             >
 
-              {/* SIGNUP NAME FIELDS */}
+              {/* SIGNUP NAMES */}
 
               {mode === "signup" && (
-                <div className="grid sm:grid-cols-2 gap-4 mb-5">
+                <div className="grid sm:grid-cols-2 gap-4 mb-4">
 
                   <div>
-                    <label className="block text-sm font-semibold text-[#344038] mb-2">
+                    <label className="block text-sm font-semibold mb-2">
                       First name
                     </label>
 
                     <input
                       type="text"
-                      autoComplete="given-name"
                       value={firstName}
-                      onChange={(
-                        event
-                      ) =>
+                      onChange={(e) =>
                         setFirstName(
-                          event.target
-                            .value
+                          e.target.value
                         )
                       }
-                      placeholder="Juan"
-                      className="w-full"
+                      placeholder="John"
+                      autoComplete="given-name"
+                      className="w-full border border-gray-200 rounded-xl px-4 py-3"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-[#344038] mb-2">
+                    <label className="block text-sm font-semibold mb-2">
                       Last name
                     </label>
 
                     <input
                       type="text"
-                      autoComplete="family-name"
                       value={lastName}
-                      onChange={(
-                        event
-                      ) =>
+                      onChange={(e) =>
                         setLastName(
-                          event.target
-                            .value
+                          e.target.value
                         )
                       }
                       placeholder="Smith"
-                      className="w-full"
+                      autoComplete="family-name"
+                      className="w-full border border-gray-200 rounded-xl px-4 py-3"
                     />
                   </div>
 
@@ -578,47 +672,42 @@ export default function BusinessLoginPage() {
 
               {/* EMAIL */}
 
-              <div className="mb-5">
-
-                <label className="block text-sm font-semibold text-[#344038] mb-2">
+              <div>
+                <label className="block text-sm font-semibold mb-2">
                   Email
                 </label>
 
                 <input
                   type="email"
-                  autoComplete="email"
                   value={email}
-                  onChange={(
-                    event
-                  ) =>
+                  onChange={(e) =>
                     setEmail(
-                      event.target.value
+                      e.target.value
                     )
                   }
                   placeholder="you@example.com"
-                  className="w-full"
+                  autoComplete="email"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3"
                 />
-
               </div>
 
               {/* PASSWORD */}
 
-              <div>
+              <div className="mt-4">
 
                 <div className="flex items-center justify-between mb-2">
 
-                  <label className="text-sm font-semibold text-[#344038]">
+                  <label className="block text-sm font-semibold">
                     Password
                   </label>
 
-                  {mode ===
-                    "signin" && (
+                  {mode === "signin" && (
                     <button
                       type="button"
                       onClick={
                         handleForgotPassword
                       }
-                      className="text-xs font-semibold text-green-700 hover:text-green-800"
+                      className="text-sm text-green-700 font-semibold hover:underline"
                     >
                       Forgot password?
                     </button>
@@ -628,27 +717,19 @@ export default function BusinessLoginPage() {
 
                 <input
                   type="password"
+                  value={password}
+                  onChange={(e) =>
+                    setPassword(
+                      e.target.value
+                    )
+                  }
+                  placeholder="••••••••"
                   autoComplete={
-                    mode ===
-                    "signin"
+                    mode === "signin"
                       ? "current-password"
                       : "new-password"
                   }
-                  value={password}
-                  onChange={(
-                    event
-                  ) =>
-                    setPassword(
-                      event.target.value
-                    )
-                  }
-                  placeholder={
-                    mode ===
-                    "signin"
-                      ? "Enter your password"
-                      : "At least 6 characters"
-                  }
-                  className="w-full"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3"
                 />
 
               </div>
@@ -656,28 +737,25 @@ export default function BusinessLoginPage() {
               {/* CONFIRM PASSWORD */}
 
               {mode === "signup" && (
-                <div className="mt-5">
+                <div className="mt-4">
 
-                  <label className="block text-sm font-semibold text-[#344038] mb-2">
+                  <label className="block text-sm font-semibold mb-2">
                     Confirm password
                   </label>
 
                   <input
                     type="password"
-                    autoComplete="new-password"
                     value={
                       confirmPassword
                     }
-                    onChange={(
-                      event
-                    ) =>
+                    onChange={(e) =>
                       setConfirmPassword(
-                        event.target
-                          .value
+                        e.target.value
                       )
                     }
-                    placeholder="Enter password again"
-                    className="w-full"
+                    placeholder="••••••••"
+                    autoComplete="new-password"
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3"
                   />
 
                 </div>
@@ -685,15 +763,15 @@ export default function BusinessLoginPage() {
 
               {/* ERRORS */}
 
-              {message && (
-                <div className="bg-red-50 border border-red-100 text-red-700 rounded-xl p-4 text-sm mt-5">
-                  {message}
+              {error && (
+                <div className="mt-5 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+                  {error}
                 </div>
               )}
 
-              {success && (
-                <div className="bg-green-50 border border-green-100 text-green-700 rounded-xl p-4 text-sm mt-5">
-                  {success}
+              {message && (
+                <div className="mt-5 bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-3 text-sm">
+                  {message}
                 </div>
               )}
 
@@ -702,52 +780,23 @@ export default function BusinessLoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full h-12 bg-[#101811] hover:bg-black text-white rounded-xl font-semibold mt-6 disabled:opacity-50"
+                className="w-full mt-6 bg-[#101811] hover:bg-black text-white font-bold py-3.5 rounded-xl transition disabled:opacity-50"
               >
                 {loading
                   ? "Please wait..."
-                  : mode ===
-                      "signin"
-                    ? "Sign In"
-                    : "Create Account"}
+                  : mode === "signin"
+                    ? "Sign In →"
+                    : "Create Account →"}
               </button>
 
             </form>
 
-            {/* BOTTOM SWITCH */}
-
-            <p className="text-sm text-gray-500 text-center mt-7">
-
-              {mode === "signin"
-                ? "New to SeatMate?"
-                : "Already have an account?"}
-
-              <button
-                type="button"
-                onClick={() =>
-                  switchMode(
-                    mode ===
-                      "signin"
-                      ? "signup"
-                      : "signin"
-                  )
-                }
-                className="font-semibold text-green-700 ml-1 hover:text-green-800"
-              >
-                {mode === "signin"
-                  ? "Create an account"
-                  : "Sign in"}
-              </button>
-
-            </p>
-
             {mode === "signup" && (
-              <p className="text-[11px] text-gray-400 text-center leading-5 mt-4">
-                By creating an account,
-                you agree to use SeatMate
-                responsibly and keep
-                business information
-                accurate.
+              <p className="text-xs text-gray-400 mt-5 text-center leading-5">
+                After creating your account,
+                you&apos;ll add your business
+                details and build your live
+                floor plan.
               </p>
             )}
 

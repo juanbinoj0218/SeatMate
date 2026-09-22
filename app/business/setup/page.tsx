@@ -26,6 +26,7 @@ export default function BusinessSetupPage() {
   const [name, setName] = useState("");
   const [type, setType] = useState("Cafe");
   const [address, setAddress] = useState("");
+  const [zipcode, setZipcode] = useState("");
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -98,6 +99,11 @@ export default function BusinessSetupPage() {
       return;
     }
 
+    if (!/^\d{5}$/.test(zipcode.trim())) {
+      setError("Enter a valid 5-digit ZIP code.");
+      return;
+    }
+
     setSaving(true);
     setError("");
 
@@ -116,32 +122,18 @@ export default function BusinessSetupPage() {
         user.uid
       );
 
-      const publicBusinessRef = doc(
-        db,
-        "publicBusinesses",
-        slug
-      );
-
       const batch = writeBatch(db);
 
-      // Private owner/business data
+      // Create the business privately first.
+      // It will NOT appear in public search until a SeatMate admin approves it.
       batch.set(businessRef, {
         ownerId: user.uid,
         name: name.trim(),
         type,
         address: address.trim(),
+        zipcode: zipcode.trim(),
         slug,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
-
-      // Public searchable business data
-      batch.set(publicBusinessRef, {
-        businessId: user.uid,
-        name: name.trim(),
-        type,
-        address: address.trim(),
-        slug,
+        status: "draft",
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
@@ -255,7 +247,7 @@ export default function BusinessSetupPage() {
                   </p>
 
                   <p className="text-sm text-gray-500">
-                    Name, type and address
+                    Name, type, address and ZIP code
                   </p>
                 </div>
               </div>
@@ -291,8 +283,8 @@ export default function BusinessSetupPage() {
             </h2>
 
             <p className="text-gray-500 mt-2">
-              This information will appear to SeatMate
-              customers.
+              Build your floor plan, then submit your business
+              for SeatMate approval before it appears to customers.
             </p>
 
             {error && (
@@ -372,6 +364,34 @@ export default function BusinessSetupPage() {
                 placeholder="123 Main Street, Folsom, CA"
                 className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-green-500"
               />
+            </div>
+
+            {/* ZIP CODE */}
+            <div className="mt-5">
+              <label className="block text-sm font-semibold mb-2">
+                ZIP code
+              </label>
+
+              <input
+                type="text"
+                value={zipcode}
+                onChange={(e) =>
+                  setZipcode(
+                    e.target.value
+                      .replace(/\D/g, "")
+                      .slice(0, 5)
+                  )
+                }
+                inputMode="numeric"
+                autoComplete="postal-code"
+                maxLength={5}
+                placeholder="95630"
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-green-500"
+              />
+
+              <p className="text-xs text-gray-400 mt-2">
+                Customers use this to find SeatMate locations near them.
+              </p>
             </div>
 
             <button

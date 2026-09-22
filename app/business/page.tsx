@@ -16,11 +16,19 @@ import {
 
 import { auth, db } from "@/lib/firebase";
 
+type BusinessStatus =
+  | "draft"
+  | "pending"
+  | "approved"
+  | "suspended"
+  | "rejected";
+
 type Business = {
   name: string;
   address: string;
   type: string;
   slug?: string;
+  status?: BusinessStatus;
 };
 
 export default function BusinessDashboard() {
@@ -35,7 +43,6 @@ export default function BusinessDashboard() {
     const unsubscribe = onAuthStateChanged(
       auth,
       async (currentUser) => {
-        // Not logged in
         if (!currentUser) {
           router.replace("/business/login");
           return;
@@ -51,14 +58,11 @@ export default function BusinessDashboard() {
           const businessSnap =
             await getDoc(businessRef);
 
-          // Logged in, but they have NOT created
-          // a restaurant/cafe yet
           if (!businessSnap.exists()) {
             router.replace("/business/setup");
             return;
           }
 
-          // They already have a business
           setBusiness(
             businessSnap.data() as Business
           );
@@ -90,7 +94,6 @@ export default function BusinessDashboard() {
           <div className="w-12 h-12 bg-green-600 text-white rounded-xl flex items-center justify-center font-bold mx-auto">
             S
           </div>
-
           <p className="text-gray-500 mt-4">
             Loading SeatMate...
           </p>
@@ -103,15 +106,14 @@ export default function BusinessDashboard() {
     return null;
   }
 
+  const businessStatus: BusinessStatus =
+    business.status ?? "approved";
+
   return (
     <main className="min-h-screen bg-[#f7f8f5]">
-
-      {/* HEADER */}
       <header className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-
           <div className="flex items-center gap-5">
-
             <BackButton fallback="/" />
 
             <div className="flex items-center gap-3">
@@ -120,16 +122,10 @@ export default function BusinessDashboard() {
               </div>
 
               <div>
-                <p className="font-bold">
-                  SeatMate
-                </p>
-
-                <p className="text-xs text-gray-400">
-                  Business
-                </p>
+                <p className="font-bold">SeatMate</p>
+                <p className="text-xs text-gray-400">Business</p>
               </div>
             </div>
-
           </div>
 
           <button
@@ -138,17 +134,14 @@ export default function BusinessDashboard() {
           >
             Log Out
           </button>
-
         </div>
       </header>
 
-      {/* PAGE */}
       <div className="max-w-7xl mx-auto px-6 py-12">
-
         <div>
           <div className="flex items-center gap-2 text-green-600 font-semibold text-sm">
             <span className="w-2 h-2 bg-green-500 rounded-full" />
-            LIVE
+            BUSINESS PORTAL
           </div>
 
           <h1 className="text-5xl font-bold mt-3">
@@ -160,9 +153,7 @@ export default function BusinessDashboard() {
           </p>
         </div>
 
-        {/* MANAGEMENT CARD */}
         <div className="bg-[#101811] text-white rounded-3xl p-10 mt-10">
-
           <p className="text-green-400 text-sm font-bold">
             FLOOR PLAN
           </p>
@@ -172,12 +163,10 @@ export default function BusinessDashboard() {
           </h2>
 
           <p className="text-white/60 mt-3">
-            Arrange tables and update seat occupancy
-            in real time.
+            Arrange tables and update seat occupancy in real time.
           </p>
 
           <div className="flex flex-wrap gap-3 mt-7">
-
             <button
               type="button"
               onClick={() =>
@@ -207,12 +196,10 @@ export default function BusinessDashboard() {
             >
               Business Hours
             </button>
-
           </div>
         </div>
 
-        {/* CUSTOMER PAGE */}
-        {business.slug && (
+        {businessStatus === "approved" && business.slug && (
           <button
             type="button"
             onClick={() =>
@@ -226,6 +213,69 @@ export default function BusinessDashboard() {
           </button>
         )}
 
+        {businessStatus === "draft" && (
+          <div className="mt-5 bg-white border border-gray-200 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <p className="font-bold">Setup not submitted</p>
+              <p className="text-gray-500 text-sm mt-1">
+                Finish your floor plan and submit your business for SeatMate approval.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() =>
+                router.push("/business/floor-plan")
+              }
+              className="bg-[#101811] text-white px-5 py-3 rounded-xl font-semibold"
+            >
+              Continue Setup →
+            </button>
+          </div>
+        )}
+
+        {businessStatus === "pending" && (
+          <div className="mt-5 bg-amber-50 border border-amber-200 rounded-2xl p-5">
+            <p className="font-bold text-amber-800">
+              Pending approval
+            </p>
+            <p className="text-amber-700 text-sm mt-1">
+              SeatMate is reviewing your business. Your customer page will become available after approval.
+            </p>
+          </div>
+        )}
+
+        {businessStatus === "suspended" && (
+          <div className="mt-5 bg-red-50 border border-red-200 rounded-2xl p-5">
+            <p className="font-bold text-red-700">
+              Business suspended
+            </p>
+            <p className="text-red-600 text-sm mt-1">
+              This location is currently hidden from SeatMate customers.
+            </p>
+          </div>
+        )}
+
+        {businessStatus === "rejected" && (
+          <div className="mt-5 bg-gray-100 border border-gray-200 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <p className="font-bold">Approval declined</p>
+              <p className="text-gray-500 text-sm mt-1">
+                Update your business or floor plan, then submit it again for review.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() =>
+                router.push("/business/floor-plan")
+              }
+              className="bg-[#101811] text-white px-5 py-3 rounded-xl font-semibold"
+            >
+              Update & Resubmit →
+            </button>
+          </div>
+        )}
       </div>
     </main>
   );

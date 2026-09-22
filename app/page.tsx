@@ -7,20 +7,37 @@ export default function HomePage() {
   const router = useRouter();
 
   const [search, setSearch] = useState("");
+  const [zipcode, setZipcode] = useState("");
   const [message, setMessage] = useState("");
 
   const findBusiness = (event: FormEvent) => {
-  event.preventDefault();
+    event.preventDefault();
 
-  if (!search.trim()) {
-    setMessage("Enter a café or restaurant name.");
-    return;
-  }
+    const query = search.trim();
+    const zip = zipcode.trim();
 
-  router.push(
-    `/search?q=${encodeURIComponent(search.trim())}`
-  );
-};
+    if (!query && !zip) {
+      setMessage("Enter a café, restaurant, or ZIP code.");
+      return;
+    }
+
+    if (zip && !/^\d{5}$/.test(zip)) {
+      setMessage("Enter a valid 5-digit ZIP code.");
+      return;
+    }
+
+    const params = new URLSearchParams();
+
+    if (query) {
+      params.set("q", query);
+    }
+
+    if (zip) {
+      params.set("zip", zip);
+    }
+
+    router.push(`/search?${params.toString()}`);
+  };
 
   return (
     <main className="min-h-screen bg-[#f7f8f5] text-[#101811]">
@@ -75,24 +92,49 @@ export default function HomePage() {
               onSubmit={findBusiness}
               className="mt-10 max-w-xl"
             >
-              <div className="bg-white border border-gray-200 rounded-2xl p-2 flex shadow-lg">
-                <input
-                  value={search}
-                  onChange={(event) => {
-                    setSearch(event.target.value);
-                    setMessage("");
-                  }}
-                  placeholder="Search a café or restaurant"
-                  className="flex-1 h-12 px-4 outline-none bg-transparent text-black"
-                />
+              <div className="bg-white border border-gray-200 rounded-2xl p-2 shadow-lg">
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    value={search}
+                    onChange={(event) => {
+                      setSearch(event.target.value);
+                      setMessage("");
+                    }}
+                    placeholder="Café or restaurant"
+                    className="flex-1 h-12 px-4 outline-none bg-transparent text-black"
+                  />
 
-                <button
-                  type="submit"
-                  className="bg-green-600 hover:bg-green-700 text-white px-6 rounded-xl font-semibold transition"
-                >
-                  Find Seats
-                </button>
+                  <div className="hidden sm:block w-px bg-gray-200" />
+
+                  <input
+                    value={zipcode}
+                    onChange={(event) => {
+                      setZipcode(
+                        event.target.value
+                          .replace(/\D/g, "")
+                          .slice(0, 5)
+                      );
+                      setMessage("");
+                    }}
+                    inputMode="numeric"
+                    autoComplete="postal-code"
+                    placeholder="ZIP code"
+                    maxLength={5}
+                    className="sm:w-36 h-12 px-4 outline-none bg-transparent text-black border-t sm:border-t-0 border-gray-100"
+                  />
+
+                  <button
+                    type="submit"
+                    className="h-12 bg-green-600 hover:bg-green-700 text-white px-6 rounded-xl font-semibold transition whitespace-nowrap"
+                  >
+                    Find Seats
+                  </button>
+                </div>
               </div>
+
+              <p className="text-xs text-gray-400 mt-3">
+                Search by business name, ZIP code, or both.
+              </p>
 
               {message && (
                 <p className="text-red-500 text-sm mt-3">

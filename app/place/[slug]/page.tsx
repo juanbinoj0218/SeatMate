@@ -4,12 +4,10 @@ import { useEffect, useState } from "react";
 import {
   useParams,
   useRouter,
-  useSearchParams,
 } from "next/navigation";
 
 import BackButton from "@/components/BackButton";
 <BackButton fallback="/business" />
-
 
 import {
   collection,
@@ -37,11 +35,228 @@ type Table = {
 };
 
 
+type DayHours = {
+  closed: boolean;
+  open: string;
+  close: string;
+};
+
+type Hours = {
+  monday: DayHours;
+  tuesday: DayHours;
+  wednesday: DayHours;
+  thursday: DayHours;
+  friday: DayHours;
+  saturday: DayHours;
+  sunday: DayHours;
+};
+
+type DayName = keyof Hours;
+
 type PublicBusiness = {
   businessId: string;
   name: string;
   address: string;
   type: string;
+  hours?: Hours;
+  timezone?: string;
+};
+
+const dayLabels: {
+  key: DayName;
+  label: string;
+}[] = [
+  { key: "monday", label: "Monday" },
+  { key: "tuesday", label: "Tuesday" },
+  { key: "wednesday", label: "Wednesday" },
+  { key: "thursday", label: "Thursday" },
+  { key: "friday", label: "Friday" },
+  { key: "saturday", label: "Saturday" },
+  { key: "sunday", label: "Sunday" },
+];
+
+const dayOrder: DayName[] = [
+  "sunday",
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+];
+
+const toMinutes = (time: string) => {
+  const [hour, minute] =
+    time.split(":").map(Number);
+
+  if (
+    !Number.isFinite(hour) ||
+    !Number.isFinite(minute)
+  ) {
+    return null;
+  }
+
+  return hour * 60 + minute;
+};
+
+const formatHour = (time: string) => {
+  const minutes = toMinutes(time);
+
+  if (minutes === null) {
+    return time;
+  }
+
+  const hour =
+    Math.floor(minutes / 60);
+
+  const minute =
+    minutes % 60;
+
+  const suffix =
+    hour >= 12 ? "PM" : "AM";
+
+  const displayHour =
+    hour % 12 || 12;
+
+  return `${displayHour}:${minute
+    .toString()
+    .padStart(2, "0")} ${suffix}`;
+};
+
+const getOpenStatus = (
+  hours: Hours | undefined,
+  timezone: string | undefined,
+  nowMs: number
+) => {
+  if (!hours || !timezone) {
+    return null;
+  }
+
+  try {
+    const parts =
+      new Intl.DateTimeFormat(
+        "en-US",
+        {
+          timeZone: timezone,
+          weekday: "long",
+          hour: "2-digit",
+          minute: "2-digit",
+          hourCycle: "h23",
+        }
+      ).formatToParts(
+        new Date(nowMs)
+      );
+
+    const weekdayValue =
+      parts
+        .find(
+          (part) =>
+            part.type === "weekday"
+        )
+        ?.value.toLowerCase();
+
+    const hourValue =
+      parts.find(
+        (part) =>
+          part.type === "hour"
+      )?.value;
+
+    const minuteValue =
+      parts.find(
+        (part) =>
+          part.type === "minute"
+      )?.value;
+
+    if (
+      !weekdayValue ||
+      hourValue === undefined ||
+      minuteValue === undefined
+    ) {
+      return null;
+    }
+
+    const day =
+      weekdayValue as DayName;
+
+    const currentMinutes =
+      Number(hourValue) * 60 +
+      Number(minuteValue);
+
+    const today =
+      hours[day];
+
+    let openNow = false;
+
+    if (today && !today.closed) {
+      const opening =
+        toMinutes(today.open);
+
+      const closing =
+        toMinutes(today.close);
+
+      if (
+        opening !== null &&
+        closing !== null
+      ) {
+        if (closing > opening) {
+          openNow =
+            currentMinutes >= opening &&
+            currentMinutes < closing;
+        } else {
+          openNow =
+            currentMinutes >= opening;
+        }
+      }
+    }
+
+    if (!openNow) {
+      const currentIndex =
+        dayOrder.indexOf(day);
+
+      const previousDay =
+        dayOrder[
+          (currentIndex + 6) %
+            dayOrder.length
+        ];
+
+      const previous =
+        hours[previousDay];
+
+      if (
+        previous &&
+        !previous.closed
+      ) {
+        const previousOpening =
+          toMinutes(previous.open);
+
+        const previousClosing =
+          toMinutes(previous.close);
+
+        if (
+          previousOpening !== null &&
+          previousClosing !== null &&
+          previousClosing <=
+            previousOpening &&
+          currentMinutes <
+            previousClosing
+        ) {
+          openNow = true;
+        }
+      }
+    }
+
+    return {
+      open: openNow,
+      day,
+    };
+  } catch (error) {
+    console.error(
+      "Could not calculate business open status:",
+      error
+    );
+
+    return null;
+  }
 };
 
 export default function PlacePage() {
@@ -49,14 +264,13 @@ export default function PlacePage() {
     useParams<{ slug: string }>();
 
   const slug = params.slug;
-  
+
   const router = useRouter();
-const searchParams = useSearchParams();
 
-const fromBusiness =
-  searchParams.get("from") === "business";
+  const [fromBusiness, setFromBusiness] =
+    useState(false);
 
-  const [business, setBusiness] =
+const [business, setBusiness] =
     useState<PublicBusiness | null>(null);
 
   const [tables, setTables] =
@@ -71,8 +285,19 @@ const fromBusiness =
   const [now, setNow] =
     useState(Date.now());
 
-
   useEffect(() => {
+    const searchParams =
+      new URLSearchParams(
+        window.location.search
+      );
+
+    setFromBusiness(
+      searchParams.get("from") ===
+        "business"
+    );
+  }, []);
+
+useEffect(() => {
   const interval = window.setInterval(() => {
     setNow(Date.now());
   }, 30000);
@@ -323,7 +548,21 @@ const isStale =
   ageMinutes >=
     STALE_AFTER_MINUTES;
 
-  return (
+const openStatus =
+  getOpenStatus(
+    business.hours,
+    business.timezone,
+    now
+  );
+
+const todaysHours =
+  openStatus
+    ? business.hours?.[
+        openStatus.day
+      ]
+    : undefined;
+
+return (
     <main className="min-h-screen bg-[#f7f8f5]">
 
       {/* HEADER */}
@@ -377,6 +616,42 @@ const isStale =
               {business.type} ·{" "}
               {business.address}
             </p>
+
+            {openStatus && (
+              <div className="flex flex-wrap items-center gap-3 mt-4">
+                <span
+                  className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-bold ${
+                    openStatus.open
+                      ? "bg-green-50 text-green-700 border border-green-200"
+                      : "bg-red-50 text-red-700 border border-red-200"
+                  }`}
+                >
+                  <span
+                    className={`w-2 h-2 rounded-full ${
+                      openStatus.open
+                        ? "bg-green-500"
+                        : "bg-red-500"
+                    }`}
+                  />
+
+                  {openStatus.open
+                    ? "Open now"
+                    : "Closed now"}
+                </span>
+
+                {todaysHours && (
+                  <span className="text-sm text-gray-500">
+                    {todaysHours.closed
+                      ? "Closed today"
+                      : `Today ${formatHour(
+                          todaysHours.open
+                        )} – ${formatHour(
+                          todaysHours.close
+                        )}`}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           <div
@@ -502,6 +777,92 @@ const isStale =
           </div>
 
         </div>
+
+        {/* BUSINESS HOURS */}
+
+        {business.hours && (
+          <div className="bg-white border border-[#e3e7e2] rounded-[26px] p-6 mt-8">
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+
+              <div>
+                <p className="text-xs font-bold tracking-wider text-gray-400">
+                  HOURS
+                </p>
+
+                <h2 className="text-2xl font-bold text-[#101811] mt-2">
+                  Business hours
+                </h2>
+              </div>
+
+              {openStatus && (
+                <span
+                  className={`text-sm font-bold ${
+                    openStatus.open
+                      ? "text-green-600"
+                      : "text-red-500"
+                  }`}
+                >
+                  {openStatus.open
+                    ? "● Open now"
+                    : "● Closed now"}
+                </span>
+              )}
+
+            </div>
+
+            <div className="mt-5 divide-y divide-gray-100">
+
+              {dayLabels.map(
+                ({ key, label }) => {
+                  const dayHours =
+                    business.hours?.[key];
+
+                  const isToday =
+                    openStatus?.day === key;
+
+                  return (
+                    <div
+                      key={key}
+                      className={`flex items-center justify-between gap-4 py-3 ${
+                        isToday
+                          ? "text-[#101811] font-semibold"
+                          : "text-gray-500"
+                      }`}
+                    >
+
+                      <div className="flex items-center gap-2">
+                        <span>
+                          {label}
+                        </span>
+
+                        {isToday && (
+                          <span className="text-[10px] bg-green-50 text-green-700 px-2 py-1 rounded-full font-bold">
+                            TODAY
+                          </span>
+                        )}
+                      </div>
+
+                      <span className="text-right">
+                        {!dayHours ||
+                        dayHours.closed
+                          ? "Closed"
+                          : `${formatHour(
+                              dayHours.open
+                            )} – ${formatHour(
+                              dayHours.close
+                            )}`}
+                      </span>
+
+                    </div>
+                  );
+                }
+              )}
+
+            </div>
+
+          </div>
+        )}
 
         {/* FLOOR PLAN */}
 

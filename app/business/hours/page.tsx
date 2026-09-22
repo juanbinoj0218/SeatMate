@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import BackButton from "@/components/BackButton";
-<BackButton fallback="/business" />
 
 import {
   onAuthStateChanged,
@@ -217,21 +216,28 @@ export default function BusinessHoursPage() {
       setSaving(true);
       setMessage("");
 
-      const batch =
-        writeBatch(db);
-
       const businessRef = doc(
         db,
         "businesses",
         user.uid
       );
 
-      const publicRef = doc(
-        db,
-        "publicBusinesses",
-        slug
-      );
+      const businessSnap =
+        await getDoc(businessRef);
 
+      if (!businessSnap.exists()) {
+        setMessage("Business not found.");
+        return;
+      }
+
+      const businessData =
+        businessSnap.data();
+
+      const batch =
+        writeBatch(db);
+
+      // Always save hours on the private business document.
+      // Draft and pending businesses do not have a public listing yet.
       batch.update(
         businessRef,
         {
@@ -239,23 +245,47 @@ export default function BusinessHoursPage() {
           timezone,
           hoursUpdatedAt:
             serverTimestamp(),
-        }
-      );
-
-      batch.update(
-        publicRef,
-        {
-          hours,
-          timezone,
-          hoursUpdatedAt:
+          updatedAt:
             serverTimestamp(),
         }
       );
 
+      // Once the business is approved, also sync hours
+      // to the public document customers read.
+      if (
+        businessData.status === "approved" &&
+        businessData.slug
+      ) {
+        const publicRef = doc(
+          db,
+          "publicBusinesses",
+          businessData.slug
+        );
+
+        const publicSnap =
+          await getDoc(publicRef);
+
+        if (publicSnap.exists()) {
+          batch.update(
+            publicRef,
+            {
+              hours,
+              timezone,
+              hoursUpdatedAt:
+                serverTimestamp(),
+              updatedAt:
+                serverTimestamp(),
+            }
+          );
+        }
+      }
+
       await batch.commit();
 
       setMessage(
-        "Business hours saved."
+        businessData.status === "approved"
+          ? "Business hours saved and synced to your customer page."
+          : "Business hours saved. They will appear publicly after approval."
       );
     } catch (error) {
       console.error(error);
@@ -303,16 +333,7 @@ export default function BusinessHoursPage() {
 
           </div>
 
-          <button
-            onClick={() =>
-              router.push(
-                "/business"
-              )
-            }
-            className="border border-gray-200 bg-white hover:bg-gray-50 px-4 py-2 rounded-xl text-sm font-semibold"
-          >
-            ← Dashboard
-          </button>
+          <BackButton fallback="/business" />
 
         </div>
 
