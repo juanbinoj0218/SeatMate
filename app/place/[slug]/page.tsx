@@ -6,9 +6,6 @@ import {
   useRouter,
 } from "next/navigation";
 
-import BackButton from "@/components/BackButton";
-<BackButton fallback="/business" />
-
 import {
   collection,
   doc,
@@ -60,6 +57,24 @@ type PublicBusiness = {
   type: string;
   hours?: Hours;
   timezone?: string;
+  googlePlaceId?: string;
+};
+
+type GoogleReview = {
+  authorName: string;
+  authorUri?: string;
+  authorPhotoUri?: string;
+  rating: number;
+  text: string;
+  relativeTime?: string;
+  googleMapsUri?: string;
+};
+
+type GooglePlaceDetails = {
+  rating?: number;
+  userRatingCount?: number;
+  googleMapsUri?: string;
+  reviews: GoogleReview[];
 };
 
 const dayLabels: {
@@ -285,6 +300,15 @@ const [business, setBusiness] =
   const [now, setNow] =
     useState(Date.now());
 
+  const [googlePlace, setGooglePlace] =
+    useState<GooglePlaceDetails | null>(null);
+
+  const [reviewsLoading, setReviewsLoading] =
+    useState(false);
+
+  const [reviewsError, setReviewsError] =
+    useState("");
+
   useEffect(() => {
     const searchParams =
       new URLSearchParams(
@@ -401,6 +425,81 @@ useEffect(() => {
       unsubscribeTables?.();
     };
   }, [slug]);
+
+  useEffect(() => {
+    const placeId =
+      business?.googlePlaceId?.trim();
+
+    if (!placeId) {
+      setGooglePlace(null);
+      setReviewsError("");
+      setReviewsLoading(false);
+      return;
+    }
+
+    const controller =
+      new AbortController();
+
+    const loadGoogleReviews = async () => {
+      try {
+        setReviewsLoading(true);
+        setReviewsError("");
+
+        const response = await fetch(
+          `/api/place-details?placeId=${encodeURIComponent(
+            placeId
+          )}`,
+          {
+            signal: controller.signal,
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            "Could not load Google place details."
+          );
+        }
+
+        const data =
+          (await response.json()) as GooglePlaceDetails;
+
+        setGooglePlace({
+          rating: data.rating,
+          userRatingCount:
+            data.userRatingCount,
+          googleMapsUri:
+            data.googleMapsUri,
+          reviews:
+            Array.isArray(data.reviews)
+              ? data.reviews
+              : [],
+        });
+      } catch (error) {
+        if (
+          error instanceof DOMException &&
+          error.name === "AbortError"
+        ) {
+          return;
+        }
+
+        console.error(error);
+        setGooglePlace(null);
+        setReviewsError(
+          "Google reviews are unavailable right now."
+        );
+      } finally {
+        if (!controller.signal.aborted) {
+          setReviewsLoading(false);
+        }
+      }
+    };
+
+    void loadGoogleReviews();
+
+    return () => {
+      controller.abort();
+    };
+  }, [business?.googlePlaceId]);
 
   if (loading) {
     return (
@@ -562,6 +661,17 @@ const todaysHours =
       ]
     : undefined;
 
+const directionsUrl =
+  business.googlePlaceId
+    ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+        business.address
+      )}&destination_place_id=${encodeURIComponent(
+        business.googlePlaceId
+      )}`
+    : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+        business.address
+      )}`;
+
 return (
     <main className="min-h-screen bg-[#f7f8f5]">
 
@@ -652,6 +762,28 @@ return (
                 )}
               </div>
             )}
+
+            <div className="flex flex-wrap gap-3 mt-5">
+              <a
+                href={directionsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-xl font-semibold transition"
+              >
+                Get Directions →
+              </a>
+
+              {googlePlace?.googleMapsUri && (
+                <a
+                  href={googlePlace.googleMapsUri}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center bg-white border border-gray-200 hover:bg-gray-50 text-[#101811] px-5 py-3 rounded-xl font-semibold transition"
+                >
+                  View on Google Maps ↗
+                </a>
+              )}
+            </div>
           </div>
 
           <div
@@ -863,6 +995,167 @@ return (
 
           </div>
         )}
+
+        {/* REVIEWS */}
+
+        <div className="bg-white border border-[#e3e7e2] rounded-[26px] p-6 mt-8">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold tracking-wider text-gray-400">
+                REVIEWS
+              </p>
+
+              <h2 className="text-2xl font-bold text-[#101811] mt-2">
+                What people are saying
+              </h2>
+
+              <p className="text-sm text-gray-500 mt-2">
+                Google reviews appear here once this SeatMate location is linked to its Google Maps listing.
+              </p>
+            </div>
+
+            {googlePlace?.rating !== undefined && (
+              <div className="sm:text-right">
+                <div className="flex sm:justify-end items-center gap-2">
+                  <span className="text-3xl font-bold text-[#101811]">
+                    {googlePlace.rating.toFixed(1)}
+                  </span>
+                  <span className="text-amber-500 text-xl">
+                    ★
+                  </span>
+                </div>
+
+                {googlePlace.userRatingCount !== undefined && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    {googlePlace.userRatingCount.toLocaleString()} Google reviews
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {!business.googlePlaceId ? (
+            <div className="bg-[#f7f8f5] border border-gray-100 rounded-2xl p-6 mt-6">
+              <p className="font-semibold text-[#101811]">
+                Reviews coming soon
+              </p>
+              <p className="text-sm text-gray-500 mt-2">
+                This test location is not linked to a real Google Maps business yet.
+              </p>
+            </div>
+          ) : reviewsLoading ? (
+            <div className="bg-[#f7f8f5] border border-gray-100 rounded-2xl p-6 mt-6">
+              <p className="text-sm text-gray-500">
+                Loading Google reviews...
+              </p>
+            </div>
+          ) : reviewsError ? (
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 mt-6">
+              <p className="font-semibold text-amber-800">
+                Reviews unavailable
+              </p>
+              <p className="text-sm text-amber-700 mt-2">
+                {reviewsError}
+              </p>
+            </div>
+          ) : googlePlace && googlePlace.reviews.length > 0 ? (
+            <div className="grid md:grid-cols-2 gap-4 mt-6">
+              {googlePlace.reviews
+                .slice(0, 4)
+                .map((review, index) => (
+                  <div
+                    key={`${review.authorName}-${index}`}
+                    className="border border-gray-200 rounded-2xl p-5"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        {review.authorPhotoUri ? (
+                          <img
+                            src={review.authorPhotoUri}
+                            alt=""
+                            className="w-9 h-9 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">
+                            {review.authorName
+                              .slice(0, 1)
+                              .toUpperCase()}
+                          </div>
+                        )}
+
+                        <div>
+                          {review.authorUri ? (
+                            <a
+                              href={review.authorUri}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-bold text-[#101811] hover:text-green-700"
+                            >
+                              {review.authorName}
+                            </a>
+                          ) : (
+                            <p className="font-bold text-[#101811]">
+                              {review.authorName}
+                            </p>
+                          )}
+
+                          {review.relativeTime && (
+                            <p className="text-xs text-gray-400 mt-1">
+                              {review.relativeTime}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <span className="text-sm font-bold text-amber-600">
+                        ★ {review.rating.toFixed(1)}
+                      </span>
+                    </div>
+
+                    {review.text && (
+                      <p className="text-sm text-gray-600 leading-6 mt-4">
+                        {review.text}
+                      </p>
+                    )}
+
+                    {review.googleMapsUri && (
+                      <a
+                        href={review.googleMapsUri}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block text-xs font-semibold text-green-700 hover:text-green-800 mt-4"
+                      >
+                        View review on Google Maps ↗
+                      </a>
+                    )}
+                  </div>
+                ))}
+            </div>
+          ) : (
+            <div className="bg-[#f7f8f5] border border-gray-100 rounded-2xl p-6 mt-6">
+              <p className="font-semibold text-[#101811]">
+                No Google reviews available
+              </p>
+              <p className="text-sm text-gray-500 mt-2">
+                This Google listing does not currently have review data available through SeatMate.
+              </p>
+            </div>
+          )}
+
+          {business.googlePlaceId && (
+            <div className="text-xs text-gray-400 mt-5 space-y-1">
+              <p>
+                Reviews are shown in Google Maps relevance order.
+              </p>
+              <p>
+                Reviews and ratings provided by{" "}
+                <span translate="no" className="font-semibold">
+                  Google Maps
+                </span>.
+              </p>
+            </div>
+          )}
+        </div>
 
         {/* FLOOR PLAN */}
 

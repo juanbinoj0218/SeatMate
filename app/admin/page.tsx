@@ -41,6 +41,7 @@ type Business = {
   status: BusinessStatus;
   hours?: Record<string, unknown>;
   timezone?: string;
+  googlePlaceId?: string;
 };
 
 export default function AdminPage() {
@@ -56,6 +57,12 @@ export default function AdminPage() {
     useState<"all" | BusinessStatus>("all");
   const [deleteTarget, setDeleteTarget] =
     useState<Business | null>(null);
+
+  const [googlePlaceInputs, setGooglePlaceInputs] =
+    useState<Record<string, string>>({});
+
+  const [googlePlaceSaving, setGooglePlaceSaving] =
+    useState<string | null>(null);
 
   useEffect(() => {
     let unsubscribeBusinesses:
@@ -125,11 +132,29 @@ export default function AdminPage() {
                     status,
                     hours: business.hours,
                     timezone: business.timezone,
+                    googlePlaceId:
+                      typeof business.googlePlaceId === "string"
+                        ? business.googlePlaceId
+                        : "",
                   };
                 }
               );
 
               setBusinesses(data);
+
+              setGooglePlaceInputs((current) => {
+                const next = { ...current };
+
+                data.forEach((business) => {
+                  if (next[business.id] === undefined) {
+                    next[business.id] =
+                      business.googlePlaceId || "";
+                  }
+                });
+
+                return next;
+              });
+
               setLoading(false);
             },
             (error) => {
@@ -187,6 +212,13 @@ export default function AdminPage() {
       setActionLoading(business.id);
       setMessage("");
 
+      const googlePlaceId =
+        (
+          googlePlaceInputs[business.id] ??
+          business.googlePlaceId ??
+          ""
+        ).trim();
+
       const batch = writeBatch(db);
       const businessRef = doc(db, "businesses", business.id);
       const publicRef = doc(
@@ -199,6 +231,8 @@ export default function AdminPage() {
         status: "approved",
         reviewedAt: serverTimestamp(),
         reviewedBy: adminUid,
+        googlePlaceId:
+          googlePlaceId || null,
       });
 
       batch.set(
@@ -213,6 +247,8 @@ export default function AdminPage() {
           verified: true,
           approvedAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
+          googlePlaceId:
+            googlePlaceId || null,
           ...(business.hours
             ? { hours: business.hours }
             : {}),
@@ -232,6 +268,67 @@ export default function AdminPage() {
       setMessage("Could not approve this business.");
     } finally {
       setActionLoading(null);
+    }
+  };
+
+  const saveGooglePlaceId = async (
+    business: Business
+  ) => {
+    const googlePlaceId =
+      (
+        googlePlaceInputs[business.id] ??
+        business.googlePlaceId ??
+        ""
+      ).trim();
+
+    try {
+      setGooglePlaceSaving(business.id);
+      setMessage("");
+
+      const batch = writeBatch(db);
+
+      batch.update(
+        doc(db, "businesses", business.id),
+        {
+          googlePlaceId:
+            googlePlaceId || null,
+          updatedAt: serverTimestamp(),
+        }
+      );
+
+      if (
+        business.status === "approved" &&
+        business.slug
+      ) {
+        batch.set(
+          doc(
+            db,
+            "publicBusinesses",
+            business.slug
+          ),
+          {
+            googlePlaceId:
+              googlePlaceId || null,
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true }
+        );
+      }
+
+      await batch.commit();
+
+      setMessage(
+        googlePlaceId
+          ? `${business.name} is linked to Google Places.`
+          : `${business.name} is no longer linked to a Google Place.`
+      );
+    } catch (error) {
+      console.error(error);
+      setMessage(
+        "Could not save the Google Place ID."
+      );
+    } finally {
+      setGooglePlaceSaving(null);
     }
   };
 
@@ -595,6 +692,66 @@ export default function AdminPage() {
                   >
                     Delete
                   </button>
+                </div>
+              </div>
+
+              <div className="border-t border-gray-100 mt-6 pt-5">
+                <div className="flex flex-col lg:flex-row lg:items-end gap-3">
+                  <div className="flex-1">
+                    <label className="text-sm font-bold text-[#101811]">
+                      Google Place ID
+                    </label>
+
+                    <p className="text-xs text-gray-500 mt-1">
+                      Optional for test locations. Add the real Google Place ID when a restaurant joins to enable live Google ratings and reviews.
+                    </p>
+
+                    <input
+                      value={
+                        googlePlaceInputs[business.id] ??
+                        business.googlePlaceId ??
+                        ""
+                      }
+                      onChange={(event) =>
+                        setGooglePlaceInputs(
+                          (current) => ({
+                            ...current,
+                            [business.id]:
+                              event.target.value,
+                          })
+                        )
+                      }
+                      placeholder="ChIJ..."
+                      className="w-full border border-gray-200 rounded-xl px-4 py-3 mt-3 outline-none focus:border-green-500"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={
+                      googlePlaceSaving === business.id ||
+                      actionLoading === business.id
+                    }
+                    onClick={() =>
+                      void saveGooglePlaceId(business)
+                    }
+                    className="bg-[#101811] text-white px-5 py-3 rounded-xl font-semibold disabled:opacity-50"
+                  >
+                    {googlePlaceSaving === business.id
+                      ? "Saving..."
+                      : "Save Google Link"}
+                  </button>
+
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                      `${business.name} ${business.address}`
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="border border-gray-200 bg-white hover:bg-gray-50 px-5 py-3 rounded-xl font-semibold text-center"
+                  >
+                    Search on Maps ↗
+                  </a>
                 </div>
               </div>
             </div>
