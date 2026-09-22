@@ -2,18 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import BackButton from "@/components/BackButton";
-<BackButton fallback ="/business" />
 
 import {
   onAuthStateChanged,
+  signOut,
   User,
 } from "firebase/auth";
 
 import {
   doc,
-  setDoc,
+  getDoc,
   serverTimestamp,
+  writeBatch,
 } from "firebase/firestore";
 
 import { auth, db } from "@/lib/firebase";
@@ -23,321 +23,371 @@ export default function BusinessSetupPage() {
 
   const [user, setUser] = useState<User | null>(null);
 
-  const [businessName, setBusinessName] =
-    useState("");
+  const [name, setName] = useState("");
+  const [type, setType] = useState("Cafe");
+  const [address, setAddress] = useState("");
 
-  const [address, setAddress] =
-    useState("");
-
-  const [businessType, setBusinessType] =
-    useState("Cafe");
-
-  const [loading, setLoading] =
-    useState(false);
-
-  const [message, setMessage] =
-    useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(
       auth,
-      (currentUser) => {
+      async (currentUser) => {
         if (!currentUser) {
-          router.push("/business/login");
+          router.replace("/business/login");
           return;
         }
 
         setUser(currentUser);
+
+        try {
+          const businessRef = doc(
+            db,
+            "businesses",
+            currentUser.uid
+          );
+
+          const businessSnap =
+            await getDoc(businessRef);
+
+          // If they already created a business,
+          // don't make them do setup again.
+          if (businessSnap.exists()) {
+            router.replace("/business");
+            return;
+          }
+
+          setLoading(false);
+        } catch (err) {
+          console.error(err);
+          setError(
+            "Could not load your account. Please try again."
+          );
+          setLoading(false);
+        }
       }
     );
 
-    return unsubscribe;
+    return () => unsubscribe();
   }, [router]);
 
-  const createBusiness = async () => {
+  const createSlug = (businessName: string) => {
+    return businessName
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+  };
+
+  const handleCreateBusiness = async (
+    event: React.FormEvent
+  ) => {
+    event.preventDefault();
+
     if (!user) return;
 
-    if (!businessName.trim()) {
-      setMessage("Enter your business name.");
+    if (!name.trim()) {
+      setError("Enter your business name.");
       return;
     }
 
     if (!address.trim()) {
-      setMessage("Enter your business address.");
+      setError("Enter your business address.");
       return;
     }
 
+    setSaving(true);
+    setError("");
+
     try {
-      setLoading(true);
-      setMessage("");
+      const slug = createSlug(name);
 
-      const slug = businessName
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, "");
+      if (!slug) {
+        setError("Please enter a valid business name.");
+        setSaving(false);
+        return;
+      }
 
-      await setDoc(
-        doc(
-          db,
-          "businesses",
-          user.uid
-        ),
-        {
-          name: businessName.trim(),
-          address: address.trim(),
-          type: businessType,
-          ownerId: user.uid,
-          ownerEmail: user.email,
-          slug,
-          createdAt: serverTimestamp(),
-        }
+      const businessRef = doc(
+        db,
+        "businesses",
+        user.uid
       );
 
-      await setDoc(
-        doc(
-          db,
-          "publicBusinesses",
-          slug
-        ),
-        {
-          businessId: user.uid,
-          name: businessName.trim(),
-          address: address.trim(),
-          type: businessType,
-        }
+      const publicBusinessRef = doc(
+        db,
+        "publicBusinesses",
+        slug
       );
 
-      router.push("/business");
-    } catch (error) {
-      console.error(error);
+      const batch = writeBatch(db);
 
-      setMessage(
-        "Could not create your business."
+      // Private owner/business data
+      batch.set(businessRef, {
+        ownerId: user.uid,
+        name: name.trim(),
+        type,
+        address: address.trim(),
+        slug,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+
+      // Public searchable business data
+      batch.set(publicBusinessRef, {
+        businessId: user.uid,
+        name: name.trim(),
+        type,
+        address: address.trim(),
+        slug,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+
+      await batch.commit();
+
+      // IMPORTANT:
+      // New owner now goes directly to the grid
+      router.push("/business/floor-plan");
+    } catch (err) {
+      console.error(
+        "Error creating business:",
+        err
       );
-    } finally {
-      setLoading(false);
+
+      setError(
+        "Something went wrong creating your business."
+      );
+
+      setSaving(false);
     }
   };
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    router.push("/business/login");
+  };
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-[#f7f8f5] flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 bg-green-600 text-white rounded-xl flex items-center justify-center font-bold mx-auto">
+            S
+          </div>
+
+          <p className="text-gray-500 mt-4">
+            Loading SeatMate...
+          </p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[#f7f8f5]">
 
       {/* HEADER */}
-
-      <header className="bg-white border-b border-[#e3e7e2]">
+      <header className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
 
-          <button
-            onClick={() =>
-              router.push("/business")
-            }
-            className="flex items-center gap-3"
-          >
-            <div className="w-10 h-10 rounded-xl bg-green-600 flex items-center justify-center text-white font-bold text-lg">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-green-600 text-white rounded-xl flex items-center justify-center font-bold">
               S
             </div>
 
-            <span className="text-xl font-bold text-[#101811]">
-              SeatMate
-            </span>
-          </button>
+            <div>
+              <p className="font-bold">
+                SeatMate
+              </p>
+
+              <p className="text-xs text-gray-400">
+                Business Setup
+              </p>
+            </div>
+          </div>
 
           <button
-            onClick={() =>
-              router.push("/business")
-            }
-            className="text-sm text-gray-500 hover:text-black transition"
+            type="button"
+            onClick={handleLogout}
+            className="border border-gray-200 bg-white hover:bg-gray-50 px-4 py-2 rounded-xl font-semibold transition"
           >
-            Cancel
+            Log Out
           </button>
 
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-6 py-12 md:py-16">
+      {/* PAGE */}
+      <div className="max-w-5xl mx-auto px-6 py-14">
 
-        <div className="grid lg:grid-cols-[0.8fr_1.2fr] gap-12">
+        <div className="grid lg:grid-cols-2 gap-12 items-start">
 
-          {/* LEFT */}
+          {/* LEFT SIDE */}
+          <div className="pt-4">
 
-          <div>
-            <p className="text-sm font-semibold text-green-600">
+            <p className="text-green-600 font-bold text-sm">
               STEP 1 OF 2
             </p>
 
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-[#101811] mt-4 leading-tight">
-              Add your location.
+            <h1 className="text-5xl font-bold tracking-tight mt-4">
+              Add your business.
             </h1>
 
-            <p className="text-gray-500 text-lg mt-5 leading-8">
-              This information appears on the customer
-              side of SeatMate, so visitors know exactly
-              which location they&apos;re viewing.
+            <p className="text-gray-500 text-lg mt-5 max-w-md">
+              Tell us about your restaurant or café.
+              After this, you&apos;ll build your live
+              seating floor plan.
             </p>
 
-            <div className="mt-10 border-t border-gray-200 pt-8">
+            <div className="mt-10 space-y-5">
 
-              <p className="font-semibold text-[#101811]">
-                What happens next?
-              </p>
+              <div className="flex items-center gap-4">
+                <div className="w-9 h-9 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">
+                  1
+                </div>
 
-              <div className="space-y-5 mt-5">
+                <div>
+                  <p className="font-semibold">
+                    Business details
+                  </p>
 
-                <SetupStep
-                  number="1"
-                  text="Create your business profile"
-                  active
-                />
+                  <p className="text-sm text-gray-500">
+                    Name, type and address
+                  </p>
+                </div>
+              </div>
 
-                <SetupStep
-                  number="2"
-                  text="Build your seating layout"
-                />
+              <div className="flex items-center gap-4">
+                <div className="w-9 h-9 rounded-full border border-gray-300 bg-white text-gray-500 flex items-center justify-center font-bold">
+                  2
+                </div>
 
-                <SetupStep
-                  number="3"
-                  text="Start sharing live availability"
-                />
+                <div>
+                  <p className="font-semibold">
+                    Build your floor plan
+                  </p>
 
+                  <p className="text-sm text-gray-500">
+                    Add tables and seats to the grid
+                  </p>
+                </div>
               </div>
 
             </div>
+
           </div>
 
           {/* FORM */}
+          <form
+            onSubmit={handleCreateBusiness}
+            className="bg-white border border-gray-200 rounded-[28px] p-8 shadow-sm"
+          >
 
-          <div className="bg-white border border-[#e3e7e2] rounded-[28px] p-7 md:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.04)]">
-
-            <h2 className="text-2xl font-bold text-[#101811]">
-              Business details
+            <h2 className="text-2xl font-bold">
+              Create your location
             </h2>
 
             <p className="text-gray-500 mt-2">
-              You can refine these details later.
+              This information will appear to SeatMate
+              customers.
             </p>
 
-            <div className="mt-8">
+            {error && (
+              <div className="mt-5 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+                {error}
+              </div>
+            )}
 
-              <label className="text-sm font-semibold text-gray-700">
+            {/* BUSINESS NAME */}
+            <div className="mt-7">
+              <label className="block text-sm font-semibold mb-2">
                 Business name
               </label>
 
               <input
-                value={businessName}
+                type="text"
+                value={name}
                 onChange={(e) =>
-                  setBusinessName(
-                    e.target.value
-                  )
+                  setName(e.target.value)
                 }
-                placeholder="e.g. Temple Coffee"
-                className="w-full h-13 border border-gray-200 rounded-xl px-4 mt-2 text-black outline-none focus:border-green-500 focus:ring-4 focus:ring-green-50 transition"
+                placeholder="Temple Coffee"
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-green-500"
               />
-
             </div>
 
-            <div className="mt-6">
-
-              <label className="text-sm font-semibold text-gray-700">
-                Address
-              </label>
-
-              <input
-                value={address}
-                onChange={(e) =>
-                  setAddress(
-                    e.target.value
-                  )
-                }
-                placeholder="123 Main Street, Folsom, CA"
-                className="w-full h-13 border border-gray-200 rounded-xl px-4 mt-2 text-black outline-none focus:border-green-500 focus:ring-4 focus:ring-green-50 transition"
-              />
-
-            </div>
-
-            <div className="mt-6">
-
-              <label className="text-sm font-semibold text-gray-700">
+            {/* BUSINESS TYPE */}
+            <div className="mt-5">
+              <label className="block text-sm font-semibold mb-2">
                 Business type
               </label>
 
               <select
-                value={businessType}
+                value={type}
                 onChange={(e) =>
-                  setBusinessType(
-                    e.target.value
-                  )
+                  setType(e.target.value)
                 }
-                className="w-full h-13 border border-gray-200 rounded-xl px-4 mt-2 text-black bg-white outline-none focus:border-green-500 focus:ring-4 focus:ring-green-50 transition"
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 bg-white outline-none focus:ring-2 focus:ring-green-500"
               >
-                <option>Cafe</option>
-                <option>Restaurant</option>
-              </select>
+                <option value="Cafe">
+                  Café
+                </option>
 
+                <option value="Restaurant">
+                  Restaurant
+                </option>
+
+                <option value="Coffee Shop">
+                  Coffee Shop
+                </option>
+
+                <option value="Bakery">
+                  Bakery
+                </option>
+
+                <option value="Food Hall">
+                  Food Hall
+                </option>
+
+                <option value="Other">
+                  Other
+                </option>
+              </select>
             </div>
 
-            {message && (
-              <div className="bg-red-50 border border-red-100 text-red-600 rounded-xl p-3 text-sm mt-6">
-                {message}
-              </div>
-            )}
+            {/* ADDRESS */}
+            <div className="mt-5">
+              <label className="block text-sm font-semibold mb-2">
+                Business address
+              </label>
+
+              <input
+                type="text"
+                value={address}
+                onChange={(e) =>
+                  setAddress(e.target.value)
+                }
+                placeholder="123 Main Street, Folsom, CA"
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
 
             <button
-              onClick={createBusiness}
-              disabled={loading}
-              className="w-full bg-[#101811] hover:bg-black text-white h-13 rounded-xl font-semibold mt-8 transition disabled:opacity-50"
+              type="submit"
+              disabled={saving}
+              className="w-full mt-7 bg-[#101811] hover:bg-black text-white font-bold py-4 rounded-xl transition disabled:opacity-50"
             >
-              {loading
-                ? "Creating..."
-                : "Create Business →"}
+              {saving
+                ? "Creating business..."
+                : "Continue to Floor Plan →"}
             </button>
 
-            <p className="text-xs text-gray-400 text-center mt-4">
-              SeatMate automatically creates your
-              customer-facing page.
-            </p>
-
-          </div>
+          </form>
 
         </div>
-
       </div>
     </main>
-  );
-}
-
-function SetupStep({
-  number,
-  text,
-  active = false,
-}: {
-  number: string;
-  text: string;
-  active?: boolean;
-}) {
-  return (
-    <div className="flex items-center gap-4">
-
-      <div
-        className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold ${
-          active
-            ? "bg-green-600 text-white"
-            : "bg-white border border-gray-200 text-gray-400"
-        }`}
-      >
-        {number}
-      </div>
-
-      <p
-        className={
-          active
-            ? "font-semibold text-[#101811]"
-            : "text-gray-400"
-        }
-      >
-        {text}
-      </p>
-
-    </div>
   );
 }
