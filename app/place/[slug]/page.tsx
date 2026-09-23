@@ -28,9 +28,94 @@ type Table = {
   xPct: number;
   yPct: number;
   shape: "rectangle" | "round";
+  scale: number;
   occupancyUpdatedAt?: Timestamp | null;
 };
 
+type MarkerType =
+  | "outlet"
+  | "window"
+  | "register"
+  | "counter"
+  | "door"
+  | "entrance"
+  | "restroom"
+  | "wall";
+
+type FloorMarker = {
+  id: string;
+  type: MarkerType;
+  label: string;
+  xPct: number;
+  yPct: number;
+  scale: number;
+  rotation: number;
+};
+
+const MARKERS: Record<
+  MarkerType,
+  {
+    label: string;
+    icon: string;
+    width: number;
+    height: number;
+  }
+> = {
+  outlet: {
+    label: "Outlet",
+    icon: "⚡",
+    width: 54,
+    height: 54,
+  },
+  window: {
+    label: "Window",
+    icon: "▭",
+    width: 120,
+    height: 36,
+  },
+  register: {
+    label: "Cash Register",
+    icon: "▣",
+    width: 92,
+    height: 66,
+  },
+  counter: {
+    label: "Counter",
+    icon: "▰",
+    width: 135,
+    height: 54,
+  },
+  door: {
+    label: "Door",
+    icon: "↪",
+    width: 82,
+    height: 42,
+  },
+  entrance: {
+    label: "Entrance",
+    icon: "⇥",
+    width: 110,
+    height: 44,
+  },
+  restroom: {
+    label: "Restroom",
+    icon: "WC",
+    width: 90,
+    height: 62,
+  },
+  wall: {
+    label: "Wall",
+    icon: "",
+    width: 150,
+    height: 26,
+  },
+};
+
+const clamp = (
+  value: number,
+  min: number,
+  max: number
+) => Math.max(min, Math.min(max, value));
 
 type DayHours = {
   closed: boolean;
@@ -57,24 +142,6 @@ type PublicBusiness = {
   type: string;
   hours?: Hours;
   timezone?: string;
-  googlePlaceId?: string;
-};
-
-type GoogleReview = {
-  authorName: string;
-  authorUri?: string;
-  authorPhotoUri?: string;
-  rating: number;
-  text: string;
-  relativeTime?: string;
-  googleMapsUri?: string;
-};
-
-type GooglePlaceDetails = {
-  rating?: number;
-  userRatingCount?: number;
-  googleMapsUri?: string;
-  reviews: GoogleReview[];
 };
 
 const dayLabels: {
@@ -291,6 +358,9 @@ const [business, setBusiness] =
   const [tables, setTables] =
     useState<Table[]>([]);
 
+  const [markers, setMarkers] =
+    useState<FloorMarker[]>([]);
+
   const [loading, setLoading] =
     useState(true);
 
@@ -299,15 +369,6 @@ const [business, setBusiness] =
   
   const [now, setNow] =
     useState(Date.now());
-
-  const [googlePlace, setGooglePlace] =
-    useState<GooglePlaceDetails | null>(null);
-
-  const [reviewsLoading, setReviewsLoading] =
-    useState(false);
-
-  const [reviewsError, setReviewsError] =
-    useState("");
 
   useEffect(() => {
     const searchParams =
@@ -333,6 +394,10 @@ useEffect(() => {
 
   useEffect(() => {
     let unsubscribeTables:
+      | (() => void)
+      | undefined;
+
+    let unsubscribeMarkers:
       | (() => void)
       | undefined;
 
@@ -395,6 +460,11 @@ useEffect(() => {
       ? "round"
       : "rectangle",
 
+  scale:
+    typeof table.scale === "number"
+      ? clamp(table.scale, 0.65, 1.8)
+      : 1,
+
   occupancyUpdatedAt:
     table.occupancyUpdatedAt instanceof Timestamp
       ? table.occupancyUpdatedAt
@@ -411,6 +481,71 @@ useEffect(() => {
             setLoading(false);
           }
         );
+
+
+        const markersRef = collection(
+          db,
+          "businesses",
+          businessData.businessId,
+          "floorMarkers"
+        );
+
+        unsubscribeMarkers = onSnapshot(
+          markersRef,
+          (snapshot) => {
+            const data: FloorMarker[] =
+              snapshot.docs.map(
+                (markerDoc, index) => {
+                  const marker =
+                    markerDoc.data();
+
+                  const type: MarkerType =
+                    marker.type in MARKERS
+                      ? (marker.type as MarkerType)
+                      : "outlet";
+
+                  return {
+                    id: markerDoc.id,
+
+                    type,
+
+                    label:
+                      typeof marker.label === "string"
+                        ? marker.label
+                        : MARKERS[type].label,
+
+                    xPct:
+                      typeof marker.xPct === "number"
+                        ? clamp(marker.xPct, 0, 100)
+                        : 15 + (index % 4) * 20,
+
+                    yPct:
+                      typeof marker.yPct === "number"
+                        ? clamp(marker.yPct, 0, 100)
+                        : 82,
+
+                    scale:
+                      typeof marker.scale === "number"
+                        ? clamp(marker.scale, 0.5, 2.5)
+                        : 1,
+
+                    rotation:
+                      typeof marker.rotation === "number"
+                        ? marker.rotation
+                        : 0,
+                  };
+                }
+              );
+
+            setMarkers(data);
+          },
+          (error) => {
+            console.error(
+              "Could not load floor markers:",
+              error
+            );
+          }
+        );
       } catch (error) {
         console.error(error);
         setLoading(false);
@@ -423,83 +558,9 @@ useEffect(() => {
 
     return () => {
       unsubscribeTables?.();
+      unsubscribeMarkers?.();
     };
   }, [slug]);
-
-  useEffect(() => {
-    const placeId =
-      business?.googlePlaceId?.trim();
-
-    if (!placeId) {
-      setGooglePlace(null);
-      setReviewsError("");
-      setReviewsLoading(false);
-      return;
-    }
-
-    const controller =
-      new AbortController();
-
-    const loadGoogleReviews = async () => {
-      try {
-        setReviewsLoading(true);
-        setReviewsError("");
-
-        const response = await fetch(
-          `/api/place-details?placeId=${encodeURIComponent(
-            placeId
-          )}`,
-          {
-            signal: controller.signal,
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(
-            "Could not load Google place details."
-          );
-        }
-
-        const data =
-          (await response.json()) as GooglePlaceDetails;
-
-        setGooglePlace({
-          rating: data.rating,
-          userRatingCount:
-            data.userRatingCount,
-          googleMapsUri:
-            data.googleMapsUri,
-          reviews:
-            Array.isArray(data.reviews)
-              ? data.reviews
-              : [],
-        });
-      } catch (error) {
-        if (
-          error instanceof DOMException &&
-          error.name === "AbortError"
-        ) {
-          return;
-        }
-
-        console.error(error);
-        setGooglePlace(null);
-        setReviewsError(
-          "Google reviews are unavailable right now."
-        );
-      } finally {
-        if (!controller.signal.aborted) {
-          setReviewsLoading(false);
-        }
-      }
-    };
-
-    void loadGoogleReviews();
-
-    return () => {
-      controller.abort();
-    };
-  }, [business?.googlePlaceId]);
 
   if (loading) {
     return (
@@ -661,17 +722,6 @@ const todaysHours =
       ]
     : undefined;
 
-const directionsUrl =
-  business.googlePlaceId
-    ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
-        business.address
-      )}&destination_place_id=${encodeURIComponent(
-        business.googlePlaceId
-      )}`
-    : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
-        business.address
-      )}`;
-
 return (
     <main className="min-h-screen bg-[#f7f8f5]">
 
@@ -762,28 +812,6 @@ return (
                 )}
               </div>
             )}
-
-            <div className="flex flex-wrap gap-3 mt-5">
-              <a
-                href={directionsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-xl font-semibold transition"
-              >
-                Get Directions →
-              </a>
-
-              {googlePlace?.googleMapsUri && (
-                <a
-                  href={googlePlace.googleMapsUri}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center bg-white border border-gray-200 hover:bg-gray-50 text-[#101811] px-5 py-3 rounded-xl font-semibold transition"
-                >
-                  View on Google Maps ↗
-                </a>
-              )}
-            </div>
           </div>
 
           <div
@@ -996,170 +1024,9 @@ return (
           </div>
         )}
 
-        {/* REVIEWS */}
-
-        <div className="bg-white border border-[#e3e7e2] rounded-[26px] p-6 mt-8">
-          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-            <div>
-              <p className="text-xs font-bold tracking-wider text-gray-400">
-                REVIEWS
-              </p>
-
-              <h2 className="text-2xl font-bold text-[#101811] mt-2">
-                What people are saying
-              </h2>
-
-              <p className="text-sm text-gray-500 mt-2">
-                Google reviews appear here once this SeatMate location is linked to its Google Maps listing.
-              </p>
-            </div>
-
-            {googlePlace?.rating !== undefined && (
-              <div className="sm:text-right">
-                <div className="flex sm:justify-end items-center gap-2">
-                  <span className="text-3xl font-bold text-[#101811]">
-                    {googlePlace.rating.toFixed(1)}
-                  </span>
-                  <span className="text-amber-500 text-xl">
-                    ★
-                  </span>
-                </div>
-
-                {googlePlace.userRatingCount !== undefined && (
-                  <p className="text-xs text-gray-400 mt-1">
-                    {googlePlace.userRatingCount.toLocaleString()} Google reviews
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-
-          {!business.googlePlaceId ? (
-            <div className="bg-[#f7f8f5] border border-gray-100 rounded-2xl p-6 mt-6">
-              <p className="font-semibold text-[#101811]">
-                Reviews coming soon
-              </p>
-              <p className="text-sm text-gray-500 mt-2">
-                This test location is not linked to a real Google Maps business yet.
-              </p>
-            </div>
-          ) : reviewsLoading ? (
-            <div className="bg-[#f7f8f5] border border-gray-100 rounded-2xl p-6 mt-6">
-              <p className="text-sm text-gray-500">
-                Loading Google reviews...
-              </p>
-            </div>
-          ) : reviewsError ? (
-            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 mt-6">
-              <p className="font-semibold text-amber-800">
-                Reviews unavailable
-              </p>
-              <p className="text-sm text-amber-700 mt-2">
-                {reviewsError}
-              </p>
-            </div>
-          ) : googlePlace && googlePlace.reviews.length > 0 ? (
-            <div className="grid md:grid-cols-2 gap-4 mt-6">
-              {googlePlace.reviews
-                .slice(0, 4)
-                .map((review, index) => (
-                  <div
-                    key={`${review.authorName}-${index}`}
-                    className="border border-gray-200 rounded-2xl p-5"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        {review.authorPhotoUri ? (
-                          <img
-                            src={review.authorPhotoUri}
-                            alt=""
-                            className="w-9 h-9 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">
-                            {review.authorName
-                              .slice(0, 1)
-                              .toUpperCase()}
-                          </div>
-                        )}
-
-                        <div>
-                          {review.authorUri ? (
-                            <a
-                              href={review.authorUri}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="font-bold text-[#101811] hover:text-green-700"
-                            >
-                              {review.authorName}
-                            </a>
-                          ) : (
-                            <p className="font-bold text-[#101811]">
-                              {review.authorName}
-                            </p>
-                          )}
-
-                          {review.relativeTime && (
-                            <p className="text-xs text-gray-400 mt-1">
-                              {review.relativeTime}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      <span className="text-sm font-bold text-amber-600">
-                        ★ {review.rating.toFixed(1)}
-                      </span>
-                    </div>
-
-                    {review.text && (
-                      <p className="text-sm text-gray-600 leading-6 mt-4">
-                        {review.text}
-                      </p>
-                    )}
-
-                    {review.googleMapsUri && (
-                      <a
-                        href={review.googleMapsUri}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-block text-xs font-semibold text-green-700 hover:text-green-800 mt-4"
-                      >
-                        View review on Google Maps ↗
-                      </a>
-                    )}
-                  </div>
-                ))}
-            </div>
-          ) : (
-            <div className="bg-[#f7f8f5] border border-gray-100 rounded-2xl p-6 mt-6">
-              <p className="font-semibold text-[#101811]">
-                No Google reviews available
-              </p>
-              <p className="text-sm text-gray-500 mt-2">
-                This Google listing does not currently have review data available through SeatMate.
-              </p>
-            </div>
-          )}
-
-          {business.googlePlaceId && (
-            <div className="text-xs text-gray-400 mt-5 space-y-1">
-              <p>
-                Reviews are shown in Google Maps relevance order.
-              </p>
-              <p>
-                Reviews and ratings provided by{" "}
-                <span translate="no" className="font-semibold">
-                  Google Maps
-                </span>.
-              </p>
-            </div>
-          )}
-        </div>
-
         {/* FLOOR PLAN */}
 
-        <div className="flex items-end justify-between mt-12">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mt-12">
 
           <div>
             <p className="text-xs font-bold tracking-wider text-gray-400">
@@ -1171,11 +1038,11 @@ return (
             </h2>
 
             <p className="text-gray-500 mt-2">
-              Green seats are currently available.
+              This is the same live floor plan created by the business.
             </p>
           </div>
 
-          <div className="hidden sm:flex gap-5 text-xs font-semibold">
+          <div className="flex gap-5 text-xs font-semibold">
 
             <span className="text-green-600">
               ● Available
@@ -1189,99 +1056,306 @@ return (
 
         </div>
 
-        <div className="overflow-x-auto mt-6 pb-3">
+        <div className="overflow-auto mt-6 pb-3 border border-gray-200 rounded-[30px] bg-gray-100/50 p-3">
 
           <div
-            className="relative min-w-[900px] h-[620px] bg-white border border-[#dfe4de] rounded-[28px] overflow-hidden"
+            className="relative bg-white border border-gray-300 rounded-[24px] overflow-hidden shadow-inner"
+            style={{
+              width: "1000px",
+              minWidth: "1000px",
+              height: "700px",
+            }}
           >
 
             <div
-              className="absolute inset-0 pointer-events-none opacity-40"
+              className="absolute inset-0 pointer-events-none opacity-55"
               style={{
                 backgroundImage:
-                  "linear-gradient(#e5e7eb 1px, transparent 1px), linear-gradient(90deg, #e5e7eb 1px, transparent 1px)",
-                backgroundSize:
-                  "32px 32px",
+                  "linear-gradient(#dfe4df 1px, transparent 1px), linear-gradient(90deg, #dfe4df 1px, transparent 1px)",
+                backgroundSize: "32px 32px",
               }}
             />
 
-            <div className="absolute top-5 left-6 text-xs font-bold tracking-[0.18em] text-gray-300">
-              MAIN FLOOR
+            <div className="absolute top-5 left-6 text-xs font-bold tracking-widest text-gray-300 pointer-events-none">
+              TOP-DOWN FLOOR
             </div>
 
-            {tables.length === 0 && (
-              <div className="absolute inset-0 flex items-center justify-center">
+            {tables.length === 0 &&
+              markers.length === 0 && (
+                <div className="absolute inset-0 flex items-center justify-center text-center">
 
-                <div className="text-center">
-                  <p className="font-bold text-xl text-[#101811]">
-                    No seating layout yet
-                  </p>
+                  <div>
+                    <p className="font-bold text-xl text-[#101811]">
+                      No seating layout yet
+                    </p>
 
-                  <p className="text-gray-400 mt-2">
-                    This business hasn&apos;t published its floor plan.
-                  </p>
+                    <p className="text-gray-400 mt-2">
+                      This business hasn&apos;t published its floor plan.
+                    </p>
+                  </div>
+
                 </div>
+              )}
 
-              </div>
-            )}
+            {/* ROOM MARKERS */}
 
-            {tables.map((table) => (
+            {markers.map((marker) => {
+              const info =
+                MARKERS[marker.type];
 
-              <div
-                key={table.id}
-                style={{
-                  position: "absolute",
-                  left: `${table.xPct}%`,
-                  top: `${table.yPct}%`,
-                  width: "190px",
-                }}
-                className="bg-white rounded-[22px] border border-gray-200 p-3 shadow-md"
-              >
+              const displayScale =
+                marker.scale;
 
+              return (
                 <div
-  className={`bg-[#101811] flex items-center justify-center px-3 ${
-    table.shape === "round"
-      ? "w-24 h-24 rounded-full mx-auto"
-      : "h-20 rounded-2xl"
-  }`}
->
-  <span className="text-white text-sm font-semibold text-center truncate">
-    {table.name}
-  </span>
-</div>
-
-                <div className="flex flex-wrap justify-center gap-2 mt-3">
-
-                  {table.seats.map(
-                    (seat) => (
-
+                  key={marker.id}
+                  className={`absolute flex items-center justify-center border text-center font-bold select-none pointer-events-none ${
+                    marker.type === "wall"
+                      ? "bg-gray-700 border-gray-800 text-white"
+                      : marker.type === "window"
+                        ? "bg-sky-50 border-sky-300 text-sky-800"
+                        : marker.type === "outlet"
+                          ? "bg-amber-50 border-amber-300 text-amber-800 rounded-xl"
+                          : "bg-white border-gray-300 text-[#101811] rounded-xl shadow-sm"
+                  }`}
+                  style={{
+                    left: `${marker.xPct}%`,
+                    top: `${marker.yPct}%`,
+                    width: `${
+                      info.width *
+                      displayScale
+                    }px`,
+                    height: `${
+                      info.height *
+                      displayScale
+                    }px`,
+                    transform: `translate(-50%, -50%) rotate(${marker.rotation}deg)`,
+                    zIndex: 5,
+                    fontSize: `${Math.max(
+                      9,
+                      11 * displayScale
+                    )}px`,
+                  }}
+                >
+                  {marker.type ===
+                  "wall" ? null : (
+                    <div
+                      className="leading-tight"
+                      style={{
+                        transform: `rotate(${-marker.rotation}deg)`,
+                      }}
+                    >
                       <div
-                        key={seat.id}
-                        className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white ${
-                          seat.status ===
-                          "available"
-                            ? "bg-green-500"
-                            : "bg-red-500"
-                        }`}
+                        style={{
+                          fontSize: `${Math.max(
+                            12,
+                            17 *
+                              displayScale
+                          )}px`,
+                        }}
                       >
-                        {seat.id}
+                        {info.icon}
                       </div>
 
-                    )
+                      {marker.scale >=
+                        0.75 && (
+                        <div className="mt-0.5">
+                          {marker.label}
+                        </div>
+                      )}
+
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* TABLES */}
+
+            {tables.map((table) => {
+              const displayScale =
+                table.scale;
+
+              const baseWidth =
+                table.shape === "round"
+                  ? 175
+                  : 210;
+
+              const baseHeight =
+                table.shape === "round"
+                  ? 175
+                  : 165;
+
+              return (
+                <div
+                  key={table.id}
+                  className="absolute select-none pointer-events-none"
+                  style={{
+                    left: `${table.xPct}%`,
+                    top: `${table.yPct}%`,
+                    width: `${
+                      baseWidth *
+                      displayScale
+                    }px`,
+                    height: `${
+                      baseHeight *
+                      displayScale
+                    }px`,
+                    transform:
+                      "translate(-50%, -50%)",
+                    zIndex: 20,
+                  }}
+                >
+
+                  <div
+                    className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#101811] text-white flex items-center justify-center text-center shadow-md ${
+                      table.shape ===
+                      "round"
+                        ? "rounded-full"
+                        : "rounded-2xl"
+                    }`}
+                    style={{
+                      width:
+                        table.shape ===
+                        "round"
+                          ? `${
+                              88 *
+                              displayScale
+                            }px`
+                          : `${
+                              125 *
+                              displayScale
+                            }px`,
+
+                      height:
+                        table.shape ===
+                        "round"
+                          ? `${
+                              88 *
+                              displayScale
+                            }px`
+                          : `${
+                              76 *
+                              displayScale
+                            }px`,
+
+                      fontSize: `${Math.max(
+                        9,
+                        13 *
+                          displayScale
+                      )}px`,
+
+                      padding: `${
+                        6 *
+                        displayScale
+                      }px`,
+                    }}
+                  >
+
+                    <div>
+                      <div className="font-bold">
+                        {table.name}
+                      </div>
+
+                      <div className="text-white/50 font-semibold mt-1">
+                        {table.seats.length} seats
+                      </div>
+                    </div>
+
+                  </div>
+
+                  {table.seats.map(
+                    (seat, index) => {
+                      const angle =
+                        -Math.PI / 2 +
+                        (index /
+                          Math.max(
+                            table.seats
+                              .length,
+                            1
+                          )) *
+                          Math.PI *
+                          2;
+
+                      const radiusX =
+                        table.shape ===
+                        "round"
+                          ? 43
+                          : 45;
+
+                      const radiusY =
+                        table.shape ===
+                        "round"
+                          ? 43
+                          : 42;
+
+                      const left =
+                        50 +
+                        Math.cos(
+                          angle
+                        ) *
+                          radiusX;
+
+                      const top =
+                        50 +
+                        Math.sin(
+                          angle
+                        ) *
+                          radiusY;
+
+                      const seatSize =
+                        clamp(
+                          30 *
+                            displayScale,
+                          22,
+                          45
+                        );
+
+                      return (
+                        <div
+                          key={seat.id}
+                          title={
+                            seat.status ===
+                            "available"
+                              ? "Available"
+                              : "Occupied"
+                          }
+                          className={`absolute rounded-full text-white font-bold border-2 border-white shadow-sm flex items-center justify-center ${
+                            seat.status ===
+                            "available"
+                              ? "bg-green-500"
+                              : "bg-red-500"
+                          }`}
+                          style={{
+                            left: `${left}%`,
+                            top: `${top}%`,
+                            width: `${seatSize}px`,
+                            height: `${seatSize}px`,
+                            transform:
+                              "translate(-50%, -50%)",
+                            fontSize: `${Math.max(
+                              8,
+                              10 *
+                                displayScale
+                            )}px`,
+                          }}
+                        >
+                          {seat.id}
+                        </div>
+                      );
+                    }
                   )}
 
                 </div>
-
-              </div>
-
-            ))}
+              );
+            })}
 
           </div>
 
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-6 pb-10">
-          Seat availability may change as customers arrive and leave.
+          Seat availability and floor-plan changes update live as the business makes changes.
         </p>
 
       </div>
