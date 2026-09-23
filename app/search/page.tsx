@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import {
   useRouter,
   useSearchParams,
@@ -53,6 +53,9 @@ function SearchPageContent() {
 
   const [now, setNow] =
     useState(Date.now());
+
+  const [filter, setFilter] = useState("all");
+  const [sort, setSort] = useState("availability");
 
   // Refresh freshness labels every 30 seconds
   useEffect(() => {
@@ -276,6 +279,79 @@ function SearchPageContent() {
     );
   };
 
+  const displayedResults = useMemo(() => {
+    let filtered = [...results];
+
+    if (filter === "available") {
+      filtered = filtered.filter(
+        (business) => business.availableSeats > 0
+      );
+    }
+
+    if (filter === "plenty") {
+      filtered = filtered.filter((business) => {
+        if (business.totalSeats === 0) return false;
+
+        const percentage =
+          (business.availableSeats / business.totalSeats) * 100;
+
+        return percentage >= 60;
+      });
+    }
+
+    if (filter === "cafe") {
+      filtered = filtered.filter((business) => {
+        const type = business.type.toLowerCase();
+
+        return (
+          type.includes("cafe") ||
+          type.includes("café") ||
+          type.includes("coffee")
+        );
+      });
+    }
+
+    if (filter === "restaurant") {
+      filtered = filtered.filter((business) =>
+        business.type
+          .toLowerCase()
+          .includes("restaurant")
+      );
+    }
+
+    if (sort === "availability") {
+      filtered.sort((a, b) => {
+        const aPercent =
+          a.totalSeats > 0
+            ? a.availableSeats / a.totalSeats
+            : -1;
+
+        const bPercent =
+          b.totalSeats > 0
+            ? b.availableSeats / b.totalSeats
+            : -1;
+
+        return bPercent - aPercent;
+      });
+    }
+
+    if (sort === "recent") {
+      filtered.sort(
+        (a, b) =>
+          (b.latestUpdateMs ?? 0) -
+          (a.latestUpdateMs ?? 0)
+      );
+    }
+
+    if (sort === "name") {
+      filtered.sort((a, b) =>
+        a.name.localeCompare(b.name)
+      );
+    }
+
+    return filtered;
+  }, [results, filter, sort]);
+
   return (
     <main className="min-h-screen bg-[#f7f8f5]">
 
@@ -399,6 +475,91 @@ function SearchPageContent() {
 
         </form>
 
+        {/* FILTERS */}
+
+        <div className="mt-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+
+          <div className="flex flex-wrap gap-2">
+
+            <button
+              onClick={() => setFilter("all")}
+              className={`px-4 py-2 rounded-full text-sm font-semibold border transition ${
+                filter === "all"
+                  ? "bg-[#101811] text-white border-[#101811]"
+                  : "bg-white text-gray-600 border-gray-200 hover:border-gray-400"
+              }`}
+            >
+              All
+            </button>
+
+            <button
+              onClick={() => setFilter("available")}
+              className={`px-4 py-2 rounded-full text-sm font-semibold border transition ${
+                filter === "available"
+                  ? "bg-[#101811] text-white border-[#101811]"
+                  : "bg-white text-gray-600 border-gray-200 hover:border-gray-400"
+              }`}
+            >
+              Available now
+            </button>
+
+            <button
+              onClick={() => setFilter("plenty")}
+              className={`px-4 py-2 rounded-full text-sm font-semibold border transition ${
+                filter === "plenty"
+                  ? "bg-[#101811] text-white border-[#101811]"
+                  : "bg-white text-gray-600 border-gray-200 hover:border-gray-400"
+              }`}
+            >
+              Plenty of seats
+            </button>
+
+            <button
+              onClick={() => setFilter("cafe")}
+              className={`px-4 py-2 rounded-full text-sm font-semibold border transition ${
+                filter === "cafe"
+                  ? "bg-[#101811] text-white border-[#101811]"
+                  : "bg-white text-gray-600 border-gray-200 hover:border-gray-400"
+              }`}
+            >
+              Café
+            </button>
+
+            <button
+              onClick={() => setFilter("restaurant")}
+              className={`px-4 py-2 rounded-full text-sm font-semibold border transition ${
+                filter === "restaurant"
+                  ? "bg-[#101811] text-white border-[#101811]"
+                  : "bg-white text-gray-600 border-gray-200 hover:border-gray-400"
+              }`}
+            >
+              Restaurant
+            </button>
+
+          </div>
+
+          <select
+            value={sort}
+            onChange={(event) =>
+              setSort(event.target.value)
+            }
+            className="bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-semibold text-gray-600 outline-none cursor-pointer"
+          >
+            <option value="availability">
+              Best availability
+            </option>
+
+            <option value="recent">
+              Recently updated
+            </option>
+
+            <option value="name">
+              Name A-Z
+            </option>
+          </select>
+
+        </div>
+
         {/* RESULTS */}
 
         <div className="mt-10">
@@ -412,9 +573,9 @@ function SearchPageContent() {
             {!loading && (
               <span className="text-sm text-gray-400">
 
-                {results.length}{" "}
+                {displayedResults.length}{" "}
 
-                {results.length === 1
+                {displayedResults.length === 1
                   ? "location"
                   : "locations"}
 
@@ -433,7 +594,7 @@ function SearchPageContent() {
 
             </div>
 
-          ) : results.length === 0 ? (
+          ) : displayedResults.length === 0 ? (
 
             <div className="bg-white border border-gray-200 rounded-[26px] p-10 mt-5 text-center">
 
@@ -457,7 +618,7 @@ function SearchPageContent() {
 
             <div className="grid gap-4 mt-5">
 
-              {results.map(
+              {displayedResults.map(
                 (business) => {
 
                   const percentage =

@@ -95,20 +95,32 @@ export default function BusinessLoginPage() {
 
       // Check whether this account is
       // a SeatMate admin.
-      const adminRef = doc(
-        db,
-        "admins",
-        userId
-      );
+      //
+      // IMPORTANT:
+      // If this Firestore check fails,
+      // do not block a normal business user
+      // from signing into SeatMate.
+      try {
+        const adminRef = doc(
+          db,
+          "admins",
+          userId
+        );
 
-      const adminSnap =
-        await getDoc(adminRef);
+        const adminSnap =
+          await getDoc(adminRef);
 
-      if (
-        adminSnap.exists() &&
-        adminSnap.data().active === true
-      ) {
-        return "/admin";
+        if (
+          adminSnap.exists() &&
+          adminSnap.data().active === true
+        ) {
+          return "/admin";
+        }
+      } catch (adminError) {
+        console.error(
+          "Error checking admin status:",
+          adminError
+        );
       }
 
       // Everyone else goes through
@@ -132,9 +144,15 @@ export default function BusinessLoginPage() {
         firebaseError.code
       );
 
+      console.error(
+        "Firebase error code:",
+        code
+      );
+
       if (
-        code ===
-        "auth/invalid-credential"
+        code === "auth/invalid-credential" ||
+        code === "auth/wrong-password" ||
+        code === "auth/user-not-found"
       ) {
         return "Incorrect email or password.";
       }
@@ -162,6 +180,41 @@ export default function BusinessLoginPage() {
 
       if (
         code ===
+        "auth/operation-not-allowed"
+      ) {
+        return "Email/password sign-in is not enabled for this Firebase project.";
+      }
+
+      if (
+        code ===
+        "auth/configuration-not-found"
+      ) {
+        return "Firebase Authentication is not configured correctly.";
+      }
+
+      if (
+        code ===
+        "auth/invalid-api-key"
+      ) {
+        return "SeatMate cannot connect to Firebase because the Firebase API key is missing or invalid.";
+      }
+
+      if (
+        code ===
+        "auth/unauthorized-domain"
+      ) {
+        return "This website domain is not authorized in Firebase Authentication.";
+      }
+
+      if (
+        code ===
+        "auth/user-disabled"
+      ) {
+        return "This account has been disabled.";
+      }
+
+      if (
+        code ===
         "auth/popup-closed-by-user"
       ) {
         return "Google sign-in was cancelled.";
@@ -172,6 +225,13 @@ export default function BusinessLoginPage() {
         "auth/popup-blocked"
       ) {
         return "Your browser blocked the Google sign-in popup.";
+      }
+
+      if (
+        code ===
+        "auth/account-exists-with-different-credential"
+      ) {
+        return "An account already exists with this email using a different sign-in method.";
       }
 
       if (
@@ -187,6 +247,19 @@ export default function BusinessLoginPage() {
       ) {
         return "Network error. Check your connection and try again.";
       }
+
+      return `Firebase error: ${code}`;
+    }
+
+    if (
+      firebaseError instanceof Error
+    ) {
+      console.error(
+        "Firebase error message:",
+        firebaseError.message
+      );
+
+      return firebaseError.message;
     }
 
     return "Something went wrong. Please try again.";
@@ -231,7 +304,10 @@ export default function BusinessLoginPage() {
 
       router.push(destination);
     } catch (err) {
-      console.error(err);
+      console.error(
+        "Sign in error:",
+        err
+      );
 
       setError(
         getFriendlyError(err)
@@ -268,7 +344,9 @@ export default function BusinessLoginPage() {
     }
 
     if (!email.trim()) {
-      setError("Enter your email.");
+      setError(
+        "Enter your email."
+      );
       return;
     }
 
@@ -301,7 +379,8 @@ export default function BusinessLoginPage() {
       await updateProfile(
         credential.user,
         {
-          displayName: `${firstName.trim()} ${lastName.trim()}`,
+          displayName:
+            `${firstName.trim()} ${lastName.trim()}`,
         }
       );
 
@@ -314,16 +393,21 @@ export default function BusinessLoginPage() {
         return;
       }
 
-      // Brand-new business accounts go
-      // to /business.
+      // Brand-new business accounts
+      // go to /business.
       //
-      // /business then checks Firestore.
-      // If no business exists, it sends
+      // /business checks whether
+      // a business exists.
+      //
+      // If not, it should redirect
       // them to /business/setup.
       router.push("/business");
 
     } catch (err) {
-      console.error(err);
+      console.error(
+        "Create account error:",
+        err
+      );
 
       setError(
         getFriendlyError(err)
@@ -361,7 +445,10 @@ export default function BusinessLoginPage() {
 
         router.push(destination);
       } catch (err) {
-        console.error(err);
+        console.error(
+          "Google sign-in error:",
+          err
+        );
 
         setError(
           getFriendlyError(err)
@@ -397,7 +484,10 @@ export default function BusinessLoginPage() {
           "Password reset email sent."
         );
       } catch (err) {
-        console.error(err);
+        console.error(
+          "Password reset error:",
+          err
+        );
 
         setError(
           getFriendlyError(err)
@@ -416,11 +506,13 @@ export default function BusinessLoginPage() {
           <BackButton fallback="/" />
 
           <div className="flex items-center gap-3">
+
             <div className="w-10 h-10 bg-green-600 text-white rounded-xl flex items-center justify-center font-bold">
               S
             </div>
 
             <div>
+
               <p className="font-bold">
                 SeatMate
               </p>
@@ -428,7 +520,9 @@ export default function BusinessLoginPage() {
               <p className="text-xs text-gray-400">
                 Business Portal
               </p>
+
             </div>
+
           </div>
 
           <div className="w-16" />
@@ -447,21 +541,28 @@ export default function BusinessLoginPage() {
           <div>
 
             <div className="inline-flex items-center gap-2 bg-green-50 border border-green-100 text-green-700 rounded-full px-3 py-1.5 text-sm font-semibold">
+
               <span className="w-2 h-2 bg-green-500 rounded-full" />
+
               SeatMate for Business
+
             </div>
 
             <h1 className="text-5xl md:text-6xl font-bold tracking-tight mt-6 leading-[1.05]">
+
               Manage your
               <br />
               space in real time.
+
             </h1>
 
             <p className="text-gray-500 text-lg mt-6 max-w-lg leading-8">
+
               Create your business, build your
               floor plan, manage staff and keep
               customers updated on live seating
               availability.
+
             </p>
 
             <div className="mt-10 bg-[#101811] text-white rounded-[28px] p-7 max-w-md">
@@ -471,8 +572,10 @@ export default function BusinessLoginPage() {
               </p>
 
               <h2 className="text-2xl font-bold mt-3">
+
                 One dashboard.
                 Everything live.
+
               </h2>
 
               <div className="mt-6 space-y-4 text-white/70">
@@ -545,15 +648,19 @@ export default function BusinessLoginPage() {
             <div className="mt-7">
 
               <h2 className="text-3xl font-bold">
+
                 {mode === "signin"
                   ? "Welcome back."
                   : "Create your account."}
+
               </h2>
 
               <p className="text-gray-500 mt-2">
+
                 {mode === "signin"
                   ? "Sign in to manage your SeatMate business."
                   : "Create an account to register and manage your business."}
+
               </p>
 
             </div>
@@ -577,6 +684,7 @@ export default function BusinessLoginPage() {
                 viewBox="0 0 24 24"
                 aria-hidden="true"
               >
+
                 <path
                   fill="#4285F4"
                   d="M21.6 12.227c0-.709-.064-1.391-.182-2.045H12v3.868h5.382a4.6 4.6 0 0 1-1.996 3.018v2.509h3.232c1.891-1.741 2.982-4.305 2.982-7.35Z"
@@ -596,6 +704,7 @@ export default function BusinessLoginPage() {
                   fill="#EA4335"
                   d="M12 5.977c1.468 0 2.786.505 3.823 1.496l2.868-2.868C16.959 2.991 14.695 2 12 2a9.997 9.997 0 0 0-8.936 5.509L6.405 10.1C7.191 7.736 9.395 5.977 12 5.977Z"
                 />
+
               </svg>
 
               Continue with Google
@@ -627,9 +736,11 @@ export default function BusinessLoginPage() {
               {/* SIGNUP NAMES */}
 
               {mode === "signup" && (
+
                 <div className="grid sm:grid-cols-2 gap-4 mb-4">
 
                   <div>
+
                     <label className="block text-sm font-semibold mb-2">
                       First name
                     </label>
@@ -646,9 +757,11 @@ export default function BusinessLoginPage() {
                       autoComplete="given-name"
                       className="w-full border border-gray-200 rounded-xl px-4 py-3"
                     />
+
                   </div>
 
                   <div>
+
                     <label className="block text-sm font-semibold mb-2">
                       Last name
                     </label>
@@ -665,14 +778,17 @@ export default function BusinessLoginPage() {
                       autoComplete="family-name"
                       className="w-full border border-gray-200 rounded-xl px-4 py-3"
                     />
+
                   </div>
 
                 </div>
+
               )}
 
               {/* EMAIL */}
 
               <div>
+
                 <label className="block text-sm font-semibold mb-2">
                   Email
                 </label>
@@ -689,6 +805,7 @@ export default function BusinessLoginPage() {
                   autoComplete="email"
                   className="w-full border border-gray-200 rounded-xl px-4 py-3"
                 />
+
               </div>
 
               {/* PASSWORD */}
@@ -702,6 +819,7 @@ export default function BusinessLoginPage() {
                   </label>
 
                   {mode === "signin" && (
+
                     <button
                       type="button"
                       onClick={
@@ -711,6 +829,7 @@ export default function BusinessLoginPage() {
                     >
                       Forgot password?
                     </button>
+
                   )}
 
                 </div>
@@ -737,6 +856,7 @@ export default function BusinessLoginPage() {
               {/* CONFIRM PASSWORD */}
 
               {mode === "signup" && (
+
                 <div className="mt-4">
 
                   <label className="block text-sm font-semibold mb-2">
@@ -759,20 +879,25 @@ export default function BusinessLoginPage() {
                   />
 
                 </div>
+
               )}
 
               {/* ERRORS */}
 
               {error && (
+
                 <div className="mt-5 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
                   {error}
                 </div>
+
               )}
 
               {message && (
+
                 <div className="mt-5 bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-3 text-sm">
                   {message}
                 </div>
+
               )}
 
               {/* SUBMIT */}
@@ -782,22 +907,28 @@ export default function BusinessLoginPage() {
                 disabled={loading}
                 className="w-full mt-6 bg-[#101811] hover:bg-black text-white font-bold py-3.5 rounded-xl transition disabled:opacity-50"
               >
+
                 {loading
                   ? "Please wait..."
                   : mode === "signin"
                     ? "Sign In →"
                     : "Create Account →"}
+
               </button>
 
             </form>
 
             {mode === "signup" && (
+
               <p className="text-xs text-gray-400 mt-5 text-center leading-5">
+
                 After creating your account,
                 you&apos;ll add your business
                 details and build your live
                 floor plan.
+
               </p>
+
             )}
 
           </div>
