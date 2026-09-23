@@ -6,12 +6,6 @@ import {
   useRouter,
 } from "next/navigation";
 
-import BackButton from "@/components/BackButton";
-<BackButton fallback="/business/login" />
-
-import HomeButton from "@/components/HomeButton";
-<HomeButton />
-
 import {
   collection,
   doc,
@@ -734,29 +728,60 @@ return (
       {/* HEADER */}
 
       <header className="bg-white border-b border-[#e3e7e2]">
-  <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
 
-    <div className="flex items-center gap-3">
-      <div className="w-10 h-10 rounded-xl bg-green-600 text-white font-bold flex items-center justify-center">
-        S
-      </div>
+          {/* SEATMATE LOGO = HOME */}
+          <button
+            type="button"
+            onClick={() => router.push("/")}
+            className="flex items-center gap-3"
+          >
+            <div className="w-10 h-10 rounded-xl bg-green-600 text-white font-bold flex items-center justify-center">
+              S
+            </div>
 
-      <span className="font-bold text-xl text-[#101811]">
-        SeatMate
-      </span>
-    </div>
+            <span className="font-bold text-xl text-[#101811]">
+              SeatMate
+            </span>
+          </button>
 
-    {fromBusiness && (
-      <button
-        onClick={() => router.push("/business")}
-        className="border border-gray-200 bg-white hover:bg-gray-50 px-4 py-2.5 rounded-xl text-sm font-semibold transition"
-      >
-        ← Back to Business
-      </button>
-    )}
+          <div className="flex items-center gap-2">
 
-  </div>
-</header>
+            {/* CUSTOMER BACK BUTTON */}
+            {!fromBusiness && (
+              <button
+                type="button"
+                onClick={() => router.push("/search")}
+                className="border border-gray-200 bg-white hover:bg-gray-50 px-4 py-2.5 rounded-xl text-sm font-semibold transition"
+              >
+                ← Back to Search
+              </button>
+            )}
+
+            {/* BUSINESS BACK BUTTON */}
+            {fromBusiness && (
+              <button
+                type="button"
+                onClick={() => router.push("/business")}
+                className="border border-gray-200 bg-white hover:bg-gray-50 px-4 py-2.5 rounded-xl text-sm font-semibold transition"
+              >
+                ← Back to Business
+              </button>
+            )}
+
+            {/* UNIVERSAL HOME BUTTON */}
+            <button
+              type="button"
+              onClick={() => router.push("/")}
+              className="bg-[#101811] text-white hover:bg-black px-4 py-2.5 rounded-xl text-sm font-semibold transition"
+            >
+              Home
+            </button>
+
+          </div>
+
+        </div>
+      </header>
 
       <div className="max-w-6xl mx-auto px-6 py-10">
 
