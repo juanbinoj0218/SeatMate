@@ -9,6 +9,9 @@ import {
   User,
 } from "firebase/auth";
 
+import HomeButton from "@/components/HomeButton";
+<HomeButton />
+
 import {
   doc,
   getDoc,

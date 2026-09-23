@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { onAuthStateChanged, User } from "firebase/auth";
 import BackButton from "@/components/BackButton";
 
+import HomeButton from "@/components/HomeButton";
+<HomeButton />
+
 import {
   addDoc,
   collection,

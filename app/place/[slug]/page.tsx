@@ -6,6 +6,12 @@ import {
   useRouter,
 } from "next/navigation";
 
+import BackButton from "@/components/BackButton";
+<BackButton fallback="/business/login" />
+
+import HomeButton from "@/components/HomeButton";
+<HomeButton />
+
 import {
   collection,
   doc,

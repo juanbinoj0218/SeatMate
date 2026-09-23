@@ -6,6 +6,9 @@ import {
   useSearchParams,
 } from "next/navigation";
 
+import HomeButton from "@/components/HomeButton";
+<HomeButton />
+
 import {
   collection,
   getDocs,

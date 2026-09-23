@@ -23,6 +23,9 @@ import {
 } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 
+import HomeButton from "@/components/HomeButton";
+<HomeButton />
+
 type BusinessStatus =
   | "draft"
   | "pending"

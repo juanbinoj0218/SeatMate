@@ -9,6 +9,9 @@ import {
 import BackButton from "@/components/BackButton";
 <BackButton fallback="/business" />
 
+import HomeButton from "@/components/HomeButton";
+<HomeButton />
+
 import {
   onAuthStateChanged,
   User,

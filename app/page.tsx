@@ -45,6 +45,7 @@ export default function HomePage() {
       <header className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <button
+            type="button"
             onClick={() => router.push("/")}
             className="flex items-center gap-3"
           >
@@ -57,19 +58,33 @@ export default function HomePage() {
             </span>
           </button>
 
-          <button
-            onClick={() => router.push("/business/login")}
-            className="bg-[#101811] text-white px-5 py-3 rounded-xl font-semibold hover:bg-black transition"
-          >
-            Business Portal
-          </button>
+          <div className="flex items-center gap-3">
+            {/* ABOUT US */}
+            <button
+              type="button"
+              onClick={() => router.push("/about")}
+              className="text-sm font-semibold text-gray-500 hover:text-black transition"
+            >
+              About Us
+            </button>
+
+            {/* BUSINESS PORTAL */}
+            <button
+              type="button"
+              onClick={() =>
+                router.push("/business/login")
+              }
+              className="bg-[#101811] text-white px-5 py-3 rounded-xl font-semibold hover:bg-black transition"
+            >
+              Business Portal
+            </button>
+          </div>
         </div>
       </header>
 
       {/* HERO */}
       <section className="max-w-7xl mx-auto px-6 py-20 md:py-28">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
-
           {/* LEFT SIDE */}
           <div>
             <div className="inline-flex items-center gap-2 bg-green-50 border border-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-semibold">
@@ -114,6 +129,7 @@ export default function HomePage() {
                           .replace(/\D/g, "")
                           .slice(0, 5)
                       );
+
                       setMessage("");
                     }}
                     inputMode="numeric"
@@ -145,13 +161,20 @@ export default function HomePage() {
 
             <div className="flex flex-wrap gap-6 mt-7 text-sm text-gray-500">
               <span className="flex items-center gap-2">
-                <span className="text-green-500">●</span>
+                <span className="text-green-500">
+                  ●
+                </span>
+
                 Live availability
               </span>
 
-              <span>✓ No account needed</span>
+              <span>
+                ✓ No account needed
+              </span>
 
-              <span>↻ Updates instantly</span>
+              <span>
+                ↻ Updates instantly
+              </span>
             </div>
           </div>
 
@@ -161,6 +184,7 @@ export default function HomePage() {
               <div>
                 <div className="flex items-center gap-2 text-green-700 text-xs font-bold">
                   <span className="w-2 h-2 bg-green-500 rounded-full" />
+
                   LIVE
                 </div>
 
@@ -294,7 +318,10 @@ export default function HomePage() {
           </p>
 
           <button
-            onClick={() => router.push("/business/login")}
+            type="button"
+            onClick={() =>
+              router.push("/business/login")
+            }
             className="bg-green-500 hover:bg-green-400 text-[#101811] px-6 py-3 rounded-xl font-bold mt-8 transition"
           >
             Open Business Portal →

@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import BackButton from "@/components/BackButton";
 
+import HomeButton from "@/components/HomeButton";
+<HomeButton />
+
 import {
   onAuthStateChanged,
   signOut,
