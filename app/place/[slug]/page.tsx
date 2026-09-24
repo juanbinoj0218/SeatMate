@@ -140,8 +140,26 @@ type PublicBusiness = {
   name: string;
   address: string;
   type: string;
+  imageUrl?: string;
+  coverImageUrl?: string;
+  photoUrl?: string;
   hours?: Hours;
   timezone?: string;
+};
+
+const PLACE_FALLBACK_IMAGES = [
+  "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=1600&q=86",
+  "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1600&q=86",
+  "https://images.unsplash.com/photo-1552566626-52f8b828add9?auto=format&fit=crop&w=1600&q=86",
+  "https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=1600&q=86",
+];
+
+const getFallbackPlaceImage = (value: string) => {
+  const hash = value
+    .split("")
+    .reduce((total, character) => total + character.charCodeAt(0), 0);
+
+  return PLACE_FALLBACK_IMAGES[hash % PLACE_FALLBACK_IMAGES.length];
 };
 
 const dayLabels: {
@@ -722,6 +740,21 @@ const todaysHours =
       ]
     : undefined;
 
+const businessImage =
+  business.imageUrl ||
+  business.coverImageUrl ||
+  business.photoUrl ||
+  getFallbackPlaceImage(business.name || slug);
+
+const openDirections = () => {
+  const destination = encodeURIComponent(business.address);
+  window.open(
+    `https://www.google.com/maps/dir/?api=1&destination=${destination}`,
+    "_blank",
+    "noopener,noreferrer"
+  );
+};
+
 return (
     <main className="min-h-screen bg-[#f7f8f5]">
 
@@ -783,191 +816,147 @@ return (
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-6 py-10">
+      <div className="max-w-7xl mx-auto px-5 sm:px-6 py-8 md:py-10">
 
-        {/* LOCATION */}
+        {/* PHOTO + LOCATION + LIVE AVAILABILITY */}
 
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+        <section className="grid gap-6 lg:grid-cols-[1.18fr_0.82fr] lg:items-stretch">
+          <div className="relative min-h-[390px] overflow-hidden rounded-[32px] border border-gray-200 bg-gray-200 shadow-sm md:min-h-[470px]">
+            <img
+              src={businessImage}
+              alt={`${business.name} interior`}
+              className="absolute inset-0 h-full w-full object-cover"
+              onError={(event) => {
+                event.currentTarget.src = getFallbackPlaceImage(slug);
+              }}
+            />
 
-          <div>
-            <div className="flex items-center gap-2 text-green-700 text-sm font-semibold">
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-40" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-black/5" />
+
+            <div className="absolute left-5 top-5 flex flex-wrap gap-2">
+              <span className="inline-flex items-center gap-2 rounded-full bg-white/95 px-3 py-1.5 text-xs font-black text-green-700 shadow-sm backdrop-blur">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-50" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
+                </span>
+                LIVE AVAILABILITY
               </span>
 
-              LIVE AVAILABILITY
+              <span className="rounded-full bg-white/95 px-3 py-1.5 text-xs font-black text-[#101811] shadow-sm backdrop-blur">
+                {business.type || "Restaurant"}
+              </span>
             </div>
 
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-[#101811] mt-4">
-              {business.name}
-            </h1>
+            <div className="absolute bottom-0 left-0 right-0 p-6 text-white sm:p-8">
+              <h1 className="max-w-3xl text-4xl font-black tracking-tight sm:text-5xl">
+                {business.name}
+              </h1>
 
-            <p className="text-gray-500 mt-2">
-              {business.type} ·{" "}
-              {business.address}
-            </p>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-white/75 sm:text-base">
+                {business.address}
+              </p>
 
-            {openStatus && (
-              <div className="flex flex-wrap items-center gap-3 mt-4">
-                <span
-                  className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-bold ${
-                    openStatus.open
-                      ? "bg-green-50 text-green-700 border border-green-200"
-                      : "bg-red-50 text-red-700 border border-red-200"
-                  }`}
-                >
+              <div className="mt-5 flex flex-wrap items-center gap-3">
+                {openStatus && (
                   <span
-                    className={`w-2 h-2 rounded-full ${
+                    className={`rounded-full px-3 py-1.5 text-sm font-black backdrop-blur ${
                       openStatus.open
-                        ? "bg-green-500"
-                        : "bg-red-500"
+                        ? "bg-green-500 text-white"
+                        : "bg-red-500 text-white"
                     }`}
-                  />
-
-                  {openStatus.open
-                    ? "Open now"
-                    : "Closed now"}
-                </span>
+                  >
+                    {openStatus.open ? "● Open now" : "● Closed now"}
+                  </span>
+                )}
 
                 {todaysHours && (
-                  <span className="text-sm text-gray-500">
+                  <span className="rounded-full bg-black/35 px-3 py-1.5 text-sm font-semibold text-white backdrop-blur">
                     {todaysHours.closed
                       ? "Closed today"
-                      : `Today ${formatHour(
-                          todaysHours.open
-                        )} – ${formatHour(
-                          todaysHours.close
-                        )}`}
+                      : `Today ${formatHour(todaysHours.open)} – ${formatHour(todaysHours.close)}`}
                   </span>
                 )}
               </div>
-            )}
+            </div>
           </div>
 
-          <div
-  className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold ${
-    isStale
-      ? "bg-amber-50 text-amber-700 border border-amber-200"
-      : "bg-green-50 text-green-700 border border-green-200"
-  }`}
->
-  <span
-    className={`w-2 h-2 rounded-full ${
-      isStale
-        ? "bg-amber-500"
-        : "bg-green-500"
-    }`}
-  />
-
-  {freshnessLabel}
-</div>
-        </div>
-
-        {/* AVAILABILITY HERO */}
-
-        <div className="bg-[#101811] rounded-[30px] p-8 md:p-10 mt-10 text-white relative overflow-hidden">
-
-          <div className="relative z-10 grid md:grid-cols-[1fr_auto] gap-8 md:items-center">
-
-            <div>
-
-              <p className="text-xs font-bold tracking-[0.18em] text-green-400">
-                AVAILABLE RIGHT NOW
-              </p>
-
-              {isStale && (
-  <div className="bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4 mt-4">
-
-    <p className="font-semibold text-amber-800">
-      Availability may be outdated
-    </p>
-
-    <p className="text-sm text-amber-700 mt-1">
-      This location has not updated its seating recently.
-      Current availability may have changed.
-    </p>
-
-  </div>
-)}
-
-              <div className="flex items-end gap-3 mt-4">
-
-                <span className="text-6xl md:text-7xl font-bold leading-none">
-                  {availableSeats}
-                </span>
-
-                <span className="text-white/50 pb-2">
-                  of {totalSeats} seats
-                </span>
-
-              </div>
-
-              <p className="text-xl font-semibold mt-6">
-                {availabilityLabel}
-              </p>
-
-              <p className="text-white/50 text-sm mt-2">
-                Based on live updates from the location.
-              </p>
-
-            </div>
-
-            <div className="md:text-right">
-
-              <div className="inline-flex items-center justify-center w-28 h-28 rounded-full border-[8px] border-green-500/20 relative">
-
-                <div className="absolute inset-[-8px] rounded-full border-[8px] border-green-500 border-l-transparent" />
-
-                <div className="text-center">
-                  <div className="text-2xl font-bold">
-                    {percentage}%
-                  </div>
-
-                  <div className="text-[10px] text-white/50 uppercase">
-                    Open
-                  </div>
+          <div className="flex flex-col rounded-[32px] bg-[#101811] p-7 text-white shadow-sm sm:p-8">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-green-400">
+                  Available right now
+                </p>
+                <div className="mt-4 flex items-end gap-3">
+                  <span className="text-6xl font-black leading-none sm:text-7xl">
+                    {availableSeats}
+                  </span>
+                  <span className="pb-2 text-sm font-semibold text-white/45">
+                    of {totalSeats} seats
+                  </span>
                 </div>
-
               </div>
 
+              <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full border-[7px] border-green-500/20 sm:h-28 sm:w-28">
+                <div className="text-center">
+                  <p className="text-2xl font-black">{percentage}%</p>
+                  <p className="text-[10px] font-black uppercase tracking-wider text-white/45">
+                    open
+                  </p>
+                </div>
+              </div>
             </div>
 
+            <p className="mt-6 text-xl font-black">{availabilityLabel}</p>
+
+            <div
+              className={`mt-5 rounded-2xl border px-4 py-3 text-sm font-semibold ${
+                isStale
+                  ? "border-amber-300/30 bg-amber-300/10 text-amber-100"
+                  : "border-green-400/20 bg-green-400/10 text-green-100"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <span
+                  className={`h-2 w-2 rounded-full ${
+                    isStale ? "bg-amber-400" : "bg-green-400"
+                  }`}
+                />
+                {freshnessLabel}
+              </div>
+              {isStale && (
+                <p className="mt-1 text-xs text-amber-100/70">
+                  Current availability may have changed since the last update.
+                </p>
+              )}
+            </div>
+
+            <div className="mt-auto grid grid-cols-2 gap-3 pt-7">
+              <div className="rounded-2xl bg-white/5 p-4">
+                <p className="text-xs font-bold uppercase tracking-wider text-white/40">
+                  Available
+                </p>
+                <p className="mt-2 text-2xl font-black text-green-400">
+                  {availableSeats}
+                </p>
+              </div>
+
+              <div className="rounded-2xl bg-white/5 p-4">
+                <p className="text-xs font-bold uppercase tracking-wider text-white/40">
+                  Occupied
+                </p>
+                <p className="mt-2 text-2xl font-black">{occupiedSeats}</p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={openDirections}
+              className="mt-3 w-full rounded-2xl bg-green-500 px-5 py-3.5 font-black text-[#101811] transition hover:bg-green-400"
+            >
+              Get directions ↗
+            </button>
           </div>
-
-          <div className="absolute -right-20 -bottom-28 w-80 h-80 bg-green-500/10 rounded-full" />
-
-        </div>
-
-        {/* SMALL STATS */}
-
-        <div className="grid grid-cols-2 gap-4 mt-5">
-
-          <div className="bg-white border border-[#e3e7e2] rounded-2xl p-5">
-
-            <p className="text-xs font-bold text-gray-400 uppercase">
-              Available
-            </p>
-
-            <p className="text-2xl font-bold text-green-600 mt-2">
-              {availableSeats}
-            </p>
-
-          </div>
-
-          <div className="bg-white border border-[#e3e7e2] rounded-2xl p-5">
-
-            <p className="text-xs font-bold text-gray-400 uppercase">
-              Occupied
-            </p>
-
-            <p className="text-2xl font-bold text-[#101811] mt-2">
-              {occupiedSeats}
-            </p>
-
-          </div>
-
-        </div>
+        </section>
 
         {/* BUSINESS HOURS */}
 
