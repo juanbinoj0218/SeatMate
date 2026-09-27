@@ -69,3 +69,51 @@ export function ChevronRightIcon({ className }: IconProps) {
     </svg>
   );
 }
+
+export function ChartIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M4 20h16" />
+      <rect x="6" y="11" width="3" height="6" rx="1" />
+      <rect x="11" y="6" width="3" height="11" rx="1" />
+      <rect x="16" y="9" width="3" height="8" rx="1" />
+    </svg>
+  );
+}
+
+export function QrIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <rect x="4" y="4" width="6" height="6" rx="1" />
+      <rect x="14" y="4" width="6" height="6" rx="1" />
+      <rect x="4" y="14" width="6" height="6" rx="1" />
+      <path d="M14 14h2v2h-2zM18 14h2M14 18v2M18 18h2v2" />
+    </svg>
+  );
+}
+
+export function EyeIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+      <circle cx="12" cy="12" r="2.8" />
+    </svg>
+  );
+}
+
+export function HeartIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M12 19.5s-7.5-4.4-7.5-10A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 7.5 2.5c0 5.6-7.5 10-7.5 10Z" />
+    </svg>
+  );
+}
+
+export function BellIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M6 9a6 6 0 1 1 12 0c0 5 2 6.5 2 6.5H4S6 14 6 9" />
+      <path d="M10 19a2 2 0 0 0 4 0" />
+    </svg>
+  );
+}

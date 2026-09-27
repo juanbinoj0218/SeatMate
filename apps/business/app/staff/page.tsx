@@ -14,11 +14,12 @@ import {
   doc,
   getDoc,
   onSnapshot,
-  runTransaction,
-  serverTimestamp,
 } from "firebase/firestore";
 
 import { auth, db } from "@seatmate/shared/firebase";
+
+import UpdateReminder from "@/components/update-reminder";
+import { toggleSeat as toggleSeatStatus } from "@/lib/seat-updates";
 
 type Seat = {
   id: number;
@@ -197,64 +198,11 @@ export default function StaffConsolePage() {
     try {
       setError("");
 
-      const tableRef = doc(
-        db,
-        "businesses",
+      await toggleSeatStatus(
         staffAccount.businessId,
-        "tables",
-        tableId
-      );
-
-      await runTransaction(
-        db,
-        async (transaction) => {
-          const tableSnap =
-            await transaction.get(
-              tableRef
-            );
-
-          if (!tableSnap.exists()) {
-            throw new Error(
-              "Table not found."
-            );
-          }
-
-          const data =
-            tableSnap.data();
-
-          const currentSeats: Seat[] =
-            data.seats || [];
-
-          const updatedSeats =
-            currentSeats.map(
-              (seat) => {
-                if (
-                  seat.id !== seatId
-                ) {
-                  return seat;
-                }
-
-                return {
-                  ...seat,
-
-                  status:
-                    seat.status ===
-                    "available"
-                      ? "occupied"
-                      : "available",
-                } as Seat;
-              }
-            );
-
-          transaction.update(
-  tableRef,
-  {
-    seats: updatedSeats,
-    occupancyUpdatedAt:
-      serverTimestamp(),
-  }
-);
-        }
+        tableId,
+        seatId,
+        tables
       );
     } catch (err) {
       console.error(err);
@@ -373,6 +321,7 @@ export default function StaffConsolePage() {
       </header>
 
       <div className="max-w-6xl mx-auto px-6 py-10">
+        <UpdateReminder businessId={staffAccount.businessId} />
 
         {/* BUSINESS */}
 

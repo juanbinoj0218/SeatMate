@@ -13,12 +13,14 @@ import {
   doc,
   getDoc,
   onSnapshot,
-  runTransaction,
   serverTimestamp,
   updateDoc,
 } from "firebase/firestore";
 
 import { auth, db } from "@seatmate/shared/firebase";
+
+import UpdateReminder from "@/components/update-reminder";
+import { toggleSeat as toggleSeatStatus } from "@/lib/seat-updates";
 import {
   clamp,
   type FloorMarker,
@@ -400,40 +402,8 @@ export default function FloorPlanPage() {
   ) => {
     if (!user || mode !== "occupancy") return;
 
-    const tableRef = doc(
-      db,
-      "businesses",
-      user.uid,
-      "tables",
-      tableId
-    );
-
     try {
-      await runTransaction(db, async (transaction) => {
-        const snapshot = await transaction.get(tableRef);
-
-        if (!snapshot.exists()) return;
-
-        const data = snapshot.data();
-        const seats: Seat[] = data.seats || [];
-
-        const updatedSeats = seats.map((seat) =>
-          seat.id === seatId
-            ? {
-                ...seat,
-                status:
-                  seat.status === "available"
-                    ? "occupied"
-                    : "available",
-              }
-            : seat
-        );
-
-        transaction.update(tableRef, {
-          seats: updatedSeats,
-          occupancyUpdatedAt: serverTimestamp(),
-        });
-      });
+      await toggleSeatStatus(user.uid, tableId, seatId, tables);
     } catch (error) {
       console.error(error);
       setMessage("Could not update seat.");
@@ -1239,6 +1209,12 @@ export default function FloorPlanPage() {
                 Delete
               </button>
             </div>
+          </div>
+        )}
+
+        {mode === "occupancy" && user && (
+          <div className="mt-6 -mb-2">
+            <UpdateReminder businessId={user.uid} />
           </div>
         )}
 

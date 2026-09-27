@@ -71,19 +71,48 @@ Data lives under `users/{uid}`:
 - `users/{uid}`: `displayName`, `homeZip`, `recentlyViewed` (latest 8 places)
 - `users/{uid}/favorites/{slug}`: one document per saved place
 
-Add these rules inside `match /databases/{database}/documents { ... }` in
-Firebase → Firestore → Rules, alongside the existing ones, so each customer
-can read and write only their own data:
+## Firestore rules
 
-```
-match /users/{userId} {
-  allow read, write: if request.auth != null && request.auth.uid == userId;
-
-  match /favorites/{slug} {
-    allow read, write: if request.auth != null && request.auth.uid == userId;
-  }
-}
-```
+The full rules live in [`firestore.rules`](firestore.rules). Paste the whole
+file into Firebase → Firestore → Rules and publish whenever it changes. It
+covers businesses, staff, customer accounts, seat alerts and analytics.
 
 Google sign-in also needs the site's domain (e.g. `seatmate360.com`) under
 Firebase → Authentication → Settings → Authorized domains.
+
+## Password reset emails
+
+"Forgot password?" on both sites sends Firebase's reset email. To have the
+link open SeatMate's own "choose a new password" page (`/auth/action` on the
+customer site) instead of Firebase's default page, set Firebase →
+Authentication → Templates → Password reset → Customize action URL to
+`https://seatmate360.com/auth/action`. Emails come from
+`noreply@<project>.firebaseapp.com` and often land in spam until a custom
+sender domain is set on the same Templates page.
+
+## Seat-open alerts
+
+Customers can ask to be emailed when a full place has an open seat. When
+staff mark a seat open, the business site's `/api/seat-alerts` route emails
+everyone waiting and turns their alert off. Alerts expire after 12 hours.
+
+The business Vercel project needs:
+
+| Variable | Notes |
+| --- | --- |
+| `FIREBASE_SERVICE_ACCOUNT_KEY` | The JSON from Firebase → Project settings → Service accounts → Generate new private key, pasted as one line |
+| `RESEND_API_KEY` | From [resend.com](https://resend.com) (free tier is enough to start) |
+| `ALERT_EMAIL_FROM` | e.g. `SeatMate <alerts@seatmate360.com>` once the domain is verified in Resend |
+
+Without them, alerts are saved but no email is sent. In `npm run dev` the
+email is printed to the terminal instead.
+
+## Analytics
+
+- `publicBusinesses/{slug}/stats/{YYYY-MM-DD}`: page views, saves and QR
+  scans, counted by customers' browsers (rules only allow +1).
+- `businesses/{id}/stats/{YYYY-MM-DD}`: seat updates and how full the place
+  was at each hour, written when staff change a seat.
+
+Owners see both on `/business/analytics`. The QR sign on `/business/qr`
+links to the place page with `?ref=qr` so scans can be counted.

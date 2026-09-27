@@ -27,6 +27,7 @@ import {
 } from "firebase/firestore";
 
 import { auth, db } from "@seatmate/shared/firebase";
+import { bumpPlaceStat } from "@seatmate/shared/analytics";
 
 // Customer accounts are optional. Everything a signed-in customer adds lives
 // under users/{uid}: the profile fields and recentlyViewed on the document,
@@ -282,6 +283,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
             ...place,
             savedAt: serverTimestamp(),
           });
+          bumpPlaceStat(place.slug, "saves");
         }
       } catch (error) {
         console.error("Could not update saved places:", error);

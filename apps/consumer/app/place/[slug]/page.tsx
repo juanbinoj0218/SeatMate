@@ -16,6 +16,13 @@ import {
   Timestamp,
 } from "firebase/firestore";
 
+import { bumpPlaceStat } from "@seatmate/shared/analytics";
+import {
+  type DayName,
+  getOpenStatus,
+  type Hours,
+  toMinutes,
+} from "@seatmate/shared/business-hours";
 import { db } from "@seatmate/shared/firebase";
 import {
   clamp,
@@ -27,6 +34,7 @@ import {
 
 import AccountMenu from "@/components/account-menu";
 import { useAccount } from "@/components/account-provider";
+import SeatAlertButton from "@/components/seat-alert-button";
 import SaveButton from "@/components/save-button";
 import { useNow } from "@/lib/use-now";
 import { businessUrl } from "@seatmate/shared/site-urls";
@@ -46,24 +54,6 @@ type Table = {
   scale: number;
   occupancyUpdatedAt?: Timestamp | null;
 };
-
-type DayHours = {
-  closed: boolean;
-  open: string;
-  close: string;
-};
-
-type Hours = {
-  monday: DayHours;
-  tuesday: DayHours;
-  wednesday: DayHours;
-  thursday: DayHours;
-  friday: DayHours;
-  saturday: DayHours;
-  sunday: DayHours;
-};
-
-type DayName = keyof Hours;
 
 type PublicBusiness = {
   businessId: string;
@@ -105,30 +95,6 @@ const dayLabels: {
   { key: "sunday", label: "Sunday" },
 ];
 
-const dayOrder: DayName[] = [
-  "sunday",
-  "monday",
-  "tuesday",
-  "wednesday",
-  "thursday",
-  "friday",
-  "saturday",
-];
-
-const toMinutes = (time: string) => {
-  const [hour, minute] =
-    time.split(":").map(Number);
-
-  if (
-    !Number.isFinite(hour) ||
-    !Number.isFinite(minute)
-  ) {
-    return null;
-  }
-
-  return hour * 60 + minute;
-};
-
 const formatHour = (time: string) => {
   const minutes = toMinutes(time);
 
@@ -151,142 +117,6 @@ const formatHour = (time: string) => {
   return `${displayHour}:${minute
     .toString()
     .padStart(2, "0")} ${suffix}`;
-};
-
-const getOpenStatus = (
-  hours: Hours | undefined,
-  timezone: string | undefined,
-  nowMs: number
-) => {
-  if (!hours || !timezone) {
-    return null;
-  }
-
-  try {
-    const parts =
-      new Intl.DateTimeFormat(
-        "en-US",
-        {
-          timeZone: timezone,
-          weekday: "long",
-          hour: "2-digit",
-          minute: "2-digit",
-          hourCycle: "h23",
-        }
-      ).formatToParts(
-        new Date(nowMs)
-      );
-
-    const weekdayValue =
-      parts
-        .find(
-          (part) =>
-            part.type === "weekday"
-        )
-        ?.value.toLowerCase();
-
-    const hourValue =
-      parts.find(
-        (part) =>
-          part.type === "hour"
-      )?.value;
-
-    const minuteValue =
-      parts.find(
-        (part) =>
-          part.type === "minute"
-      )?.value;
-
-    if (
-      !weekdayValue ||
-      hourValue === undefined ||
-      minuteValue === undefined
-    ) {
-      return null;
-    }
-
-    const day =
-      weekdayValue as DayName;
-
-    const currentMinutes =
-      Number(hourValue) * 60 +
-      Number(minuteValue);
-
-    const today =
-      hours[day];
-
-    let openNow = false;
-
-    if (today && !today.closed) {
-      const opening =
-        toMinutes(today.open);
-
-      const closing =
-        toMinutes(today.close);
-
-      if (
-        opening !== null &&
-        closing !== null
-      ) {
-        if (closing > opening) {
-          openNow =
-            currentMinutes >= opening &&
-            currentMinutes < closing;
-        } else {
-          openNow =
-            currentMinutes >= opening;
-        }
-      }
-    }
-
-    if (!openNow) {
-      const currentIndex =
-        dayOrder.indexOf(day);
-
-      const previousDay =
-        dayOrder[
-          (currentIndex + 6) %
-            dayOrder.length
-        ];
-
-      const previous =
-        hours[previousDay];
-
-      if (
-        previous &&
-        !previous.closed
-      ) {
-        const previousOpening =
-          toMinutes(previous.open);
-
-        const previousClosing =
-          toMinutes(previous.close);
-
-        if (
-          previousOpening !== null &&
-          previousClosing !== null &&
-          previousClosing <=
-            previousOpening &&
-          currentMinutes <
-            previousClosing
-        ) {
-          openNow = true;
-        }
-      }
-    }
-
-    return {
-      open: openNow,
-      day,
-    };
-  } catch (error) {
-    console.error(
-      "Could not calculate business open status:",
-      error
-    );
-
-    return null;
-  }
 };
 
 export default function PlacePage() {
@@ -410,7 +240,6 @@ const [business, setBusiness] =
           }
         );
 
-
         const markersRef = collection(
           db,
           "businesses",
@@ -508,6 +337,32 @@ const [business, setBusiness] =
         "",
     });
   }, [business, profileReady, slug, recordView]);
+
+  // Count one view per place per browser session for the business's
+  // analytics. Skipped when the owner previews their own page.
+  useEffect(() => {
+    if (!business || fromBusiness) {
+      return;
+    }
+
+    try {
+      const key = `seatmate:viewed:${slug}`;
+
+      if (sessionStorage.getItem(key)) {
+        return;
+      }
+
+      sessionStorage.setItem(key, "1");
+    } catch {
+      // Storage blocked: still count the view.
+    }
+
+    bumpPlaceStat(slug, "views");
+
+    if (new URLSearchParams(window.location.search).get("ref") === "qr") {
+      bumpPlaceStat(slug, "scans");
+    }
+  }, [business, fromBusiness, slug]);
 
   if (loading) {
     return (
@@ -899,6 +754,14 @@ return (
                 <p className="mt-2 text-2xl font-black">{occupiedSeats}</p>
               </div>
             </div>
+
+            {totalSeats > 0 && availableSeats === 0 && (
+              <SeatAlertButton
+                slug={slug}
+                businessId={business.businessId}
+                placeName={business.name}
+              />
+            )}
 
             <button
               type="button"
