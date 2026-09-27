@@ -3,3 +3,31 @@
 
 /* Tailwind only scans this app by default; include shared components. */
 @source "../../../packages/shared/src";
+
+@theme {
+  --font-display: var(--font-instrument-serif), Georgia, "Times New Roman", serif;
+  --color-ink: #101811;
+  --color-paper: #f7f8f5;
+  --color-line: #e3e7e2;
+  --color-moss: #15803d;
+  --color-seat-open: #22a55b;
+  --color-seat-taken: #e5534b;
+}
+
+/* The shared stylesheet makes every heading bold, which would fake-bold the
+   single-weight display serif. Class selectors outrank those element rules. */
+.font-display {
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
+/* Inputs that sit inside a larger field (e.g. the home search bar) and should
+   not draw their own box. */
+.bare-input,
+.bare-input:hover,
+.bare-input:focus {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}

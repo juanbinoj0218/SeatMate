@@ -315,262 +315,173 @@ export default function HomePage() {
   }, [businesses, activeZip]);
 
   return (
-    <main className="min-h-screen bg-[#f7f8f5] text-[#101811]">
+    <main className="min-h-screen bg-paper text-ink">
       {/* NAVBAR */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+      <header className="sticky top-0 z-30 border-b border-line/80 bg-paper/85 backdrop-blur-md">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 sm:px-8">
           <button
             type="button"
             onClick={() => router.push("/")}
-            className="flex items-center gap-3"
+            className="flex items-center gap-2.5"
+            aria-label="SeatMate home"
           >
-            <div className="w-10 h-10 rounded-xl bg-green-600 text-white font-bold flex items-center justify-center">
-              S
-            </div>
-
-            <span className="text-xl font-bold">
+            <LogoMark className="h-8 w-8" />
+            <span className="text-lg font-semibold tracking-tight">
               SeatMate
             </span>
           </button>
 
-          <div className="flex items-center gap-3">
-            {/* ABOUT US */}
+          <nav className="flex items-center gap-1 text-sm font-medium text-gray-600">
+            <button
+              type="button"
+              onClick={() => router.push("/search")}
+              className="hidden rounded-lg px-3 py-2 transition hover:bg-black/[0.04] hover:text-ink sm:block"
+            >
+              Browse places
+            </button>
+
             <button
               type="button"
               onClick={() => router.push("/about")}
-              className="text-sm font-semibold text-gray-500 hover:text-black transition"
+              className="rounded-lg px-3 py-2 transition hover:bg-black/[0.04] hover:text-ink"
             >
               About Us
             </button>
-          </div>
+          </nav>
         </div>
       </header>
 
-      {/* HERO - OLD LAYOUT RESTORED */}
-      <section className="max-w-7xl mx-auto px-6 py-20 md:py-28">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
-          {/* LEFT SIDE */}
-          <div>
-            <div className="inline-flex items-center gap-2 bg-green-50 border border-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-semibold">
-              <span className="w-2 h-2 rounded-full bg-green-500" />
-              Live seating availability
+      {/* HERO */}
+      <section className="mx-auto grid max-w-6xl items-center gap-14 px-5 pb-20 pt-12 sm:px-8 md:pt-20 lg:grid-cols-[1.05fr_1fr] lg:gap-16 lg:pb-28">
+        <div>
+          <p className="flex items-center gap-2 text-sm font-medium text-moss">
+            <LiveDot />
+            Live seating availability
+          </p>
+
+          <h1 className="font-display mt-5 text-[3.5rem] leading-[0.95] sm:text-7xl lg:text-[5.75rem]">
+            Know before
+            <br />
+            you <em className="italic text-moss">go.</em>
+          </h1>
+
+          <p className="mt-6 max-w-md text-lg text-gray-600">
+            Check live seating availability at cafés and restaurants before
+            you arrive.
+          </p>
+
+          <form onSubmit={findBusiness} className="mt-9 max-w-xl">
+            <div className="flex flex-col rounded-2xl border border-line bg-white p-1.5 shadow-[0_1px_2px_rgba(16,24,17,0.04),0_16px_36px_-16px_rgba(16,24,17,0.22)] transition focus-within:border-moss/40 sm:flex-row sm:items-center">
+              <label className="flex flex-1 items-center gap-3 px-4">
+                <SearchIcon className="h-4 w-4 shrink-0 text-gray-400" />
+                <span className="sr-only">Café or restaurant</span>
+                <input
+                  value={search}
+                  onChange={(event) => {
+                    setSearch(event.target.value);
+                    setMessage("");
+                  }}
+                  placeholder="Café or restaurant"
+                  className="bare-input h-12 w-full min-w-0 text-[15px] text-ink outline-none"
+                />
+              </label>
+
+              <div className="mx-4 h-px bg-line sm:mx-0 sm:h-7 sm:w-px" />
+
+              <label className="flex items-center gap-3 px-4 sm:w-40">
+                <PinIcon className="h-4 w-4 shrink-0 text-gray-400" />
+                <span className="sr-only">ZIP code</span>
+                <input
+                  value={zipcode}
+                  onChange={(event) => {
+                    setZipcode(
+                      event.target.value
+                        .replace(/\D/g, "")
+                        .slice(0, 5)
+                    );
+
+                    setMessage("");
+                  }}
+                  inputMode="numeric"
+                  autoComplete="postal-code"
+                  placeholder={detectedZip || "ZIP code"}
+                  maxLength={5}
+                  className="bare-input h-12 w-full min-w-0 text-[15px] text-ink outline-none"
+                />
+              </label>
+
+              <button
+                type="submit"
+                className="mt-1.5 h-12 whitespace-nowrap rounded-xl bg-ink px-6 text-[15px] font-semibold text-white transition hover:bg-black sm:mt-0"
+              >
+                Find seats
+              </button>
             </div>
 
-            <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-[1] mt-7">
-              Know before
-              <br />
-              you go.
-            </h1>
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-sm text-gray-500">
+              <span>Search by business name, ZIP code, or both.</span>
 
-            <p className="text-lg md:text-xl text-gray-500 max-w-xl mt-7 leading-8">
-              Check live seating availability at cafés and restaurants before
-              you arrive.
-            </p>
-
-            <form
-              onSubmit={findBusiness}
-              className="mt-10 max-w-xl"
-            >
-              <div className="bg-white border border-gray-200 rounded-2xl p-2 shadow-lg">
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <input
-                    value={search}
-                    onChange={(event) => {
-                      setSearch(event.target.value);
-                      setMessage("");
-                    }}
-                    placeholder="Café or restaurant"
-                    className="flex-1 h-12 px-4 outline-none bg-transparent text-black"
-                  />
-
-                  <div className="hidden sm:block w-px bg-gray-200" />
-
-                  <input
-                    value={zipcode}
-                    onChange={(event) => {
-                      setZipcode(
-                        event.target.value
-                          .replace(/\D/g, "")
-                          .slice(0, 5)
-                      );
-
-                      setMessage("");
-                    }}
-                    inputMode="numeric"
-                    autoComplete="postal-code"
-                    placeholder={
-                      detectedZip || "ZIP code"
-                    }
-                    maxLength={5}
-                    className="sm:w-36 h-12 px-4 outline-none bg-transparent text-black border-t sm:border-t-0 border-gray-100"
-                  />
-
-                  <button
-                    type="submit"
-                    className="h-12 bg-green-600 hover:bg-green-700 text-white px-6 rounded-xl font-semibold transition whitespace-nowrap"
-                  >
-                    Find Seats
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-3 mt-3">
-                <p className="text-xs text-gray-400">
-                  Search by business name, ZIP code, or both.
-                </p>
-
-                {detectedZip && !zipcode && (
-                  <span className="text-xs font-semibold text-green-700">
-                    Near you: {detectedZip}
-                  </span>
-                )}
-              </div>
-
-              {message && (
-                <p className="text-red-500 text-sm mt-3">
-                  {message}
-                </p>
-              )}
-            </form>
-
-            <div className="flex flex-wrap gap-6 mt-7 text-sm text-gray-500">
-              <span className="flex items-center gap-2">
-                <span className="text-green-500">
-                  ●
+              {detectedZip && !zipcode && (
+                <span className="inline-flex items-center gap-1.5 font-medium text-moss">
+                  <PinIcon className="h-3.5 w-3.5" />
+                  Near you: {detectedZip}
                 </span>
-
-                Live availability
-              </span>
-
-              <span>
-                ✓ No account needed
-              </span>
-
-              <span>
-                ↻ Updates instantly
-              </span>
-            </div>
-          </div>
-
-          {/* OLD MOCK FLOOR PLAN RESTORED */}
-          <div className="bg-white border border-gray-200 rounded-[32px] shadow-xl p-7">
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="flex items-center gap-2 text-green-700 text-xs font-bold">
-                  <span className="w-2 h-2 bg-green-500 rounded-full" />
-
-                  LIVE
-                </div>
-
-                <h2 className="text-2xl font-bold mt-2">
-                  Your favorite café
-                </h2>
-
-                <p className="text-sm text-gray-400 mt-1">
-                  Seating updated moments ago
-                </p>
-              </div>
-
-              <div className="text-right">
-                <p className="text-3xl font-bold text-green-600">
-                  9
-                </p>
-
-                <p className="text-xs text-gray-400">
-                  seats open
-                </p>
-              </div>
+              )}
             </div>
 
-            <div className="relative h-[360px] bg-[#f8faf7] border border-gray-100 rounded-3xl mt-7 overflow-hidden">
-              <div
-                className="absolute inset-0 opacity-50"
-                style={{
-                  backgroundImage:
-                    "linear-gradient(#e5e7eb 1px, transparent 1px), linear-gradient(90deg, #e5e7eb 1px, transparent 1px)",
-                  backgroundSize: "28px 28px",
-                }}
-              />
+            {message && (
+              <p
+                role="alert"
+                className="mt-3 px-1 text-sm font-medium text-red-600"
+              >
+                {message}
+              </p>
+            )}
+          </form>
 
-              <PreviewTable
-                name="Table 1"
-                left="8%"
-                top="14%"
-                seats={[
-                  "available",
-                  "available",
-                  "occupied",
-                  "available",
-                ]}
-              />
-
-              <PreviewTable
-                name="Table 2"
-                left="53%"
-                top="18%"
-                seats={[
-                  "available",
-                  "occupied",
-                  "available",
-                  "available",
-                ]}
-              />
-
-              <PreviewTable
-                name="Table 3"
-                left="28%"
-                top="61%"
-                seats={[
-                  "occupied",
-                  "available",
-                  "available",
-                  "available",
-                ]}
-              />
-            </div>
-
-            <div className="flex justify-center gap-6 text-xs font-semibold mt-5">
-              <span className="text-green-600">
-                ● Available
-              </span>
-
-              <span className="text-red-500">
-                ● Occupied
-              </span>
-            </div>
-          </div>
+          <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-600">
+            {[
+              "Live availability",
+              "No account needed",
+              "Updates instantly",
+            ].map((point) => (
+              <li key={point} className="flex items-center gap-2">
+                <CheckIcon className="h-4 w-4 text-moss" />
+                {point}
+              </li>
+            ))}
+          </ul>
         </div>
+
+        <LiveFloorPreview />
       </section>
 
-      {/* NEW: RESTAURANTS NEAR YOU */}
-      <section className="max-w-7xl mx-auto px-6 pb-20">
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5">
+      {/* RESTAURANTS NEAR YOU */}
+      <section className="mx-auto max-w-6xl px-5 pb-20 sm:px-8 lg:pb-28">
+        <div className="flex flex-col gap-6 border-t border-line pt-12 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-green-600 font-bold text-sm">
-              LIVE NEAR YOU
-            </p>
-
-            <h2 className="text-4xl md:text-5xl font-bold mt-3">
-              Restaurants near you
+            <h2 className="font-display text-4xl sm:text-5xl">
+              Open seats near you
             </h2>
 
-            <p className="text-gray-500 mt-3 max-w-2xl">
+            <p className="mt-3 max-w-xl text-gray-600">
               {activeZip
-                ? `Approved SeatMate locations in ZIP ${activeZip}, sorted by current seating availability.`
-                : "Approved restaurants and cafés currently using SeatMate."}
+                ? `SeatMate locations in ZIP ${activeZip}, with the most open seats first.`
+                : "Restaurants and cafés currently using SeatMate."}
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             {locationState !== "ready" && (
               <button
                 type="button"
                 onClick={detectLocation}
                 disabled={locationState === "checking"}
-                className="border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-60 px-4 py-2.5 rounded-xl text-sm font-semibold transition"
+                className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-4 py-2 text-sm font-medium transition hover:border-gray-300 disabled:opacity-60"
               >
+                <PinIcon className="h-3.5 w-3.5" />
                 {locationState === "checking"
-                  ? "Finding your area..."
+                  ? "Finding your area…"
                   : "Use my location"}
               </button>
             )}
@@ -584,33 +495,39 @@ export default function HomePage() {
                     : "/search"
                 )
               }
-              className="bg-[#101811] text-white hover:bg-black px-4 py-2.5 rounded-xl text-sm font-semibold transition"
+              className="inline-flex items-center gap-1.5 rounded-full bg-ink px-4 py-2 text-sm font-medium text-white transition hover:bg-black"
             >
-              View all →
+              View all
+              <ArrowRightIcon className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>
 
         {businessesLoading ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 mt-10">
+          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {[0, 1, 2].map((item) => (
               <div
                 key={item}
-                className="h-[330px] bg-white border border-gray-200 rounded-[26px] animate-pulse"
-              />
+                className="overflow-hidden rounded-2xl border border-line bg-white"
+              >
+                <div className="aspect-[16/10] animate-pulse bg-gray-100" />
+                <div className="space-y-3 p-5">
+                  <div className="h-4 w-2/3 animate-pulse rounded bg-gray-100" />
+                  <div className="h-3 w-1/2 animate-pulse rounded bg-gray-100" />
+                  <div className="h-1.5 w-full animate-pulse rounded-full bg-gray-100" />
+                </div>
+              </div>
             ))}
           </div>
         ) : nearbyBusinesses.length === 0 ? (
-          <div className="bg-white border border-gray-200 rounded-[26px] p-10 mt-10 text-center">
-            <div className="text-4xl">
-              🪑
-            </div>
+          <div className="mt-10 flex flex-col items-center rounded-3xl border border-dashed border-gray-300 bg-white/60 px-6 py-14 text-center">
+            <EmptyTableIcon className="h-14 w-14 text-gray-300" />
 
-            <h3 className="text-xl font-bold mt-4">
+            <h3 className="mt-5 text-lg font-semibold">
               No SeatMate locations nearby yet
             </h3>
 
-            <p className="text-gray-500 mt-2">
+            <p className="mt-2 max-w-md text-gray-600">
               {activeZip
                 ? `There are no approved SeatMate businesses in ZIP ${activeZip} yet.`
                 : "Try entering your ZIP code above to find SeatMate locations near you."}
@@ -620,14 +537,15 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={() => router.push("/search")}
-                className="text-green-700 font-semibold mt-5 hover:text-green-800"
+                className="mt-5 inline-flex items-center gap-1.5 font-medium text-moss hover:text-green-800"
               >
-                Browse all locations →
+                Browse all locations
+                <ArrowRightIcon className="h-4 w-4" />
               </button>
             )}
           </div>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 mt-10">
+          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {nearbyBusinesses.map((business) => (
               <RestaurantCard
                 key={business.slug}
@@ -644,90 +562,141 @@ export default function HomePage() {
         {(locationState === "denied" ||
           locationState === "unavailable") &&
           !zipcode && (
-            <p className="text-sm text-gray-500 mt-5">
+            <p className="mt-5 text-sm text-gray-500">
               Location access is unavailable. Enter your ZIP code above to see
               SeatMate restaurants near you.
             </p>
           )}
       </section>
 
-      {/* HOW IT WORKS - OLD SECTION RESTORED */}
-      <section className="bg-white border-y border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 py-20">
-          <p className="text-green-600 font-bold text-sm">
-            HOW IT WORKS
-          </p>
+      {/* HOW IT WORKS */}
+      <section className="border-y border-line bg-white">
+        <div className="mx-auto grid max-w-6xl gap-12 px-5 py-20 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20 lg:py-28">
+          <div>
+            <p className="text-sm font-medium text-moss">How it works</p>
 
-          <h2 className="text-4xl md:text-5xl font-bold mt-3 max-w-2xl">
-            Finding a seat shouldn&apos;t be a guessing game.
-          </h2>
+            <h2 className="font-display mt-3 text-4xl leading-[1.05] sm:text-5xl">
+              Finding a seat shouldn&apos;t be a guessing game.
+            </h2>
+          </div>
 
-          <div className="grid md:grid-cols-3 gap-5 mt-12">
-            <InfoCard
-              number="01"
-              title="Find a location"
-              description="Search for the café or restaurant you want to visit."
-            />
+          <ol className="divide-y divide-line">
+            {[
+              {
+                title: "Find a location",
+                description:
+                  "Search for the café or restaurant you want to visit.",
+              },
+              {
+                title: "Check the floor",
+                description:
+                  "See which seats are available and where they are located.",
+              },
+              {
+                title: "Head over",
+                description:
+                  "Availability updates live as staff manage seating.",
+              },
+            ].map((step, index) => (
+              <li
+                key={step.title}
+                className="flex gap-6 py-7 first:pt-0 last:pb-0"
+              >
+                <span className="font-display w-6 shrink-0 text-4xl leading-none text-gray-300">
+                  {index + 1}
+                </span>
 
-            <InfoCard
-              number="02"
-              title="Check the floor"
-              description="See which seats are available and where they are located."
-            />
+                <div>
+                  <h3 className="text-lg font-semibold">
+                    {step.title}
+                  </h3>
 
-            <InfoCard
-              number="03"
-              title="Head over"
-              description="Availability updates live as staff manage seating."
-            />
+                  <p className="mt-1.5 text-gray-600">
+                    {step.description}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      {/* BUSINESS */}
+      <section className="mx-auto max-w-6xl px-5 py-20 sm:px-8 lg:py-28">
+        <div className="grid overflow-hidden rounded-3xl bg-ink text-white lg:grid-cols-2">
+          <div className="p-8 sm:p-12 lg:p-14">
+            <p className="text-sm font-medium text-green-400">
+              SeatMate for business
+            </p>
+
+            <h2 className="font-display mt-4 text-4xl leading-[1.05] sm:text-5xl">
+              Turn your floor plan into live information.
+            </h2>
+
+            <p className="mt-5 max-w-md text-lg text-white/65">
+              Staff update occupancy with one tap. Customers see those
+              changes instantly.
+            </p>
+
+            <button
+              type="button"
+              onClick={() =>
+                window.location.assign(businessUrl("/business/login"))
+              }
+              className="mt-8 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 font-semibold text-ink transition hover:bg-green-50"
+            >
+              Open Business Portal
+              <ArrowRightIcon className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="flex items-center border-t border-white/10 p-8 sm:p-12 lg:border-l lg:border-t-0">
+            <StaffUpdateMock />
           </div>
         </div>
       </section>
 
-      {/* BUSINESS - OLD SECTION RESTORED */}
-      <section className="max-w-7xl mx-auto px-6 py-20">
-        <div className="bg-[#101811] text-white rounded-[36px] p-8 md:p-14">
-          <p className="text-green-400 font-bold text-sm">
-            SEATMATE FOR BUSINESS
-          </p>
+      {/* FOOTER */}
+      <footer className="border-t border-line">
+        <div className="mx-auto flex max-w-6xl flex-col gap-6 px-5 py-10 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="flex items-center gap-2">
+              <LogoMark className="h-6 w-6" />
+              <span className="font-semibold">SeatMate</span>
+            </span>
 
-          <h2 className="text-4xl md:text-5xl font-bold max-w-2xl mt-4">
-            Turn your floor plan into live information.
-          </h2>
-
-          <p className="text-white/60 text-lg max-w-xl mt-5 leading-8">
-            Staff update occupancy with one tap. Customers see those changes
-            instantly.
-          </p>
-
-          <button
-            type="button"
-            onClick={() =>
-              window.location.assign(businessUrl("/business/login"))
-            }
-            className="bg-green-500 hover:bg-green-400 text-[#101811] px-6 py-3 rounded-xl font-bold mt-8 transition"
-          >
-            Open Business Portal →
-          </button>
-        </div>
-      </section>
-
-      {/* FOOTER - OLD FOOTER RESTORED */}
-      <footer className="border-t border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 py-8 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-green-600 text-white font-bold flex items-center justify-center">
-              S
-            </div>
-
-            <span className="font-bold">
-              SeatMate
+            <span className="text-sm text-gray-500">
+              Live seating, without the guessing.
             </span>
           </div>
 
-          <p className="text-xs text-gray-400">
-            Live seating, without the guessing.
-          </p>
+          <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-600">
+            <button
+              type="button"
+              onClick={() => router.push("/search")}
+              className="transition hover:text-ink"
+            >
+              Browse places
+            </button>
+
+            <button
+              type="button"
+              onClick={() => router.push("/about")}
+              className="transition hover:text-ink"
+            >
+              About Us
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                window.location.assign(businessUrl("/business/login"))
+              }
+              className="transition hover:text-ink"
+            >
+              For businesses
+            </button>
+          </nav>
         </div>
       </footer>
     </main>
@@ -762,6 +731,32 @@ function RestaurantCard({
           : business.totalSeats > 0
             ? "Currently full"
             : "No seating data";
+
+  // Chip and meter colors follow the same thresholds as the label.
+  const tone =
+    percentage >= 25
+      ? {
+          chip: "bg-white/90 text-green-800",
+          dot: "bg-seat-open",
+          bar: "bg-seat-open",
+        }
+      : percentage > 0
+        ? {
+            chip: "bg-white/90 text-amber-800",
+            dot: "bg-amber-500",
+            bar: "bg-amber-500",
+          }
+        : business.totalSeats > 0
+          ? {
+              chip: "bg-white/90 text-red-700",
+              dot: "bg-seat-taken",
+              bar: "bg-seat-taken",
+            }
+          : {
+              chip: "bg-white/90 text-gray-600",
+              dot: "bg-gray-400",
+              bar: "bg-gray-300",
+            };
 
   const ageMinutes =
     business.latestUpdateMs === null
@@ -800,82 +795,93 @@ function RestaurantCard({
     <button
       type="button"
       onClick={onOpen}
-      className="group bg-white border border-gray-200 rounded-[26px] overflow-hidden text-left hover:border-green-300 hover:shadow-lg transition"
+      className="group flex flex-col overflow-hidden rounded-2xl border border-line bg-white text-left transition duration-200 hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-[0_20px_40px_-24px_rgba(16,24,17,0.4)]"
     >
-      {/* REAL RESTAURANT PHOTO IF SAVED IN FIREBASE */}
-      {business.imageUrl ? (
-        <div className="h-44 bg-gray-100 overflow-hidden">
+      <div className="relative aspect-[16/10] overflow-hidden bg-[#eef2ec]">
+        {/* REAL RESTAURANT PHOTO IF SAVED IN FIREBASE */}
+        {business.imageUrl ? (
           <img
             src={business.imageUrl}
             alt={business.name}
-            className="w-full h-full object-cover group-hover:scale-[1.03] transition duration-300"
+            className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
           />
-        </div>
-      ) : (
-        <div className="h-44 bg-gradient-to-br from-[#e9f5ea] to-[#f7f8f5] flex items-center justify-center">
-          <div className="text-center">
-            <div className="w-14 h-14 rounded-2xl bg-white border border-gray-200 shadow-sm flex items-center justify-center text-xl font-bold text-green-700 mx-auto">
+        ) : (
+          <div
+            className="flex h-full w-full items-center justify-center"
+            style={{
+              backgroundImage:
+                "radial-gradient(rgba(21,128,61,0.14) 1.5px, transparent 1.5px)",
+              backgroundSize: "18px 18px",
+            }}
+          >
+            <span className="font-display text-7xl text-moss/70">
               {business.name
                 .trim()
                 .charAt(0)
                 .toUpperCase() || "S"}
-            </div>
-
-            <p className="text-xs text-gray-400 mt-3">
-              Restaurant photo coming soon
-            </p>
-          </div>
-        </div>
-      )}
-
-      <div className="p-6">
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <span className="inline-flex text-xs font-bold text-green-700 bg-green-50 px-2.5 py-1 rounded-full">
-              {business.type}
             </span>
-
-            <h3 className="text-xl font-bold mt-3 truncate group-hover:text-green-700 transition">
-              {business.name}
-            </h3>
           </div>
+        )}
 
-          {business.totalSeats > 0 && (
-            <div className="shrink-0 text-right">
-              <p className="text-3xl font-bold text-green-600 leading-none">
-                {business.availableSeats}
-              </p>
+        <span
+          className={`absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm backdrop-blur ${tone.chip}`}
+        >
+          <span className={`h-1.5 w-1.5 rounded-full ${tone.dot}`} />
+          {availabilityLabel}
+        </span>
+      </div>
 
-              <p className="text-[11px] text-gray-400 mt-1">
-                seats open
-              </p>
-            </div>
-          )}
+      <div className="flex flex-1 flex-col p-5">
+        <div className="flex items-baseline justify-between gap-3">
+          <h3 className="truncate text-lg font-semibold transition group-hover:text-moss">
+            {business.name}
+          </h3>
+
+          <span className="shrink-0 text-xs font-medium uppercase tracking-wider text-gray-400">
+            {business.type}
+          </span>
         </div>
 
-        <p className="text-sm text-gray-500 mt-2 line-clamp-2">
+        <p className="mt-1 line-clamp-1 text-sm text-gray-500">
           {business.address}
         </p>
 
-        <div className="border-t border-gray-100 mt-5 pt-4 flex items-center justify-between gap-4">
-          <div>
-            <p className="text-sm font-semibold">
-              {availabilityLabel}
-            </p>
+        {business.totalSeats > 0 ? (
+          <div className="mb-5 mt-4">
+            <div className="h-1.5 overflow-hidden rounded-full bg-gray-100">
+              <div
+                className={`h-full rounded-full ${tone.bar}`}
+                style={{ width: `${percentage}%` }}
+              />
+            </div>
 
-            <p
-              className={`text-xs mt-1 ${
-                isFresh
-                  ? "text-green-700"
-                  : "text-gray-400"
-              }`}
-            >
-              {freshnessLabel}
+            <p className="mt-2 text-sm">
+              <span className="font-semibold">
+                {business.availableSeats}
+              </span>{" "}
+              <span className="text-gray-500">
+                of {business.totalSeats} seats open
+              </span>
             </p>
           </div>
+        ) : (
+          <p className="mb-5 mt-4 text-sm text-gray-500">
+            Seat counts will appear once staff start updating.
+          </p>
+        )}
 
-          <span className="text-green-700 font-bold">
-            View →
+        <div className="mt-auto flex items-center justify-between gap-4 border-t border-line pt-4 text-sm">
+          <span
+            className={
+              isFresh ? "text-moss" : "text-gray-400"
+            }
+          >
+            {freshnessLabel}
+          </span>
+
+          <span className="inline-flex items-center gap-1 font-medium text-ink transition group-hover:text-moss">
+            View floor
+            <ArrowRightIcon className="h-3.5 w-3.5" />
           </span>
         </div>
       </div>
@@ -883,69 +889,311 @@ function RestaurantCard({
   );
 }
 
-function PreviewTable({
-  name,
-  left,
-  top,
-  seats,
-}: {
-  name: string;
-  left: string;
-  top: string;
-  seats: ("available" | "occupied")[];
-}) {
+// Example floor for the hero. Every seat is listed once so the "seats open"
+// count is always derived from what is drawn.
+const DEMO_TABLES: {
+  shape: "round" | "rect";
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  seats: [number, number][];
+}[] = [
+  { shape: "round", x: 100, y: 102, w: 52, h: 52, seats: [[100, 62], [140, 102], [100, 142], [60, 102]] },
+  { shape: "rect", x: 240, y: 102, w: 100, h: 40, seats: [[210, 64], [240, 64], [270, 64], [210, 140], [240, 140], [270, 140]] },
+  { shape: "round", x: 362, y: 102, w: 40, h: 40, seats: [[328, 102], [396, 102]] },
+  { shape: "rect", x: 104, y: 230, w: 44, h: 40, seats: [[104, 192], [104, 268]] },
+  { shape: "round", x: 200, y: 230, w: 36, h: 36, seats: [[200, 196], [200, 264]] },
+];
+
+const DEMO_STOOLS: [number, number][] = [
+  [296, 212],
+  [336, 212],
+  [376, 212],
+];
+
+const DEMO_SEAT_COUNT =
+  DEMO_TABLES.reduce((sum, table) => sum + table.seats.length, 0) +
+  DEMO_STOOLS.length;
+
+// Which seats start taken, and the order seats flip in to show updates.
+const DEMO_INITIAL_TAKEN = [2, 4, 8, 11, 13, 17];
+const DEMO_FLIP_ORDER = [5, 11, 0, 15, 8, 12, 2, 16];
+
+function LiveFloorPreview() {
+  const [open, setOpen] = useState<boolean[]>(() =>
+    Array.from(
+      { length: DEMO_SEAT_COUNT },
+      (_, index) => !DEMO_INITIAL_TAKEN.includes(index)
+    )
+  );
+
+  // Flip one seat every few seconds so the example reads as live.
+  useEffect(() => {
+    if (
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      return;
+    }
+
+    let step = 0;
+
+    const interval = window.setInterval(() => {
+      const seat = DEMO_FLIP_ORDER[step % DEMO_FLIP_ORDER.length];
+      step += 1;
+
+      setOpen((current) =>
+        current.map((value, index) =>
+          index === seat ? !value : value
+        )
+      );
+    }, 2800);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, []);
+
+  const openCount = open.filter(Boolean).length;
+
+  let seatIndex = 0;
+
+  const seatFill = () =>
+    open[seatIndex++] ? "#22a55b" : "#e5534b";
+
   return (
-    <div
-      className="absolute w-[145px] origin-top-left scale-[0.8] max-[379px]:scale-[0.65] sm:scale-100 bg-white border border-gray-200 shadow-sm rounded-2xl p-3"
-      style={{
-        left,
-        top,
-      }}
-    >
-      <div className="bg-[#101811] h-14 rounded-xl flex items-center justify-center">
-        <span className="text-white text-xs font-semibold">
-          {name}
-        </span>
+    <figure className="rounded-3xl border border-line bg-white p-5 shadow-[0_1px_2px_rgba(16,24,17,0.04),0_30px_60px_-30px_rgba(16,24,17,0.28)] sm:p-7">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-[0.14em] text-gray-400">
+            Example floor
+          </p>
+
+          <p className="mt-1.5 text-lg font-semibold">
+            Your favorite café
+          </p>
+
+          <p className="mt-1 flex items-center gap-2 text-sm text-gray-500">
+            <LiveDot />
+            Updated moments ago
+          </p>
+        </div>
+
+        <div className="text-right">
+          <p className="font-display text-5xl leading-none text-moss">
+            {openCount}
+          </p>
+
+          <p className="mt-1.5 text-xs text-gray-500">
+            of {DEMO_SEAT_COUNT} seats open
+          </p>
+        </div>
       </div>
 
-      <div className="flex justify-center gap-1.5 mt-2.5">
-        {seats.map((status, index) => (
-          <div
+      <svg
+        viewBox="0 0 420 300"
+        role="img"
+        aria-label={`Example floor plan with ${openCount} of ${DEMO_SEAT_COUNT} seats open`}
+        className="mt-6 w-full"
+      >
+        {/* Room */}
+        <rect x="6" y="6" width="408" height="288" rx="18" fill="#fafbf9" stroke="#e3e7e2" strokeWidth="2" />
+
+        {/* Window along the top wall */}
+        <rect x="80" y="3" width="260" height="6" rx="3" fill="#cfe3e8" />
+        <text x="210" y="26" textAnchor="middle" fontSize="9" letterSpacing="2" fill="#9aa39c">
+          WINDOW
+        </text>
+
+        {/* Entrance on the left wall */}
+        <line x1="6" y1="196" x2="6" y2="248" stroke="#fafbf9" strokeWidth="4" />
+        <path d="M6 196 A 52 52 0 0 1 48 248" fill="none" stroke="#d3d9d2" strokeDasharray="3 4" />
+        <text x="20" y="276" fontSize="9" letterSpacing="2" fill="#9aa39c">
+          ENTRANCE
+        </text>
+
+        {/* Counter */}
+        <rect x="272" y="232" width="128" height="46" rx="10" fill="#eef1ec" stroke="#e3e7e2" />
+        <text x="336" y="259" textAnchor="middle" fontSize="9" letterSpacing="2" fill="#9aa39c">
+          COUNTER
+        </text>
+
+        {DEMO_TABLES.map((table, tableIndex) => (
+          <g key={tableIndex}>
+            {table.shape === "round" ? (
+              <circle cx={table.x} cy={table.y} r={table.w / 2} fill="#101811" />
+            ) : (
+              <rect
+                x={table.x - table.w / 2}
+                y={table.y - table.h / 2}
+                width={table.w}
+                height={table.h}
+                rx="8"
+                fill="#101811"
+              />
+            )}
+
+            {table.seats.map(([cx, cy], index) => (
+              <circle
+                key={index}
+                cx={cx}
+                cy={cy}
+                r="10"
+                fill={seatFill()}
+                stroke="#fff"
+                strokeWidth="3"
+                style={{ transition: "fill 500ms ease" }}
+              />
+            ))}
+          </g>
+        ))}
+
+        {DEMO_STOOLS.map(([cx, cy], index) => (
+          <circle
             key={index}
-            className={`w-6 h-6 rounded-full ${
-              status === "available"
-                ? "bg-green-500"
-                : "bg-red-500"
-            }`}
+            cx={cx}
+            cy={cy}
+            r="9"
+            fill={seatFill()}
+            stroke="#fff"
+            strokeWidth="3"
+            style={{ transition: "fill 500ms ease" }}
           />
         ))}
+      </svg>
+
+      <figcaption className="mt-5 flex flex-wrap items-center justify-between gap-3 text-xs text-gray-500">
+        <span className="flex items-center gap-4">
+          <span className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-full bg-seat-open" />
+            Available
+          </span>
+
+          <span className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-full bg-seat-taken" />
+            Occupied
+          </span>
+        </span>
+
+        <span>Staff update seats with one tap</span>
+      </figcaption>
+    </figure>
+  );
+}
+
+function StaffUpdateMock() {
+  const rows = [
+    { name: "Window table", seats: [true, false] },
+    { name: "Table 4", seats: [false, false, true, true] },
+    { name: "Bar", seats: [true, true, false] },
+  ];
+
+  return (
+    <div
+      aria-hidden="true"
+      className="mx-auto w-full max-w-sm rounded-2xl bg-white/[0.04] p-5 ring-1 ring-white/10"
+    >
+      <div className="flex items-center justify-between text-xs text-white/50">
+        <span className="font-medium uppercase tracking-[0.14em]">
+          Staff view
+        </span>
+        <span>Tap a seat to update</span>
       </div>
+
+      <ul className="mt-4 space-y-2.5">
+        {rows.map((row) => (
+          <li
+            key={row.name}
+            className="flex items-center justify-between rounded-xl bg-white/[0.06] px-4 py-3"
+          >
+            <span className="text-sm font-medium">{row.name}</span>
+
+            <span className="flex gap-1.5">
+              {row.seats.map((isOpen, index) => (
+                <span
+                  key={index}
+                  className={`h-5 w-5 rounded-full ring-2 ring-ink ${
+                    isOpen ? "bg-seat-open" : "bg-seat-taken"
+                  }`}
+                />
+              ))}
+            </span>
+          </li>
+        ))}
+      </ul>
+
+      <p className="mt-4 flex items-center gap-2 text-xs text-white/50">
+        <LiveDot />
+        Customers see changes instantly
+      </p>
     </div>
   );
 }
 
-function InfoCard({
-  number,
-  title,
-  description,
-}: {
-  number: string;
-  title: string;
-  description: string;
-}) {
+function LiveDot() {
   return (
-    <div className="border border-gray-200 rounded-[26px] p-7">
-      <div className="w-11 h-11 rounded-xl bg-green-50 text-green-700 font-bold flex items-center justify-center text-sm">
-        {number}
-      </div>
+    <span className="relative flex h-2 w-2">
+      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-seat-open opacity-60 motion-reduce:hidden" />
+      <span className="relative inline-flex h-2 w-2 rounded-full bg-seat-open" />
+    </span>
+  );
+}
 
-      <h3 className="text-xl font-bold mt-6">
-        {title}
-      </h3>
+function LogoMark({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 32 32" className={className} aria-hidden="true">
+      <rect width="32" height="32" rx="9" fill="#101811" />
+      <circle cx="16" cy="16" r="5.5" fill="#fff" />
+      <circle cx="16" cy="6.5" r="2.6" fill="#22a55b" />
+      <circle cx="25.5" cy="16" r="2.6" fill="#22a55b" />
+      <circle cx="16" cy="25.5" r="2.6" fill="#e5534b" />
+      <circle cx="6.5" cy="16" r="2.6" fill="#22a55b" />
+    </svg>
+  );
+}
 
-      <p className="text-gray-500 leading-7 mt-2">
-        {description}
-      </p>
-    </div>
+function SearchIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className={className} aria-hidden="true">
+      <circle cx="9" cy="9" r="6" />
+      <path d="m13.5 13.5 3.5 3.5" />
+    </svg>
+  );
+}
+
+function PinIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="M10 18s6-5.2 6-10a6 6 0 1 0-12 0c0 4.8 6 10 6 10Z" />
+      <circle cx="10" cy="8" r="2.2" />
+    </svg>
+  );
+}
+
+function CheckIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="m4.5 10.5 3.5 3.5 7.5-8" />
+    </svg>
+  );
+}
+
+function ArrowRightIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="M4 10h12m-5-5 5 5-5 5" />
+    </svg>
+  );
+}
+
+function EmptyTableIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 56 56" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <circle cx="28" cy="28" r="11" />
+      <circle cx="28" cy="7" r="4" />
+      <circle cx="49" cy="28" r="4" />
+      <circle cx="28" cy="49" r="4" />
+      <circle cx="7" cy="28" r="4" />
+    </svg>
   );
 }
