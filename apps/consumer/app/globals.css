@@ -5,7 +5,7 @@
 @source "../../../packages/shared/src";
 
 @theme {
-  --font-display: var(--font-instrument-serif), Georgia, "Times New Roman", serif;
+  --font-display: var(--font-bricolage), var(--font-body), system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
   --color-ink: #101811;
   --color-paper: #f7f8f5;
@@ -15,11 +15,14 @@
   --color-seat-taken: #e5534b;
 }
 
-/* The shared stylesheet makes every heading bold, which would fake-bold the
-   single-weight display serif. Class selectors outrank those element rules. */
+/* Headline face. Class selectors outrank the shared stylesheet's bold,
+   tracked heading rules, so this sets the weight and spacing that suit
+   Bricolage at large sizes. */
 .font-display {
-  font-weight: 400;
-  letter-spacing: -0.02em;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  font-optical-sizing: auto;
+  text-wrap: balance;
 }
 
 /* Inputs that sit inside a larger field (e.g. the home search bar) and should

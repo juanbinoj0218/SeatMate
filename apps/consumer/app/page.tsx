@@ -342,7 +342,7 @@ export default function HomePage() {
           <h1 className="font-display mt-5 text-[3.5rem] leading-[0.95] sm:text-7xl lg:text-[5.75rem]">
             Know before
             <br />
-            you <em className="italic text-moss">go.</em>
+            you <em className="not-italic text-moss">go.</em>
           </h1>
 
           <p className="mt-6 max-w-md text-lg text-gray-600">
