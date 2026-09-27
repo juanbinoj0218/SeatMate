@@ -541,15 +541,11 @@ export default function BusinessLoginPage() {
 
           <div>
 
-            <div className="inline-flex items-center gap-2 bg-green-50 border border-green-100 text-green-700 rounded-full px-3 py-1.5 text-sm font-semibold">
-
-              <span className="w-2 h-2 bg-green-500 rounded-full" />
-
+            <p className="text-sm font-semibold text-gray-500">
               SeatMate for Business
+            </p>
 
-            </div>
-
-            <h1 className="text-5xl md:text-6xl font-bold tracking-tight mt-6 leading-[1.05]">
+            <h1 className="text-5xl md:text-6xl font-bold tracking-tight mt-4 leading-[1.05]">
 
               Manage your
               <br />
@@ -566,41 +562,33 @@ export default function BusinessLoginPage() {
 
             </p>
 
-            <div className="mt-10 bg-[#101811] text-white rounded-[28px] p-7 max-w-md">
+            <ul className="mt-10 max-w-md border-t border-gray-200 divide-y divide-gray-200">
 
-              <p className="text-green-400 text-sm font-bold">
-                BUSINESS PORTAL
-              </p>
+              {[
+                ["Floor plan", "Lay out your tables and seats."],
+                ["Live seats", "Mark seats open or taken as guests come and go."],
+                ["Staff", "Invite your team to update seats."],
+                ["Hours", "Show customers when you're open."],
+              ].map(([title, description]) => (
 
-              <h2 className="text-2xl font-bold mt-3">
+                <li
+                  key={title}
+                  className="py-4 flex gap-6"
+                >
 
-                One dashboard.
-                Everything live.
+                  <span className="w-24 shrink-0 font-semibold">
+                    {title}
+                  </span>
 
-              </h2>
+                  <span className="text-gray-500">
+                    {description}
+                  </span>
 
-              <div className="mt-6 space-y-4 text-white/70">
+                </li>
 
-                <p>
-                  ✓ Build your restaurant or
-                  café floor plan
-                </p>
+              ))}
 
-                <p>
-                  ✓ Update live seat occupancy
-                </p>
-
-                <p>
-                  ✓ Invite staff members
-                </p>
-
-                <p>
-                  ✓ Manage business hours
-                </p>
-
-              </div>
-
-            </div>
+            </ul>
 
           </div>
 
@@ -826,7 +814,7 @@ export default function BusinessLoginPage() {
                       onClick={
                         handleForgotPassword
                       }
-                      className="text-sm text-green-700 font-semibold hover:underline"
+                      className="text-sm text-gray-500 font-semibold hover:text-[#101811] hover:underline"
                     >
                       Forgot password?
                     </button>
