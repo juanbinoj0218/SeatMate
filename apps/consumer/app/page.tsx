@@ -342,17 +342,6 @@ export default function HomePage() {
             >
               About Us
             </button>
-
-            {/* BUSINESS PORTAL */}
-            <button
-              type="button"
-              onClick={() =>
-                window.location.assign(businessUrl("/business/login"))
-              }
-              className="bg-[#101811] text-white px-5 py-3 rounded-xl font-semibold hover:bg-black transition"
-            >
-              Business Portal
-            </button>
           </div>
         </div>
       </header>

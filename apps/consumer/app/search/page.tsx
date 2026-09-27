@@ -4,7 +4,6 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { collection, getDocs, Timestamp } from "firebase/firestore";
 import { db } from "@seatmate/shared/firebase";
-import { businessUrl } from "@seatmate/shared/site-urls";
 
 const FALLBACK_IMAGES = [
   "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=1200&q=82",
@@ -262,13 +261,6 @@ function SearchPageContent() {
               className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-bold transition hover:bg-gray-50"
             >
               Home
-            </button>
-            <button
-              type="button"
-              onClick={() => window.location.assign(businessUrl("/business/login"))}
-              className="hidden rounded-xl bg-[#101811] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-black sm:block"
-            >
-              Business Portal
             </button>
           </div>
         </div>
