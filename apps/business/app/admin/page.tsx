@@ -130,6 +130,18 @@ const MARKER_STYLE: Record<
     width: 120,
     height: 18,
   },
+  poolTable: {
+    label: "Pool Table",
+    icon: "🎱",
+    width: 120,
+    height: 68,
+  },
+  darts: {
+    label: "Darts",
+    icon: "🎯",
+    width: 72,
+    height: 56,
+  },
 };
 
 export default function AdminPage() {

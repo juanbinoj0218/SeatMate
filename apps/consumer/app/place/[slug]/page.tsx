@@ -21,6 +21,7 @@ import {
   clamp,
   type FloorMarker,
   MARKERS,
+  markerClassName,
   type MarkerType,
 } from "@seatmate/shared/floor-plan";
 
@@ -1080,15 +1081,7 @@ return (
               return (
                 <div
                   key={marker.id}
-                  className={`absolute flex items-center justify-center border text-center font-bold select-none pointer-events-none ${
-                    marker.type === "wall"
-                      ? "bg-gray-700 border-gray-800 text-white"
-                      : marker.type === "window"
-                        ? "bg-sky-50 border-sky-300 text-sky-800"
-                        : marker.type === "outlet"
-                          ? "bg-amber-50 border-amber-300 text-amber-800 rounded-xl"
-                          : "bg-white border-gray-300 text-[#101811] rounded-xl shadow-sm"
-                  }`}
+                  className={`absolute flex items-center justify-center border text-center font-bold select-none pointer-events-none ${markerClassName(marker.type)}`}
                   style={{
                     left: `${marker.xPct}%`,
                     top: `${marker.yPct}%`,

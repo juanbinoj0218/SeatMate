@@ -22,7 +22,10 @@ import { auth, db } from "@seatmate/shared/firebase";
 import {
   clamp,
   type FloorMarker,
+  BAR_ONLY_MARKERS,
+  isBar,
   MARKERS,
+  markerClassName,
   type MarkerType,
 } from "@seatmate/shared/floor-plan";
 
@@ -74,6 +77,9 @@ export default function FloorPlanPage() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [creatingMarker, setCreatingMarker] = useState(false);
+
+  // Bars also get pool table and darts markers.
+  const [businessIsBar, setBusinessIsBar] = useState(false);
   const [message, setMessage] = useState("");
 
   const [businessStatus, setBusinessStatus] =
@@ -135,6 +141,8 @@ export default function FloorPlanPage() {
             router.replace("/business/setup");
             return;
           }
+
+          setBusinessIsBar(isBar(businessSnap.data().type));
 
           const rawStatus = businessSnap.data().status;
 
@@ -1122,14 +1130,19 @@ export default function FloorPlanPage() {
                   }
                   className="h-11 flex-1 border border-gray-200 rounded-xl px-3 bg-white text-black"
                 >
-                  <option value="outlet">⚡ Outlet</option>
-                  <option value="window">▭ Window</option>
-                  <option value="register">▣ Cash Register</option>
-                  <option value="counter">▰ Counter</option>
-                  <option value="door">↪ Door</option>
-                  <option value="entrance">⇥ Entrance</option>
-                  <option value="restroom">WC Restroom</option>
-                  <option value="wall">Wall / Divider</option>
+                  {(Object.keys(MARKERS) as MarkerType[])
+                    .filter(
+                      (type) =>
+                        businessIsBar ||
+                        !BAR_ONLY_MARKERS.includes(type)
+                    )
+                    .map((type) => (
+                      <option key={type} value={type}>
+                        {type === "wall"
+                          ? "Wall / Divider"
+                          : `${MARKERS[type].icon} ${MARKERS[type].label}`}
+                      </option>
+                    ))}
                 </select>
 
                 <button
@@ -1309,15 +1322,7 @@ export default function FloorPlanPage() {
                       setSelectedTableId(null);
                     }
                   }}
-                  className={`absolute flex items-center justify-center border text-center font-bold select-none ${
-                    marker.type === "wall"
-                      ? "bg-gray-700 border-gray-800 text-white"
-                      : marker.type === "window"
-                        ? "bg-sky-50 border-sky-300 text-sky-800"
-                        : marker.type === "outlet"
-                          ? "bg-amber-50 border-amber-300 text-amber-800 rounded-xl"
-                          : "bg-white border-gray-300 text-[#101811] rounded-xl shadow-sm"
-                  } ${
+                  className={`absolute flex items-center justify-center border text-center font-bold select-none ${markerClassName(marker.type)} ${
                     mode === "layout"
                       ? "cursor-grab active:cursor-grabbing"
                       : "pointer-events-none"
