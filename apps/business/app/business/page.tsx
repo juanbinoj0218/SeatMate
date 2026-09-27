@@ -93,8 +93,8 @@ export default function BusinessDashboard() {
     return (
       <main className="min-h-screen bg-[#f7f8f5] flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 bg-green-600 text-white rounded-xl flex items-center justify-center font-bold mx-auto">
-            <SeatMateMark className="h-[62%] w-[62%]" />
+          <div className="w-12 h-12 flex items-center justify-center mx-auto text-[#101811]">
+            <SeatMateMark className="h-[85%] w-[85%]" />
           </div>
           <p className="text-gray-500 mt-4">
             Loading SeatMate...
@@ -119,8 +119,8 @@ export default function BusinessDashboard() {
             <BackButton fallback="/" />
 
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-green-600 text-white rounded-xl flex items-center justify-center font-bold">
-                <SeatMateMark className="h-[62%] w-[62%]" />
+              <div className="w-10 h-10 flex items-center justify-center text-[#101811]">
+                <SeatMateMark className="h-[85%] w-[85%]" />
               </div>
 
               <div>
