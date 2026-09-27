@@ -11,12 +11,22 @@ import {
 } from "firebase/auth";
 
 import {
+  collection,
   doc,
   getDoc,
+  getDocs,
 } from "firebase/firestore";
 
 import { auth, db } from "@seatmate/shared/firebase";
 import { consumerUrl } from "@seatmate/shared/site-urls";
+
+import {
+  ChevronRightIcon,
+  ClockIcon,
+  FloorPlanIcon,
+  StaffIcon,
+  StorefrontIcon,
+} from "@/components/portal-icons";
 
 type BusinessStatus =
   | "draft"
@@ -24,6 +34,19 @@ type BusinessStatus =
   | "approved"
   | "suspended"
   | "rejected";
+
+type SeatCount = {
+  open: number;
+  total: number;
+};
+
+const STATUS_BADGES: Record<BusinessStatus, { label: string; className: string }> = {
+  approved: { label: "Live on SeatMate", className: "bg-emerald-50 text-emerald-700 ring-emerald-200" },
+  pending: { label: "Pending approval", className: "bg-amber-50 text-amber-700 ring-amber-200" },
+  draft: { label: "Draft", className: "bg-gray-100 text-gray-600 ring-gray-200" },
+  suspended: { label: "Suspended", className: "bg-rose-50 text-rose-700 ring-rose-200" },
+  rejected: { label: "Declined", className: "bg-gray-100 text-gray-600 ring-gray-200" },
+};
 
 type Business = {
   name: string;
@@ -40,6 +63,9 @@ export default function BusinessDashboard() {
     useState<Business | null>(null);
 
   const [loading, setLoading] = useState(true);
+
+  const [seats, setSeats] =
+    useState<SeatCount | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(
@@ -70,6 +96,30 @@ export default function BusinessDashboard() {
           );
 
           setLoading(false);
+
+          // Live seat count across all tables. The dashboard still works
+          // without it.
+          try {
+            const tables = await getDocs(
+              collection(db, "businesses", currentUser.uid, "tables")
+            );
+
+            const count = { open: 0, total: 0 };
+
+            tables.docs.forEach((tableDoc) => {
+              const tableSeats: { status?: string }[] =
+                tableDoc.data().seats || [];
+
+              count.total += tableSeats.length;
+              count.open += tableSeats.filter(
+                (seat) => seat.status === "available"
+              ).length;
+            });
+
+            setSeats(count);
+          } catch (seatError) {
+            console.error("Error loading seats:", seatError);
+          }
         } catch (error) {
           console.error(
             "Error loading business:",
@@ -114,7 +164,7 @@ export default function BusinessDashboard() {
   return (
     <main className="min-h-screen bg-[#f7f8f5]">
       <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+        <div className="max-w-3xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-5">
             <BackButton fallback="/" />
 
@@ -139,84 +189,24 @@ export default function BusinessDashboard() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-6 py-12">
-        <div>
-          <div className="flex items-center gap-2 text-green-600 font-semibold text-sm">
-            <span className="w-2 h-2 bg-green-500 rounded-full" />
-            BUSINESS PORTAL
-          </div>
+      <div className="max-w-3xl mx-auto px-6 py-12">
+        <span
+          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ring-1 ${STATUS_BADGES[businessStatus].className}`}
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-current" />
+          {STATUS_BADGES[businessStatus].label}
+        </span>
 
-          <h1 className="text-5xl font-bold mt-3">
-            {business.name}
-          </h1>
+        <h1 className="text-4xl font-bold tracking-tight mt-4">
+          {business.name}
+        </h1>
 
-          <p className="text-gray-500 mt-2">
-            {business.type} · {business.address}
-          </p>
-        </div>
-
-        <div className="bg-[#101811] text-white rounded-3xl p-10 mt-10">
-          <p className="text-green-400 text-sm font-bold">
-            FLOOR PLAN
-          </p>
-
-          <h2 className="text-3xl font-bold mt-3">
-            Manage live seating
-          </h2>
-
-          <p className="text-white/60 mt-3">
-            Arrange tables and update seat occupancy in real time.
-          </p>
-
-          <div className="flex flex-wrap gap-3 mt-7">
-            <button
-              type="button"
-              onClick={() =>
-                router.push("/business/floor-plan")
-              }
-              className="bg-green-500 hover:bg-green-400 text-black font-bold px-6 py-3 rounded-xl transition"
-            >
-              Open Floor Plan →
-            </button>
-
-            <button
-              type="button"
-              onClick={() =>
-                router.push("/business/staff")
-              }
-              className="bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold px-6 py-3 rounded-xl transition"
-            >
-              Manage Staff
-            </button>
-
-            <button
-              type="button"
-              onClick={() =>
-                router.push("/business/hours")
-              }
-              className="bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold px-6 py-3 rounded-xl transition"
-            >
-              Business Hours
-            </button>
-          </div>
-        </div>
-
-        {businessStatus === "approved" && business.slug && (
-          <button
-            type="button"
-            onClick={() =>
-              window.location.assign(
-                consumerUrl(`/place/${business.slug}?from=business`)
-              )
-            }
-            className="border border-gray-200 bg-white hover:bg-gray-50 px-6 py-3 rounded-xl mt-5 font-semibold transition"
-          >
-            View Customer Page →
-          </button>
-        )}
+        <p className="text-gray-500 mt-2">
+          {business.type} · {business.address}
+        </p>
 
         {businessStatus === "draft" && (
-          <div className="mt-5 bg-white border border-gray-200 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="mt-8 bg-white border border-gray-200 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <p className="font-bold">Setup not submitted</p>
               <p className="text-gray-500 text-sm mt-1">
@@ -229,7 +219,7 @@ export default function BusinessDashboard() {
               onClick={() =>
                 router.push("/business/floor-plan")
               }
-              className="bg-[#101811] text-white px-5 py-3 rounded-xl font-semibold"
+              className="shrink-0 bg-[#101811] text-white px-5 py-3 rounded-xl font-semibold"
             >
               Continue Setup →
             </button>
@@ -237,7 +227,7 @@ export default function BusinessDashboard() {
         )}
 
         {businessStatus === "pending" && (
-          <div className="mt-5 bg-amber-50 border border-amber-200 rounded-2xl p-5">
+          <div className="mt-8 bg-amber-50 border border-amber-200 rounded-2xl p-5">
             <p className="font-bold text-amber-800">
               Pending approval
             </p>
@@ -248,7 +238,7 @@ export default function BusinessDashboard() {
         )}
 
         {businessStatus === "suspended" && (
-          <div className="mt-5 bg-red-50 border border-red-200 rounded-2xl p-5">
+          <div className="mt-8 bg-red-50 border border-red-200 rounded-2xl p-5">
             <p className="font-bold text-red-700">
               Business suspended
             </p>
@@ -259,7 +249,7 @@ export default function BusinessDashboard() {
         )}
 
         {businessStatus === "rejected" && (
-          <div className="mt-5 bg-gray-100 border border-gray-200 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="mt-8 bg-gray-100 border border-gray-200 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <p className="font-bold">Approval declined</p>
               <p className="text-gray-500 text-sm mt-1">
@@ -272,13 +262,132 @@ export default function BusinessDashboard() {
               onClick={() =>
                 router.push("/business/floor-plan")
               }
-              className="bg-[#101811] text-white px-5 py-3 rounded-xl font-semibold"
+              className="shrink-0 bg-[#101811] text-white px-5 py-3 rounded-xl font-semibold"
             >
               Update & Resubmit →
             </button>
           </div>
         )}
+
+        {seats && seats.total > 0 && (
+          <SeatSummary seats={seats} />
+        )}
+
+        <ul className="mt-6 bg-white border border-gray-200 rounded-2xl divide-y divide-gray-200 overflow-hidden">
+          <DashboardLink
+            title="Floor plan"
+            Icon={FloorPlanIcon}
+            tile="bg-emerald-100 text-emerald-700"
+            description="Arrange tables and update seat occupancy in real time."
+            onClick={() => router.push("/business/floor-plan")}
+          />
+
+          <DashboardLink
+            title="Staff"
+            Icon={StaffIcon}
+            tile="bg-violet-100 text-violet-700"
+            description="Invite staff and manage who can update seats."
+            onClick={() => router.push("/business/staff")}
+          />
+
+          <DashboardLink
+            title="Business hours"
+            Icon={ClockIcon}
+            tile="bg-amber-100 text-amber-700"
+            description="Set the hours customers see on your page."
+            onClick={() => router.push("/business/hours")}
+          />
+
+          {businessStatus === "approved" && business.slug && (
+            <DashboardLink
+              title="Customer page"
+              Icon={StorefrontIcon}
+              tile="bg-sky-100 text-sky-700"
+              description="See your place the way customers do on SeatMate."
+              onClick={() =>
+                window.location.assign(
+                  consumerUrl(`/place/${business.slug}?from=business`)
+                )
+              }
+            />
+          )}
+        </ul>
       </div>
     </main>
+  );
+}
+
+function SeatSummary({ seats }: { seats: SeatCount }) {
+  const percent = Math.round((seats.open / seats.total) * 100);
+
+  return (
+    <div className="mt-8 bg-white border border-gray-200 rounded-2xl p-6">
+      <div className="flex items-baseline justify-between gap-4">
+        <p className="text-sm font-semibold text-gray-500">Seats right now</p>
+        <p className="text-sm text-gray-500">{percent}% open</p>
+      </div>
+
+      <p className="mt-2 text-3xl font-bold tracking-tight">
+        <span className="text-emerald-600">{seats.open}</span>
+        <span className="text-gray-400 text-xl font-semibold">
+          {" "}/ {seats.total} open
+        </span>
+      </p>
+
+      <div className="mt-4 h-2.5 rounded-full bg-rose-100 overflow-hidden">
+        <div
+          className="h-full rounded-full bg-emerald-500 transition-[width]"
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+
+      <div className="mt-3 flex gap-4 text-xs text-gray-500">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-emerald-500" />
+          Open
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-rose-300" />
+          Taken
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function DashboardLink({
+  title,
+  description,
+  Icon,
+  tile,
+  onClick,
+}: {
+  title: string;
+  description: string;
+  Icon: (props: { className?: string }) => React.ReactNode;
+  tile: string;
+  onClick: () => void;
+}) {
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={onClick}
+        className="group w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-gray-50 transition"
+      >
+        <span className={`w-11 h-11 shrink-0 rounded-xl flex items-center justify-center ${tile}`}>
+          <Icon className="w-5 h-5" />
+        </span>
+
+        <span className="flex-1 min-w-0">
+          <span className="block font-semibold">{title}</span>
+          <span className="block text-sm text-gray-500 mt-0.5">
+            {description}
+          </span>
+        </span>
+
+        <ChevronRightIcon className="w-5 h-5 shrink-0 text-gray-300 group-hover:text-[#101811] group-hover:translate-x-0.5 transition" />
+      </button>
+    </li>
   );
 }
