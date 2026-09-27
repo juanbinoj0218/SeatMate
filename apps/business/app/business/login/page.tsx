@@ -21,6 +21,73 @@ import {
 import { auth, db } from "@seatmate/shared/firebase";
 import BackButton from "@seatmate/shared/components/BackButton";
 
+import {
+  ClockIcon,
+  FloorPlanIcon,
+  SeatIcon,
+  StaffIcon,
+} from "@/components/portal-icons";
+
+const FEATURES = [
+  {
+    title: "Floor plan",
+    description: "Lay out your tables and seats.",
+    Icon: FloorPlanIcon,
+    tile: "bg-emerald-100 text-emerald-700",
+  },
+  {
+    title: "Live seats",
+    description: "Mark seats open or taken as guests come and go.",
+    Icon: SeatIcon,
+    tile: "bg-sky-100 text-sky-700",
+  },
+  {
+    title: "Staff",
+    description: "Invite your team to update seats.",
+    Icon: StaffIcon,
+    tile: "bg-violet-100 text-violet-700",
+  },
+  {
+    title: "Hours",
+    description: "Show customers when you're open.",
+    Icon: ClockIcon,
+    tile: "bg-amber-100 text-amber-700",
+  },
+];
+
+// A sample table row showing what customers see: green seats are open,
+// red seats are taken.
+const SAMPLE_SEATS = [
+  true, false, true, true, false, false, true, true, false, true, true, true,
+];
+
+function SeatPreview() {
+  const open = SAMPLE_SEATS.filter(Boolean).length;
+
+  return (
+    <div className="mt-10 max-w-md bg-white border border-gray-200 rounded-2xl p-5">
+      <div className="flex items-baseline justify-between">
+        <p className="text-sm font-semibold">What customers see</p>
+        <p className="text-sm text-gray-500">
+          <span className="font-bold text-emerald-600">{open}</span> of{" "}
+          {SAMPLE_SEATS.length} seats open
+        </p>
+      </div>
+
+      <div className="mt-4 grid grid-cols-12 gap-1.5" aria-hidden="true">
+        {SAMPLE_SEATS.map((isOpen, index) => (
+          <span
+            key={index}
+            className={`aspect-square rounded-md ${
+              isOpen ? "bg-emerald-500" : "bg-rose-400"
+            }`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 type Mode = "signin" | "signup";
 
 export default function BusinessLoginPage() {
@@ -541,7 +608,11 @@ export default function BusinessLoginPage() {
 
           <div>
 
-            <p className="text-sm font-semibold text-gray-500">
+            <p className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-700">
+              <span className="relative flex w-2 h-2">
+                <span className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-60 motion-reduce:animate-none" />
+                <span className="relative w-2 h-2 rounded-full bg-emerald-500" />
+              </span>
               SeatMate for Business
             </p>
 
@@ -562,26 +633,26 @@ export default function BusinessLoginPage() {
 
             </p>
 
-            <ul className="mt-10 max-w-md border-t border-gray-200 divide-y divide-gray-200">
+            <ul className="mt-10 max-w-md space-y-5">
 
-              {[
-                ["Floor plan", "Lay out your tables and seats."],
-                ["Live seats", "Mark seats open or taken as guests come and go."],
-                ["Staff", "Invite your team to update seats."],
-                ["Hours", "Show customers when you're open."],
-              ].map(([title, description]) => (
+              {FEATURES.map(({ title, description, Icon, tile }) => (
 
                 <li
                   key={title}
-                  className="py-4 flex gap-6"
+                  className="flex items-center gap-4"
                 >
 
-                  <span className="w-24 shrink-0 font-semibold">
-                    {title}
+                  <span className={`w-11 h-11 shrink-0 rounded-xl flex items-center justify-center ${tile}`}>
+                    <Icon className="w-5 h-5" />
                   </span>
 
-                  <span className="text-gray-500">
-                    {description}
+                  <span>
+                    <span className="block font-semibold">
+                      {title}
+                    </span>
+                    <span className="block text-gray-500 text-sm mt-0.5">
+                      {description}
+                    </span>
                   </span>
 
                 </li>
@@ -589,6 +660,8 @@ export default function BusinessLoginPage() {
               ))}
 
             </ul>
+
+            <SeatPreview />
 
           </div>
 
@@ -814,7 +887,7 @@ export default function BusinessLoginPage() {
                       onClick={
                         handleForgotPassword
                       }
-                      className="text-sm text-gray-500 font-semibold hover:text-[#101811] hover:underline"
+                      className="text-sm text-emerald-700 font-semibold hover:underline"
                     >
                       Forgot password?
                     </button>
@@ -883,7 +956,7 @@ export default function BusinessLoginPage() {
 
               {message && (
 
-                <div className="mt-5 bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-3 text-sm">
+                <div className="mt-5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl px-4 py-3 text-sm">
                   {message}
                 </div>
 
