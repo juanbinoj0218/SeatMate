@@ -21,6 +21,9 @@ import {
   SiteFooter,
   SiteHeader,
 } from "@/components/site-chrome";
+import { HeartIcon } from "@/components/account-menu";
+import { useAccount } from "@/components/account-provider";
+import SaveButton from "@/components/save-button";
 
 type NearbyBusiness = {
   slug: string;
@@ -46,6 +49,7 @@ const getZipFromAddress = (address: string) =>
 
 export default function HomePage() {
   const router = useRouter();
+  const { profile, favorites } = useAccount();
 
   const [search, setSearch] = useState("");
   const [zipcode, setZipcode] = useState("");
@@ -291,8 +295,11 @@ export default function HomePage() {
   }, []);
 
   // If the user types a ZIP, that takes priority over location detection.
+  // Then the signed-in customer's home ZIP, then the detected one.
   const activeZip =
-    /^\d{5}$/.test(zipcode) ? zipcode : detectedZip;
+    /^\d{5}$/.test(zipcode)
+      ? zipcode
+      : profile.homeZip || detectedZip;
 
   const nearbyBusinesses = useMemo(() => {
     const sorted = [...businesses].sort((a, b) => {
@@ -428,6 +435,43 @@ export default function HomePage() {
 
         <LiveFloorPreview />
       </section>
+
+      {/* SAVED PLACES (signed in) */}
+      {favorites.length > 0 && (
+        <section className="mx-auto max-w-6xl px-5 pb-12 sm:px-8">
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="flex items-center gap-2 text-base font-semibold">
+              <HeartIcon filled className="h-4 w-4 text-seat-taken" />
+              Your saved places
+            </h2>
+
+            <button
+              type="button"
+              onClick={() => router.push("/account#saved")}
+              className="inline-flex items-center gap-1 text-sm font-medium text-gray-600 transition hover:text-ink"
+            >
+              See all
+              <ArrowRightIcon className="h-3.5 w-3.5" />
+            </button>
+          </div>
+
+          <div className="-mx-5 mt-4 flex gap-3 overflow-x-auto px-5 pb-2 sm:mx-0 sm:flex-wrap sm:px-0">
+            {favorites.slice(0, 8).map((place) => (
+              <button
+                key={place.slug}
+                type="button"
+                onClick={() => router.push(`/place/${place.slug}`)}
+                className="flex shrink-0 items-center gap-3 rounded-full border border-line bg-white py-1.5 pl-1.5 pr-4 text-sm font-medium transition hover:border-gray-300"
+              >
+                <span className="font-display flex h-8 w-8 items-center justify-center rounded-full bg-[#eef2ec] text-base text-moss">
+                  {place.name.trim().charAt(0).toUpperCase() || "S"}
+                </span>
+                {place.name}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* RESTAURANTS NEAR YOU */}
       <section className="mx-auto max-w-6xl px-5 pb-20 sm:px-8 lg:pb-28">
@@ -723,100 +767,113 @@ function RestaurantCard({
     ageMinutes !== null && ageMinutes < 15;
 
   return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className="group flex flex-col overflow-hidden rounded-2xl border border-line bg-white text-left transition duration-200 hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-[0_20px_40px_-24px_rgba(16,24,17,0.4)]"
-    >
-      <div className="relative aspect-[16/10] overflow-hidden bg-[#eef2ec]">
-        {/* REAL RESTAURANT PHOTO IF SAVED IN FIREBASE */}
-        {business.imageUrl ? (
-          <img
-            src={business.imageUrl}
-            alt={business.name}
-            className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
-          />
-        ) : (
-          <div
-            className="flex h-full w-full items-center justify-center"
-            style={{
-              backgroundImage:
-                "radial-gradient(rgba(21,128,61,0.14) 1.5px, transparent 1.5px)",
-              backgroundSize: "18px 18px",
-            }}
+    <div className="relative">
+      <button
+        type="button"
+        onClick={onOpen}
+        className="group flex h-full w-full flex-col overflow-hidden rounded-2xl border border-line bg-white text-left transition duration-200 hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-[0_20px_40px_-24px_rgba(16,24,17,0.4)]"
+      >
+        <div className="relative aspect-[16/10] overflow-hidden bg-[#eef2ec]">
+          {/* REAL RESTAURANT PHOTO IF SAVED IN FIREBASE */}
+          {business.imageUrl ? (
+            <img
+              src={business.imageUrl}
+              alt={business.name}
+              className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+            />
+          ) : (
+            <div
+              className="flex h-full w-full items-center justify-center"
+              style={{
+                backgroundImage:
+                  "radial-gradient(rgba(21,128,61,0.14) 1.5px, transparent 1.5px)",
+                backgroundSize: "18px 18px",
+              }}
+            >
+              <span className="font-display text-7xl text-moss/70">
+                {business.name
+                  .trim()
+                  .charAt(0)
+                  .toUpperCase() || "S"}
+              </span>
+            </div>
+          )}
+
+          <span
+            className={`absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm backdrop-blur ${tone.chip}`}
           >
-            <span className="font-display text-7xl text-moss/70">
-              {business.name
-                .trim()
-                .charAt(0)
-                .toUpperCase() || "S"}
+            <span className={`h-1.5 w-1.5 rounded-full ${tone.dot}`} />
+            {availabilityLabel}
+          </span>
+        </div>
+
+        <div className="flex flex-1 flex-col p-5">
+          <div className="flex items-baseline justify-between gap-3">
+            <h3 className="truncate text-lg font-semibold transition group-hover:text-moss">
+              {business.name}
+            </h3>
+
+            <span className="shrink-0 text-xs font-medium uppercase tracking-wider text-gray-400">
+              {business.type}
             </span>
           </div>
-        )}
 
-        <span
-          className={`absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm backdrop-blur ${tone.chip}`}
-        >
-          <span className={`h-1.5 w-1.5 rounded-full ${tone.dot}`} />
-          {availabilityLabel}
-        </span>
-      </div>
-
-      <div className="flex flex-1 flex-col p-5">
-        <div className="flex items-baseline justify-between gap-3">
-          <h3 className="truncate text-lg font-semibold transition group-hover:text-moss">
-            {business.name}
-          </h3>
-
-          <span className="shrink-0 text-xs font-medium uppercase tracking-wider text-gray-400">
-            {business.type}
-          </span>
-        </div>
-
-        <p className="mt-1 line-clamp-1 text-sm text-gray-500">
-          {business.address}
-        </p>
-
-        {business.totalSeats > 0 ? (
-          <div className="mb-5 mt-4">
-            <div className="h-1.5 overflow-hidden rounded-full bg-gray-100">
-              <div
-                className={`h-full rounded-full ${tone.bar}`}
-                style={{ width: `${percentage}%` }}
-              />
-            </div>
-
-            <p className="mt-2 text-sm">
-              <span className="font-semibold">
-                {business.availableSeats}
-              </span>{" "}
-              <span className="text-gray-500">
-                of {business.totalSeats} seats open
-              </span>
-            </p>
-          </div>
-        ) : (
-          <p className="mb-5 mt-4 text-sm text-gray-500">
-            Seat counts will appear once staff start updating.
+          <p className="mt-1 line-clamp-1 text-sm text-gray-500">
+            {business.address}
           </p>
-        )}
 
-        <div className="mt-auto flex items-center justify-between gap-4 border-t border-line pt-4 text-sm">
-          <span
-            className={
-              isFresh ? "text-moss" : "text-gray-400"
-            }
-          >
-            {freshnessLabel}
-          </span>
+          {business.totalSeats > 0 ? (
+            <div className="mb-5 mt-4">
+              <div className="h-1.5 overflow-hidden rounded-full bg-gray-100">
+                <div
+                  className={`h-full rounded-full ${tone.bar}`}
+                  style={{ width: `${percentage}%` }}
+                />
+              </div>
 
-          <span className="inline-flex items-center gap-1 font-medium text-ink transition group-hover:text-moss">
-            View floor
-            <ArrowRightIcon className="h-3.5 w-3.5" />
-          </span>
+              <p className="mt-2 text-sm">
+                <span className="font-semibold">
+                  {business.availableSeats}
+                </span>{" "}
+                <span className="text-gray-500">
+                  of {business.totalSeats} seats open
+                </span>
+              </p>
+            </div>
+          ) : (
+            <p className="mb-5 mt-4 text-sm text-gray-500">
+              Seat counts will appear once staff start updating.
+            </p>
+          )}
+
+          <div className="mt-auto flex items-center justify-between gap-4 border-t border-line pt-4 text-sm">
+            <span
+              className={
+                isFresh ? "text-moss" : "text-gray-400"
+              }
+            >
+              {freshnessLabel}
+            </span>
+
+            <span className="inline-flex items-center gap-1 font-medium text-ink transition group-hover:text-moss">
+              View floor
+              <ArrowRightIcon className="h-3.5 w-3.5" />
+            </span>
+          </div>
         </div>
-      </div>
-    </button>
+      </button>
+
+      <SaveButton
+        place={{
+          slug: business.slug,
+          name: business.name,
+          address: business.address,
+          type: business.type,
+          imageUrl: business.imageUrl,
+        }}
+        className="absolute right-3 top-3"
+      />
+    </div>
   );
 }
 

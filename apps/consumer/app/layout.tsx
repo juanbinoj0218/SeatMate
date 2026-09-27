@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+
+import { AccountProvider } from "@/components/account-provider";
 import { Inter, Instrument_Serif } from "next/font/google";
 
 const inter = Inter({
@@ -39,8 +41,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} h-full antialiased`}
     >
       <body className={`${inter.variable} antialiased`}>
-  {children}
-</body>
+        <AccountProvider>{children}</AccountProvider>
+      </body>
     </html>
   );
 }
