@@ -5,7 +5,7 @@ Next.js sites that share one Firebase project:
 
 | Folder | Site | Pages |
 | --- | --- | --- |
-| `apps/consumer` | Customer site (seatmate360) | `/`, `/about`, `/search`, `/place/[slug]`, `/api/place-details` |
+| `apps/consumer` | Customer site (seatmate360.com) | `/`, `/about`, `/search`, `/place/[slug]`, `/api/place-details` |
 | `apps/business` | Business portal (seatmate360.net) | `/business/*`, `/staff/*`, `/admin` |
 | `packages/shared` | Shared code | Firebase setup, `BackButton`, `HomeButton`, global styles, cross-site URLs |
 
@@ -38,7 +38,7 @@ Each site links to the other by absolute URL:
 | --- | --- | --- |
 | consumer | `GOOGLE_MAPS_API_KEY` | Google reviews on place pages |
 | consumer | `NEXT_PUBLIC_BUSINESS_SITE_URL` | Optional; defaults to `https://seatmate360.net` |
-| business | `NEXT_PUBLIC_CONSUMER_SITE_URL` | Required on Vercel (the build stops without it) |
+| business | `NEXT_PUBLIC_CONSUMER_SITE_URL` | Optional; defaults to `https://seatmate360.com` |
 
 In `npm run dev` the sites link to `http://localhost:3000` / `http://localhost:3001`.
 

@@ -8,7 +8,8 @@ const isDev = process.env.NODE_ENV === "development";
 const trimTrailingSlash = (url: string) => url.replace(/\/+$/, "");
 
 export const CONSUMER_SITE_URL = trimTrailingSlash(
-  process.env.NEXT_PUBLIC_CONSUMER_SITE_URL || "http://localhost:3000"
+  process.env.NEXT_PUBLIC_CONSUMER_SITE_URL ||
+    (isDev ? "http://localhost:3000" : "https://seatmate360.com")
 );
 
 export const BUSINESS_SITE_URL = trimTrailingSlash(
