@@ -5,12 +5,17 @@ import { useRouter } from "next/navigation";
 import SeatMateMark from "@seatmate/shared/components/SeatMateMark";
 import { businessUrl } from "@seatmate/shared/site-urls";
 
+import AccountMenu from "@/components/account-menu";
+
 // Header, footer and brand pieces shared by the consumer pages.
 
 export function SiteHeader({
   current,
+  showAccount = true,
 }: {
   current?: "search" | "about";
+  // Off on the sign-in page, where a "Sign in" button would be redundant.
+  showAccount?: boolean;
 }) {
   const router = useRouter();
 
@@ -52,6 +57,12 @@ export function SiteHeader({
           >
             About Us
           </button>
+
+          {showAccount && (
+            <span className="ml-1.5 sm:ml-2">
+              <AccountMenu />
+            </span>
+          )}
         </nav>
       </div>
     </header>

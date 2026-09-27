@@ -56,3 +56,31 @@ business site.
 
 Add `seatmate360.net` to Firebase → Authentication → Settings →
 Authorized domains, or Google sign-in will fail there.
+
+## Customer accounts
+
+Accounts on the consumer site are optional. Signed-in customers can save
+places, set a home ZIP and see recently viewed places. Sign-in uses the same
+Firebase Authentication project (Google and email/password).
+
+Data lives under `users/{uid}`:
+
+- `users/{uid}`: `displayName`, `homeZip`, `recentlyViewed` (latest 8 places)
+- `users/{uid}/favorites/{slug}`: one document per saved place
+
+Add these rules inside `match /databases/{database}/documents { ... }` in
+Firebase → Firestore → Rules, alongside the existing ones, so each customer
+can read and write only their own data:
+
+```
+match /users/{userId} {
+  allow read, write: if request.auth != null && request.auth.uid == userId;
+
+  match /favorites/{slug} {
+    allow read, write: if request.auth != null && request.auth.uid == userId;
+  }
+}
+```
+
+Google sign-in also needs the site's domain (e.g. `seatmate360.com`) under
+Firebase → Authentication → Settings → Authorized domains.

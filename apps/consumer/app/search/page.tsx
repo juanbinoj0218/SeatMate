@@ -6,6 +6,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { collection, getDocs, Timestamp } from "firebase/firestore";
 import { db } from "@seatmate/shared/firebase";
 
+import AccountMenu from "@/components/account-menu";
+import SaveButton from "@/components/save-button";
+
 const FALLBACK_IMAGES = [
   "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=1200&q=82",
   "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=82",
@@ -263,6 +266,8 @@ function SearchPageContent() {
             >
               Home
             </button>
+
+            <AccountMenu />
           </div>
         </div>
       </header>
@@ -430,93 +435,105 @@ function SearchPageContent() {
                 const isStale = ageMinutes === null || ageMinutes >= 15;
 
                 return (
-                  <button
-                    key={business.slug}
-                    type="button"
-                    onClick={() => router.push(`/place/${business.slug}`)}
-                    className="group overflow-hidden rounded-[28px] border border-gray-200 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-green-300 hover:shadow-xl"
-                  >
-                    <div className="relative h-52 overflow-hidden">
-                      <img
-                        src={business.imageUrl}
-                        alt={`${business.name} interior`}
-                        loading="lazy"
-                        className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
-                        onError={(event) => {
-                          event.currentTarget.src = fallbackImageFor(business.slug);
-                        }}
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent" />
+                  <div key={business.slug} className="relative">
+                    <button
+                      type="button"
+                      onClick={() => router.push(`/place/${business.slug}`)}
+                      className="group h-full w-full overflow-hidden rounded-[28px] border border-gray-200 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-green-300 hover:shadow-xl"
+                    >
+                      <div className="relative h-52 overflow-hidden">
+                        <img
+                          src={business.imageUrl}
+                          alt={`${business.name} interior`}
+                          loading="lazy"
+                          className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+                          onError={(event) => {
+                            event.currentTarget.src = fallbackImageFor(business.slug);
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent" />
 
-                      <div className="absolute left-4 top-4 flex flex-wrap gap-2">
-                        <span className="rounded-full bg-white/95 px-3 py-1.5 text-xs font-black text-[#101811] shadow-sm backdrop-blur">
-                          {business.type || "Restaurant"}
-                        </span>
-                        {business.totalSeats > 0 && (
-                          <span
-                            className={`rounded-full px-3 py-1.5 text-xs font-black shadow-sm backdrop-blur ${
-                              isStale
-                                ? "bg-amber-50/95 text-amber-700"
-                                : "bg-green-50/95 text-green-700"
-                            }`}
-                          >
-                            {freshnessLabel}
+                        <div className="absolute left-4 top-4 flex flex-wrap gap-2">
+                          <span className="rounded-full bg-white/95 px-3 py-1.5 text-xs font-black text-[#101811] shadow-sm backdrop-blur">
+                            {business.type || "Restaurant"}
                           </span>
-                        )}
-                      </div>
-
-                      {business.totalSeats > 0 && (
-                        <div className="absolute bottom-4 right-4 rounded-2xl bg-white/95 px-4 py-3 text-right shadow-lg backdrop-blur">
-                          <p className="text-2xl font-black leading-none text-green-600">
-                            {business.availableSeats}
-                          </p>
-                          <p className="mt-1 text-[11px] font-bold text-gray-500">
-                            seats open
-                          </p>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="p-5 sm:p-6">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0">
-                          <h2 className="truncate text-2xl font-black transition group-hover:text-green-700">
-                            {business.name}
-                          </h2>
-                          <p className="mt-1 line-clamp-2 text-sm leading-6 text-gray-500">
-                            {business.address}
-                          </p>
-                        </div>
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#f3f5f1] font-black text-gray-700 transition group-hover:bg-green-600 group-hover:text-white">
-                          →
-                        </span>
-                      </div>
-
-                      <div className="mt-5 flex items-center justify-between gap-4 border-t border-gray-100 pt-4">
-                        <div>
-                          <p className="text-sm font-black text-[#101811]">
-                            {availability}
-                          </p>
-                          {isStale && business.totalSeats > 0 && (
-                            <p className="mt-1 text-xs font-semibold text-amber-700">
-                              Availability may be outdated
-                            </p>
+                          {business.totalSeats > 0 && (
+                            <span
+                              className={`rounded-full px-3 py-1.5 text-xs font-black shadow-sm backdrop-blur ${
+                                isStale
+                                  ? "bg-amber-50/95 text-amber-700"
+                                  : "bg-green-50/95 text-green-700"
+                              }`}
+                            >
+                              {freshnessLabel}
+                            </span>
                           )}
                         </div>
 
                         {business.totalSeats > 0 && (
-                          <div className="text-right">
-                            <p className="text-sm font-black text-gray-700">
-                              {percentage}% open
+                          <div className="absolute bottom-4 right-4 rounded-2xl bg-white/95 px-4 py-3 text-right shadow-lg backdrop-blur">
+                            <p className="text-2xl font-black leading-none text-green-600">
+                              {business.availableSeats}
                             </p>
-                            <p className="text-xs text-gray-400">
-                              {business.availableSeats} of {business.totalSeats}
+                            <p className="mt-1 text-[11px] font-bold text-gray-500">
+                              seats open
                             </p>
                           </div>
                         )}
                       </div>
-                    </div>
-                  </button>
+
+                      <div className="p-5 sm:p-6">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0">
+                            <h2 className="truncate text-2xl font-black transition group-hover:text-green-700">
+                              {business.name}
+                            </h2>
+                            <p className="mt-1 line-clamp-2 text-sm leading-6 text-gray-500">
+                              {business.address}
+                            </p>
+                          </div>
+                          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#f3f5f1] font-black text-gray-700 transition group-hover:bg-green-600 group-hover:text-white">
+                            →
+                          </span>
+                        </div>
+
+                        <div className="mt-5 flex items-center justify-between gap-4 border-t border-gray-100 pt-4">
+                          <div>
+                            <p className="text-sm font-black text-[#101811]">
+                              {availability}
+                            </p>
+                            {isStale && business.totalSeats > 0 && (
+                              <p className="mt-1 text-xs font-semibold text-amber-700">
+                                Availability may be outdated
+                              </p>
+                            )}
+                          </div>
+
+                          {business.totalSeats > 0 && (
+                            <div className="text-right">
+                              <p className="text-sm font-black text-gray-700">
+                                {percentage}% open
+                              </p>
+                              <p className="text-xs text-gray-400">
+                                {business.availableSeats} of {business.totalSeats}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+
+                    <SaveButton
+                      place={{
+                        slug: business.slug,
+                        name: business.name,
+                        address: business.address,
+                        type: business.type,
+                        imageUrl: business.imageUrl,
+                      }}
+                      className="absolute right-4 top-4"
+                    />
+                  </div>
                 );
               })}
             </div>

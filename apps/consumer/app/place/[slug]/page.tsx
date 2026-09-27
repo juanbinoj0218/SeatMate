@@ -16,6 +16,10 @@ import {
 } from "firebase/firestore";
 
 import { db } from "@seatmate/shared/firebase";
+
+import AccountMenu from "@/components/account-menu";
+import { useAccount } from "@/components/account-provider";
+import SaveButton from "@/components/save-button";
 import { businessUrl } from "@seatmate/shared/site-urls";
 
 type Seat = {
@@ -367,6 +371,8 @@ export default function PlacePage() {
 
   const slug = params.slug;
 
+  const { profileReady, recordView } = useAccount();
+
   const router = useRouter();
 
   const [fromBusiness, setFromBusiness] =
@@ -581,6 +587,25 @@ useEffect(() => {
       unsubscribeMarkers?.();
     };
   }, [slug]);
+
+  // Add this place to the signed-in customer's "Recently viewed" list.
+  useEffect(() => {
+    if (!business || !profileReady) {
+      return;
+    }
+
+    recordView({
+      slug,
+      name: business.name,
+      address: business.address,
+      type: business.type || "Restaurant",
+      imageUrl:
+        business.imageUrl ||
+        business.coverImageUrl ||
+        business.photoUrl ||
+        "",
+    });
+  }, [business, profileReady, slug, recordView]);
 
   if (loading) {
     return (
@@ -815,6 +840,8 @@ return (
               Home
             </button>
 
+            <AccountMenu />
+
           </div>
 
         </div>
@@ -861,6 +888,21 @@ return (
               </p>
 
               <div className="mt-5 flex flex-wrap items-center gap-3">
+                <SaveButton
+                  variant="pill"
+                  place={{
+                    slug,
+                    name: business.name,
+                    address: business.address,
+                    type: business.type || "Restaurant",
+                    imageUrl:
+                      business.imageUrl ||
+                      business.coverImageUrl ||
+                      business.photoUrl ||
+                      "",
+                  }}
+                />
+
                 {openStatus && (
                   <span
                     className={`rounded-full px-3 py-1.5 text-sm font-black backdrop-blur ${
