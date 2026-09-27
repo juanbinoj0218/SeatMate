@@ -114,7 +114,7 @@ export default function BusinessDashboard() {
   return (
     <main className="min-h-screen bg-[#f7f8f5]">
       <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+        <div className="max-w-3xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-5">
             <BackButton fallback="/" />
 
@@ -139,84 +139,17 @@ export default function BusinessDashboard() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-6 py-12">
-        <div>
-          <div className="flex items-center gap-2 text-green-600 font-semibold text-sm">
-            <span className="w-2 h-2 bg-green-500 rounded-full" />
-            BUSINESS PORTAL
-          </div>
+      <div className="max-w-3xl mx-auto px-6 py-12">
+        <h1 className="text-4xl font-bold tracking-tight">
+          {business.name}
+        </h1>
 
-          <h1 className="text-5xl font-bold mt-3">
-            {business.name}
-          </h1>
-
-          <p className="text-gray-500 mt-2">
-            {business.type} · {business.address}
-          </p>
-        </div>
-
-        <div className="bg-[#101811] text-white rounded-3xl p-10 mt-10">
-          <p className="text-green-400 text-sm font-bold">
-            FLOOR PLAN
-          </p>
-
-          <h2 className="text-3xl font-bold mt-3">
-            Manage live seating
-          </h2>
-
-          <p className="text-white/60 mt-3">
-            Arrange tables and update seat occupancy in real time.
-          </p>
-
-          <div className="flex flex-wrap gap-3 mt-7">
-            <button
-              type="button"
-              onClick={() =>
-                router.push("/business/floor-plan")
-              }
-              className="bg-green-500 hover:bg-green-400 text-black font-bold px-6 py-3 rounded-xl transition"
-            >
-              Open Floor Plan →
-            </button>
-
-            <button
-              type="button"
-              onClick={() =>
-                router.push("/business/staff")
-              }
-              className="bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold px-6 py-3 rounded-xl transition"
-            >
-              Manage Staff
-            </button>
-
-            <button
-              type="button"
-              onClick={() =>
-                router.push("/business/hours")
-              }
-              className="bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold px-6 py-3 rounded-xl transition"
-            >
-              Business Hours
-            </button>
-          </div>
-        </div>
-
-        {businessStatus === "approved" && business.slug && (
-          <button
-            type="button"
-            onClick={() =>
-              window.location.assign(
-                consumerUrl(`/place/${business.slug}?from=business`)
-              )
-            }
-            className="border border-gray-200 bg-white hover:bg-gray-50 px-6 py-3 rounded-xl mt-5 font-semibold transition"
-          >
-            View Customer Page →
-          </button>
-        )}
+        <p className="text-gray-500 mt-2">
+          {business.type} · {business.address}
+        </p>
 
         {businessStatus === "draft" && (
-          <div className="mt-5 bg-white border border-gray-200 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="mt-8 bg-white border border-gray-200 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <p className="font-bold">Setup not submitted</p>
               <p className="text-gray-500 text-sm mt-1">
@@ -229,7 +162,7 @@ export default function BusinessDashboard() {
               onClick={() =>
                 router.push("/business/floor-plan")
               }
-              className="bg-[#101811] text-white px-5 py-3 rounded-xl font-semibold"
+              className="shrink-0 bg-[#101811] text-white px-5 py-3 rounded-xl font-semibold"
             >
               Continue Setup →
             </button>
@@ -237,7 +170,7 @@ export default function BusinessDashboard() {
         )}
 
         {businessStatus === "pending" && (
-          <div className="mt-5 bg-amber-50 border border-amber-200 rounded-2xl p-5">
+          <div className="mt-8 bg-amber-50 border border-amber-200 rounded-2xl p-5">
             <p className="font-bold text-amber-800">
               Pending approval
             </p>
@@ -248,7 +181,7 @@ export default function BusinessDashboard() {
         )}
 
         {businessStatus === "suspended" && (
-          <div className="mt-5 bg-red-50 border border-red-200 rounded-2xl p-5">
+          <div className="mt-8 bg-red-50 border border-red-200 rounded-2xl p-5">
             <p className="font-bold text-red-700">
               Business suspended
             </p>
@@ -259,7 +192,7 @@ export default function BusinessDashboard() {
         )}
 
         {businessStatus === "rejected" && (
-          <div className="mt-5 bg-gray-100 border border-gray-200 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="mt-8 bg-gray-100 border border-gray-200 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <p className="font-bold">Approval declined</p>
               <p className="text-gray-500 text-sm mt-1">
@@ -272,13 +205,79 @@ export default function BusinessDashboard() {
               onClick={() =>
                 router.push("/business/floor-plan")
               }
-              className="bg-[#101811] text-white px-5 py-3 rounded-xl font-semibold"
+              className="shrink-0 bg-[#101811] text-white px-5 py-3 rounded-xl font-semibold"
             >
               Update & Resubmit →
             </button>
           </div>
         )}
+
+        <ul className="mt-10 bg-white border border-gray-200 rounded-2xl divide-y divide-gray-200 overflow-hidden">
+          <DashboardLink
+            title="Floor plan"
+            description="Arrange tables and update seat occupancy in real time."
+            onClick={() => router.push("/business/floor-plan")}
+          />
+
+          <DashboardLink
+            title="Staff"
+            description="Invite staff and manage who can update seats."
+            onClick={() => router.push("/business/staff")}
+          />
+
+          <DashboardLink
+            title="Business hours"
+            description="Set the hours customers see on your page."
+            onClick={() => router.push("/business/hours")}
+          />
+
+          {businessStatus === "approved" && business.slug && (
+            <DashboardLink
+              title="Customer page"
+              description="See your place the way customers do on SeatMate."
+              onClick={() =>
+                window.location.assign(
+                  consumerUrl(`/place/${business.slug}?from=business`)
+                )
+              }
+            />
+          )}
+        </ul>
       </div>
     </main>
+  );
+}
+
+function DashboardLink({
+  title,
+  description,
+  onClick,
+}: {
+  title: string;
+  description: string;
+  onClick: () => void;
+}) {
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={onClick}
+        className="group w-full flex items-center justify-between gap-4 px-6 py-5 text-left hover:bg-gray-50 transition"
+      >
+        <span>
+          <span className="block font-semibold">{title}</span>
+          <span className="block text-sm text-gray-500 mt-0.5">
+            {description}
+          </span>
+        </span>
+
+        <span
+          aria-hidden="true"
+          className="text-gray-400 group-hover:text-[#101811] group-hover:translate-x-0.5 transition"
+        >
+          →
+        </span>
+      </button>
+    </li>
   );
 }
