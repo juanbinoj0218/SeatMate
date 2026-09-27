@@ -1,5 +1,6 @@
 "use client";
 
+import SeatMateMark from "@seatmate/shared/components/SeatMateMark";
 import { useEffect, useState } from "react";
 import {
   useParams,
@@ -283,7 +284,7 @@ export default function JoinStaffPage() {
         <div className="w-full max-w-md bg-white border border-gray-200 rounded-3xl p-8 shadow-sm">
 
           <div className="w-12 h-12 bg-green-600 rounded-xl text-white font-bold flex items-center justify-center">
-            S
+            <SeatMateMark className="h-[62%] w-[62%]" />
           </div>
 
           <p className="text-green-600 text-sm font-semibold mt-7">
@@ -343,7 +344,7 @@ export default function JoinStaffPage() {
       <div className="w-full max-w-md bg-white border border-gray-200 rounded-3xl p-8 shadow-sm">
 
         <div className="w-12 h-12 bg-green-600 rounded-xl text-white font-bold flex items-center justify-center">
-          S
+          <SeatMateMark className="h-[62%] w-[62%]" />
         </div>
 
         <p className="text-green-600 font-semibold text-sm mt-7">

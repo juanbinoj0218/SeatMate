@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 
+import SeatMateMark from "@seatmate/shared/components/SeatMateMark";
 import { businessUrl } from "@seatmate/shared/site-urls";
 
 // Header, footer and brand pieces shared by the consumer pages.
@@ -107,16 +108,7 @@ export function SiteFooter() {
 }
 
 export function LogoMark({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 32 32" className={className} aria-hidden="true">
-      <rect width="32" height="32" rx="9" fill="#101811" />
-      <circle cx="16" cy="16" r="5.5" fill="#fff" />
-      <circle cx="16" cy="6.5" r="2.6" fill="#22a55b" />
-      <circle cx="25.5" cy="16" r="2.6" fill="#22a55b" />
-      <circle cx="16" cy="25.5" r="2.6" fill="#e5534b" />
-      <circle cx="6.5" cy="16" r="2.6" fill="#22a55b" />
-    </svg>
-  );
+  return <SeatMateMark className={`text-ink ${className ?? ""}`} />;
 }
 
 export function ArrowRightIcon({ className }: { className?: string }) {

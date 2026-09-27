@@ -1,5 +1,6 @@
 "use client";
 
+import SeatMateMark from "@seatmate/shared/components/SeatMateMark";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged, User } from "firebase/auth";
@@ -1025,7 +1026,7 @@ export default function FloorPlanPage() {
 
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-green-600 text-white flex items-center justify-center font-bold">
-                S
+                <SeatMateMark className="h-[62%] w-[62%]" />
               </div>
 
               <div>

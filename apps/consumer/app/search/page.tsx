@@ -1,5 +1,6 @@
 "use client";
 
+import SeatMateMark from "@seatmate/shared/components/SeatMateMark";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { collection, getDocs, Timestamp } from "firebase/firestore";
@@ -249,7 +250,7 @@ function SearchPageContent() {
             className="flex items-center gap-3"
           >
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-600 font-bold text-white">
-              S
+              <SeatMateMark className="h-[62%] w-[62%]" />
             </div>
             <span className="text-xl font-black tracking-tight">SeatMate</span>
           </button>
@@ -577,7 +578,7 @@ export default function SearchPage() {
         <main className="flex min-h-screen items-center justify-center bg-[#f7f8f5]">
           <div className="text-center">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-green-600 font-bold text-white">
-              S
+              <SeatMateMark className="h-[62%] w-[62%]" />
             </div>
             <p className="mt-4 text-gray-500">Loading SeatMate...</p>
           </div>

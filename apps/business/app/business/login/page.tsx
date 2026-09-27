@@ -1,5 +1,6 @@
 "use client";
 
+import SeatMateMark from "@seatmate/shared/components/SeatMateMark";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -511,7 +512,7 @@ export default function BusinessLoginPage() {
           <div className="flex items-center gap-3">
 
             <div className="w-10 h-10 bg-green-600 text-white rounded-xl flex items-center justify-center font-bold">
-              S
+              <SeatMateMark className="h-[62%] w-[62%]" />
             </div>
 
             <div>

@@ -1,5 +1,6 @@
 "use client";
 
+import SeatMateMark from "@seatmate/shared/components/SeatMateMark";
 import { useEffect, useState } from "react";
 import {
   useParams,
@@ -587,7 +588,7 @@ useEffect(() => {
         <div className="text-center">
 
           <div className="w-12 h-12 rounded-2xl bg-green-600 text-white font-bold flex items-center justify-center mx-auto">
-            S
+            <SeatMateMark className="h-[62%] w-[62%]" />
           </div>
 
           <p className="text-gray-500 mt-4">
@@ -771,7 +772,7 @@ return (
             className="flex items-center gap-3"
           >
             <div className="w-10 h-10 rounded-xl bg-green-600 text-white font-bold flex items-center justify-center">
-              S
+              <SeatMateMark className="h-[62%] w-[62%]" />
             </div>
 
             <span className="font-bold text-xl text-[#101811]">
