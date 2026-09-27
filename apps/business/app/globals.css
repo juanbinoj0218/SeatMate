@@ -1,0 +1,5 @@
+@import "tailwindcss";
+@import "@seatmate/shared/globals.css";
+
+/* Tailwind only scans this app by default; include shared components. */
+@source "../../../packages/shared/src";

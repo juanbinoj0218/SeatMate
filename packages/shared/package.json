@@ -1,0 +1,16 @@
+{
+  "name": "@seatmate/shared",
+  "version": "0.1.0",
+  "private": true,
+  "exports": {
+    "./firebase": "./src/firebase.ts",
+    "./site-urls": "./src/site-urls.ts",
+    "./components/*": "./src/components/*.tsx",
+    "./globals.css": "./globals.css"
+  },
+  "peerDependencies": {
+    "firebase": "^12.19.0",
+    "next": "16.3.5",
+    "react": "19.2.8"
+  }
+}

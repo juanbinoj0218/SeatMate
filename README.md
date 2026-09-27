@@ -1,36 +1,59 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SeatMate
 
-## Getting Started
+Live seating availability for cafés and restaurants. The repo holds two
+Next.js sites that share one Firebase project:
 
-First, run the development server:
+| Folder | Site | Pages |
+| --- | --- | --- |
+| `apps/consumer` | Customer site (seatmate360) | `/`, `/about`, `/search`, `/place/[slug]`, `/api/place-details` |
+| `apps/business` | Business portal (separate domain) | `/business/*`, `/staff/*`, `/admin` |
+| `packages/shared` | Shared code | Firebase setup, `BackButton`, `HomeButton`, global styles, cross-site URLs |
+
+## Local development
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install              # once, from the repo root
+npm run dev:consumer     # http://localhost:3000
+npm run dev:business     # http://localhost:3001
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`npm run build` and `npm run lint` run for both apps.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Both apps need the Firebase settings:
 
-## Learn More
+```
+NEXT_PUBLIC_FIREBASE_API_KEY
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+NEXT_PUBLIC_FIREBASE_PROJECT_ID
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+NEXT_PUBLIC_FIREBASE_APP_ID
+```
 
-To learn more about Next.js, take a look at the following resources:
+Each site links to the other, so each needs the other's address (no
+trailing slash). On Vercel the build stops with an error if it is missing.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| App | Variable | Example |
+| --- | --- | --- |
+| consumer | `NEXT_PUBLIC_BUSINESS_SITE_URL` | `https://your-business-domain.com` |
+| consumer | `GOOGLE_MAPS_API_KEY` | Google reviews on place pages |
+| business | `NEXT_PUBLIC_CONSUMER_SITE_URL` | `https://seatmate360.com` |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Locally these default to `http://localhost:3000` / `http://localhost:3001`.
 
-## Deploy on Vercel
+## Deploying on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+One Vercel project per app, both connected to this repo:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Consumer project**: Root Directory `apps/consumer`.
+- **Business project**: Root Directory `apps/business`, with the business
+  domain attached.
+
+Old business links on the consumer domain (`/business/...`, `/staff/...`,
+`/admin`, including staff invite links) redirect to the same path on the
+business site.
+
+Add the business domain to Firebase → Authentication → Settings →
+Authorized domains, or Google sign-in will fail there.
