@@ -6,6 +6,7 @@
 
 @theme {
   --font-display: var(--font-instrument-serif), Georgia, "Times New Roman", serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
   --color-ink: #101811;
   --color-paper: #f7f8f5;
   --color-line: #e3e7e2;
