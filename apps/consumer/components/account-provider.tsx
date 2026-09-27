@@ -86,6 +86,24 @@ type AccountContextValue = {
 
 const AccountContext = createContext<AccountContextValue | null>(null);
 
+// Turns a Firestore error into a message that says what actually went wrong.
+const describeError = (error: unknown, fallback: string) => {
+  const code =
+    typeof error === "object" && error !== null && "code" in error
+      ? String((error as { code: unknown }).code)
+      : "";
+
+  if (code === "permission-denied") {
+    return "Your account data is blocked by the database's security rules, so nothing can be saved yet.";
+  }
+
+  if (code === "unavailable") {
+    return "SeatMate can't reach the database right now. Check your connection.";
+  }
+
+  return code ? `${fallback} (${code})` : fallback;
+};
+
 const toPlaceSummary = (value: Record<string, unknown>): PlaceSummary => ({
   slug: String(value.slug || ""),
   name: String(value.name || "SeatMate location"),
@@ -103,6 +121,15 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   const [profileReady, setProfileReady] = useState(false);
   const [favorites, setFavorites] = useState<SavedPlace[]>([]);
   const [syncError, setSyncError] = useState("");
+  const [toast, setToast] = useState("");
+  const toastTimer = useRef<number | undefined>(undefined);
+
+  // Brief message at the bottom of the screen, e.g. when a save fails.
+  const showToast = useCallback((message: string) => {
+    window.clearTimeout(toastTimer.current);
+    setToast(message);
+    toastTimer.current = window.setTimeout(() => setToast(""), 6000);
+  }, []);
 
   // Latest profile for callbacks, so they don't need to be recreated (and
   // re-trigger effects) every time the profile document changes.
@@ -150,7 +177,9 @@ export function AccountProvider({ children }: { children: ReactNode }) {
               { merge: true }
             ).catch((error) => {
               console.error("Could not create SeatMate profile:", error);
-              setSyncError("We couldn't set up your account data.");
+              setSyncError(
+                describeError(error, "We couldn't set up your account data.")
+              );
             });
           }
 
@@ -174,7 +203,9 @@ export function AccountProvider({ children }: { children: ReactNode }) {
         },
         (error) => {
           console.error("Could not load SeatMate profile:", error);
-          setSyncError("We couldn't load your account data.");
+          setSyncError(
+            describeError(error, "We couldn't load your account data.")
+          );
           setProfileReady(true);
         }
       );
@@ -205,7 +236,9 @@ export function AccountProvider({ children }: { children: ReactNode }) {
         },
         (error) => {
           console.error("Could not load saved places:", error);
-          setSyncError("We couldn't load your saved places.");
+          setSyncError(
+            describeError(error, "We couldn't load your saved places.")
+          );
         }
       );
     });
@@ -252,10 +285,15 @@ export function AccountProvider({ children }: { children: ReactNode }) {
         }
       } catch (error) {
         console.error("Could not update saved places:", error);
-        setSyncError("We couldn't update your saved places.");
+        const message = describeError(
+          error,
+          "We couldn't update your saved places."
+        );
+        setSyncError(message);
+        showToast(message);
       }
     },
-    [user, favoriteSlugs, goToSignIn]
+    [user, favoriteSlugs, goToSignIn, showToast]
   );
 
   const recordView = useCallback(
@@ -356,6 +394,15 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   return (
     <AccountContext.Provider value={value}>
       {children}
+
+      {toast && (
+        <div
+          role="alert"
+          className="fixed inset-x-4 bottom-5 z-50 mx-auto max-w-md rounded-2xl bg-ink px-5 py-4 text-sm text-white shadow-[0_20px_40px_-16px_rgba(16,24,17,0.5)]"
+        >
+          {toast}
+        </div>
+      )}
     </AccountContext.Provider>
   );
 }

@@ -94,7 +94,7 @@ export default function AccountPage() {
 
         {syncError && (
           <p role="alert" className="mt-6 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            {syncError} Please try again in a moment.
+            {syncError}
           </p>
         )}
       </section>
