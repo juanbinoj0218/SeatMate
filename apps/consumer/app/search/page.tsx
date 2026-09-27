@@ -3,6 +3,7 @@
 import SeatMateMark from "@seatmate/shared/components/SeatMateMark";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { isBar } from "@seatmate/shared/floor-plan";
 
 import AccountMenu from "@/components/account-menu";
 import SaveButton from "@/components/save-button";
@@ -131,6 +132,10 @@ function SearchPageContent() {
       });
     }
 
+    if (filter === "bar") {
+      filtered = filtered.filter((business) => isBar(business.type));
+    }
+
     if (filter === "restaurant") {
       filtered = filtered.filter((business) =>
         business.type.toLowerCase().includes("restaurant")
@@ -233,7 +238,7 @@ function SearchPageContent() {
                       setSearch(event.target.value);
                       setMessage("");
                     }}
-                    placeholder="Restaurant, café, or name"
+                    placeholder="Restaurant, café, bar, or name"
                     className="h-12 min-w-0 flex-1 bg-transparent text-black outline-none placeholder:text-gray-400"
                   />
                 </div>
@@ -279,6 +284,7 @@ function SearchPageContent() {
             <FilterButton active={filter === "plenty"} onClick={() => setFilter("plenty")}>Plenty of seats</FilterButton>
             <FilterButton active={filter === "cafe"} onClick={() => setFilter("cafe")}>Café</FilterButton>
             <FilterButton active={filter === "restaurant"} onClick={() => setFilter("restaurant")}>Restaurant</FilterButton>
+            <FilterButton active={filter === "bar"} onClick={() => setFilter("bar")}>Bar</FilterButton>
           </div>
 
           <select

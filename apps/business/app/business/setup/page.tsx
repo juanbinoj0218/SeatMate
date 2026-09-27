@@ -230,7 +230,7 @@ export default function BusinessSetupPage() {
             </h1>
 
             <p className="text-gray-500 text-lg mt-5 max-w-md">
-              Tell us about your restaurant or café.
+              Tell us about your restaurant, café or bar.
               After this, you&apos;ll build your live
               seating floor plan.
             </p>
@@ -338,6 +338,10 @@ export default function BusinessSetupPage() {
 
                 <option value="Bakery">
                   Bakery
+                </option>
+
+                <option value="Bar">
+                  Bar
                 </option>
 
                 <option value="Food Hall">
