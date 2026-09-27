@@ -53,9 +53,9 @@ h3,
 h4,
 h5,
 h6 {
-  color:
-    var(--seatmate-dark);
-
+  /* No color here: headings inherit from their section (body is
+     --seatmate-dark), so headings on dark/green backgrounds stay white.
+     An unlayered color rule would also override Tailwind text-* classes. */
   font-weight: 700;
 
   letter-spacing:

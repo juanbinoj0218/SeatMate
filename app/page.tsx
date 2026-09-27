@@ -483,7 +483,7 @@ export default function HomePage() {
 
               <div className="text-right">
                 <p className="text-3xl font-bold text-green-600">
-                  8
+                  9
                 </p>
 
                 <p className="text-xs text-gray-400">
@@ -906,7 +906,7 @@ function PreviewTable({
 }) {
   return (
     <div
-      className="absolute w-[145px] bg-white border border-gray-200 shadow-sm rounded-2xl p-3"
+      className="absolute w-[145px] origin-top-left scale-[0.8] max-[379px]:scale-[0.65] sm:scale-100 bg-white border border-gray-200 shadow-sm rounded-2xl p-3"
       style={{
         left,
         top,
