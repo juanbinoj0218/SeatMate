@@ -6,7 +6,8 @@
     "./firebase": "./src/firebase.ts",
     "./site-urls": "./src/site-urls.ts",
     "./components/*": "./src/components/*.tsx",
-    "./globals.css": "./globals.css"
+    "./globals.css": "./globals.css",
+    "./floor-plan": "./src/floor-plan.ts"
   },
   "peerDependencies": {
     "firebase": "^12.19.0",

@@ -3,11 +3,15 @@
 import SeatMateMark from "@seatmate/shared/components/SeatMateMark";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { collection, getDocs, Timestamp } from "firebase/firestore";
-import { db } from "@seatmate/shared/firebase";
 
 import AccountMenu from "@/components/account-menu";
 import SaveButton from "@/components/save-button";
+import {
+  fetchPublicPlaces,
+  type PlaceWithSeats,
+  withSeatSummaries,
+} from "@/lib/places";
+import { useNow } from "@/lib/use-now";
 
 const FALLBACK_IMAGES = [
   "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=1200&q=82",
@@ -16,18 +20,7 @@ const FALLBACK_IMAGES = [
   "https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=1200&q=82",
 ];
 
-type SearchResult = {
-  slug: string;
-  businessId: string;
-  name: string;
-  address: string;
-  type: string;
-  zipcode: string;
-  imageUrl: string;
-  availableSeats: number;
-  totalSeats: number;
-  latestUpdateMs: number | null;
-};
+type SearchResult = PlaceWithSeats;
 
 function hashString(value: string) {
   return value.split("").reduce((total, character) => {
@@ -51,14 +44,9 @@ function SearchPageContent() {
   const [message, setMessage] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(true);
-  const [now, setNow] = useState(Date.now());
+  const now = useNow();
   const [filter, setFilter] = useState("all");
   const [sort, setSort] = useState("availability");
-
-  useEffect(() => {
-    const interval = window.setInterval(() => setNow(Date.now()), 30000);
-    return () => window.clearInterval(interval);
-  }, []);
 
   useEffect(() => {
     const loadResults = async () => {
@@ -68,92 +56,21 @@ function SearchPageContent() {
         const term = initialQuery.trim().toLowerCase();
         const zipTerm = initialZip.trim();
 
-        const businessesSnapshot = await getDocs(
-          collection(db, "publicBusinesses")
-        );
-
-        const matches = businessesSnapshot.docs
-          .map((businessDoc) => {
-            const data = businessDoc.data();
-            const address = String(data.address || "");
-            const zipFromAddress =
-              address.match(/\b\d{5}(?:-\d{4})?\b/)?.[0]?.slice(0, 5) || "";
-
-            const name = String(data.name || "");
-            const imageUrl = String(
-              data.imageUrl ||
-                data.coverImageUrl ||
-                data.photoUrl ||
-                fallbackImageFor(name || businessDoc.id)
-            );
-
-            return {
-              slug: businessDoc.id,
-              businessId: String(data.businessId || ""),
-              name,
-              address,
-              type: String(data.type || ""),
-              zipcode: String(
-                data.zipcode || data.zip || zipFromAddress
-              ).trim(),
-              imageUrl,
-            };
-          })
-          .filter((business) => {
-            const searchableText = `${business.name} ${business.address} ${business.type}`.toLowerCase();
+        const matches = (await fetchPublicPlaces())
+          .map((place) => ({
+            ...place,
+            imageUrl:
+              place.imageUrl || fallbackImageFor(place.name || place.slug),
+          }))
+          .filter((place) => {
+            const searchableText = `${place.name} ${place.address} ${place.type}`.toLowerCase();
             const matchesQuery = !term || searchableText.includes(term);
-            const matchesZip = !zipTerm || business.zipcode === zipTerm;
+            const matchesZip = !zipTerm || place.zipcode === zipTerm;
             return matchesQuery && matchesZip;
           });
 
-        const resultsWithAvailability = await Promise.all(
-          matches.map(async (business) => {
-            if (!business.businessId) {
-              return {
-                ...business,
-                totalSeats: 0,
-                availableSeats: 0,
-                latestUpdateMs: null,
-              };
-            }
-
-            const tablesSnapshot = await getDocs(
-              collection(db, "businesses", business.businessId, "tables")
-            );
-
-            let totalSeats = 0;
-            let availableSeats = 0;
-            let latestUpdateMs: number | null = null;
-
-            tablesSnapshot.docs.forEach((tableDoc) => {
-              const table = tableDoc.data();
-              const seats = Array.isArray(table.seats) ? table.seats : [];
-
-              totalSeats += seats.length;
-              availableSeats += seats.filter(
-                (seat: { status?: string }) => seat.status === "available"
-              ).length;
-
-              const occupancyUpdatedAt = table.occupancyUpdatedAt;
-
-              if (occupancyUpdatedAt instanceof Timestamp) {
-                const updateMs = occupancyUpdatedAt.toMillis();
-                if (latestUpdateMs === null || updateMs > latestUpdateMs) {
-                  latestUpdateMs = updateMs;
-                }
-              }
-            });
-
-            return {
-              ...business,
-              totalSeats,
-              availableSeats,
-              latestUpdateMs,
-            };
-          })
-        );
-
-        setResults(resultsWithAvailability);
+        // Only matching places need their tables read.
+        setResults(await withSeatSummaries(matches));
       } catch (error) {
         console.error(error);
       } finally {
@@ -442,10 +359,13 @@ function SearchPageContent() {
                       className="group h-full w-full overflow-hidden rounded-[28px] border border-gray-200 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-green-300 hover:shadow-xl"
                     >
                       <div className="relative h-52 overflow-hidden">
+                        {/* Owner photos can be on any host; see the home page card. */}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={business.imageUrl}
                           alt={`${business.name} interior`}
                           loading="lazy"
+                          decoding="async"
                           className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
                           onError={(event) => {
                             event.currentTarget.src = fallbackImageFor(business.slug);

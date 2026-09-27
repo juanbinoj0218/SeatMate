@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation";
 import {
   onAuthStateChanged,
   signOut,
-  User,
 } from "firebase/auth";
 
 import {
@@ -46,9 +45,6 @@ type StaffAccount = {
 export default function StaffConsolePage() {
   const router = useRouter();
 
-  const [user, setUser] =
-    useState<User | null>(null);
-
   const [staffAccount, setStaffAccount] =
     useState<StaffAccount | null>(null);
 
@@ -73,8 +69,6 @@ export default function StaffConsolePage() {
           router.push("/business/login");
           return;
         }
-
-        setUser(currentUser);
 
         try {
           const staffRef = doc(
