@@ -1,16 +1,11 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono, Schibsted_Grotesk } from "next/font/google";
 import "./globals.css";
-import { Inter } from "next/font/google";
 
-const inter = Inter({
+// Body and interface text (same as the consumer site).
+const schibstedGrotesk = Schibsted_Grotesk({
   subsets: ["latin"],
-  variable:  "--font-inter",
-});
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+  variable: "--font-body",
 });
 
 const geistMono = Geist_Mono({
@@ -28,11 +23,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${schibstedGrotesk.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className={`${inter.variable} antialiased`}>
-  {children}
-</body>
+      <body className="antialiased">{children}</body>
     </html>
   );
 }

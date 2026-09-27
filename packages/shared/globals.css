@@ -26,7 +26,7 @@ body {
     var(--seatmate-dark);
 
   font-family:
-    var(--font-inter),
+    var(--font-body),
     Arial,
     Helvetica,
     sans-serif;

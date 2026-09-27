@@ -1,26 +1,25 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import {
+  Bricolage_Grotesque,
+  Geist_Mono,
+  Schibsted_Grotesk,
+} from "next/font/google";
 import "./globals.css";
 
 import { AccountProvider } from "@/components/account-provider";
-import { Inter, Instrument_Serif } from "next/font/google";
 
-const inter = Inter({
+// Body and interface text.
+const schibstedGrotesk = Schibsted_Grotesk({
   subsets: ["latin"],
-  variable:  "--font-inter",
+  variable: "--font-body",
 });
 
-// Display serif for page headlines (used via the font-display class).
-const instrumentSerif = Instrument_Serif({
+// Page headlines (used via the font-display class). The optical-size and
+// width axes let large headlines tighten up without looking squashed.
+const bricolageGrotesque = Bricolage_Grotesque({
   subsets: ["latin"],
-  weight: "400",
-  style: ["normal", "italic"],
-  variable: "--font-instrument-serif",
-});
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+  axes: ["opsz", "wdth"],
+  variable: "--font-bricolage",
 });
 
 const geistMono = Geist_Mono({
@@ -38,9 +37,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} h-full antialiased`}
+      className={`${schibstedGrotesk.variable} ${bricolageGrotesque.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className={`${inter.variable} antialiased`}>
+      <body className="antialiased">
         <AccountProvider>{children}</AccountProvider>
       </body>
     </html>

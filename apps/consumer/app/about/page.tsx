@@ -60,11 +60,11 @@ export default function AboutPage() {
 
         <h1 className="font-display mt-6 max-w-5xl text-balance text-[2.75rem] leading-[1.02] sm:text-6xl lg:text-[5.25rem]">
           We&apos;re building for the moment you walk in and
-          there&apos;s <em className="italic text-moss">nowhere to sit.</em>
+          there&apos;s <em className="not-italic text-moss">nowhere to sit.</em>
         </h1>
 
         <div className="mt-14 grid gap-6 border-t border-line pt-8 md:grid-cols-[1fr_2fr] md:gap-16">
-          <p className="font-display text-2xl italic text-gray-500">
+          <p className="font-display text-2xl text-gray-500">
             Know before you go.
           </p>
 

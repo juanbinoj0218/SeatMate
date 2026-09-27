@@ -177,7 +177,7 @@ function LoginContent() {
           <h1 className="font-display mt-8 text-6xl leading-[1]">
             Your places,
             <br />
-            <em className="italic text-moss">one tap away.</em>
+            <em className="not-italic text-moss">one tap away.</em>
           </h1>
 
           <ul className="mt-10 space-y-4 text-lg text-gray-600">
