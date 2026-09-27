@@ -224,8 +224,8 @@ export default function StaffManagementPage() {
         <div className="max-w-6xl mx-auto h-20 px-6 flex items-center justify-between">
 
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-green-600 rounded-xl text-white font-bold flex items-center justify-center">
-              <SeatMateMark className="h-[62%] w-[62%]" />
+            <div className="w-10 h-10 flex items-center justify-center text-[#101811]">
+              <SeatMateMark className="h-[85%] w-[85%]" />
             </div>
 
             <div>

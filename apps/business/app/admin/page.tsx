@@ -703,8 +703,8 @@ export default function AdminPage() {
     return (
       <main className="min-h-screen bg-[#f7f8f5] flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 rounded-xl bg-green-600 text-white flex items-center justify-center font-bold mx-auto">
-            <SeatMateMark className="h-[62%] w-[62%]" />
+          <div className="w-12 h-12 flex items-center justify-center mx-auto text-[#101811]">
+            <SeatMateMark className="h-[85%] w-[85%]" />
           </div>
           <p className="text-gray-500 mt-4">
             Loading SeatMate Admin...
@@ -718,8 +718,8 @@ export default function AdminPage() {
     return (
       <main className="min-h-screen bg-[#f7f8f5] flex items-center justify-center px-6">
         <div className="bg-white border border-gray-200 rounded-3xl p-10 max-w-md w-full text-center">
-          <div className="w-14 h-14 rounded-2xl bg-[#101811] text-white flex items-center justify-center font-bold mx-auto">
-            <SeatMateMark className="h-[62%] w-[62%]" />
+          <div className="w-14 h-14 flex items-center justify-center mx-auto text-[#101811]">
+            <SeatMateMark className="h-[85%] w-[85%]" />
           </div>
           <h1 className="text-2xl font-bold mt-6">
             Admin access required
@@ -744,8 +744,8 @@ export default function AdminPage() {
       <header className="bg-[#101811] text-white">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-green-500 text-black rounded-xl flex items-center justify-center font-black">
-              <SeatMateMark className="h-[62%] w-[62%]" />
+            <div className="w-10 h-10 flex items-center justify-center text-white">
+              <SeatMateMark className="h-[85%] w-[85%]" />
             </div>
             <div>
               <p className="font-bold">SeatMate</p>

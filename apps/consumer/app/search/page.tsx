@@ -169,8 +169,8 @@ function SearchPageContent() {
             onClick={() => router.push("/")}
             className="flex items-center gap-3"
           >
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-600 font-bold text-white">
-              <SeatMateMark className="h-[62%] w-[62%]" />
+            <div className="flex h-10 w-10 items-center justify-center text-[#101811]">
+              <SeatMateMark className="h-[85%] w-[85%]" />
             </div>
             <span className="text-xl font-black tracking-tight">SeatMate</span>
           </button>
@@ -514,8 +514,8 @@ export default function SearchPage() {
       fallback={
         <main className="flex min-h-screen items-center justify-center bg-[#f7f8f5]">
           <div className="text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-green-600 font-bold text-white">
-              <SeatMateMark className="h-[62%] w-[62%]" />
+            <div className="mx-auto flex h-12 w-12 items-center justify-center text-[#101811]">
+              <SeatMateMark className="h-[85%] w-[85%]" />
             </div>
             <p className="mt-4 text-gray-500">Loading SeatMate...</p>
           </div>

@@ -345,8 +345,8 @@ export default function StaffConsolePage() {
 
           <div className="flex items-center gap-3">
 
-            <div className="w-10 h-10 rounded-xl bg-green-600 text-white font-bold flex items-center justify-center">
-              <SeatMateMark className="h-[62%] w-[62%]" />
+            <div className="w-10 h-10 flex items-center justify-center text-[#101811]">
+              <SeatMateMark className="h-[85%] w-[85%]" />
             </div>
 
             <div>
