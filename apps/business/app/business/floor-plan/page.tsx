@@ -6,9 +6,6 @@ import { useRouter } from "next/navigation";
 import { onAuthStateChanged, User } from "firebase/auth";
 import BackButton from "@seatmate/shared/components/BackButton";
 
-import HomeButton from "@seatmate/shared/components/HomeButton";
-<HomeButton />
-
 import {
   addDoc,
   collection,
@@ -22,6 +19,12 @@ import {
 } from "firebase/firestore";
 
 import { auth, db } from "@seatmate/shared/firebase";
+import {
+  clamp,
+  type FloorMarker,
+  MARKERS,
+  type MarkerType,
+} from "@seatmate/shared/floor-plan";
 
 type SeatStatus = "available" | "occupied";
 type TableShape = "rectangle" | "round";
@@ -32,16 +35,6 @@ type BusinessStatus =
   | "approved"
   | "suspended"
   | "rejected";
-
-type MarkerType =
-  | "outlet"
-  | "window"
-  | "register"
-  | "counter"
-  | "door"
-  | "entrance"
-  | "restroom"
-  | "wall";
 
 type Seat = {
   id: number;
@@ -57,78 +50,6 @@ type Table = {
   shape: TableShape;
   scale: number;
 };
-
-type FloorMarker = {
-  id: string;
-  type: MarkerType;
-  label: string;
-  xPct: number;
-  yPct: number;
-  scale: number;
-  rotation: number;
-};
-
-const MARKERS: Record<
-  MarkerType,
-  {
-    label: string;
-    icon: string;
-    width: number;
-    height: number;
-  }
-> = {
-  outlet: {
-    label: "Outlet",
-    icon: "⚡",
-    width: 54,
-    height: 54,
-  },
-  window: {
-    label: "Window",
-    icon: "▭",
-    width: 120,
-    height: 36,
-  },
-  register: {
-    label: "Cash Register",
-    icon: "▣",
-    width: 92,
-    height: 66,
-  },
-  counter: {
-    label: "Counter",
-    icon: "▰",
-    width: 135,
-    height: 54,
-  },
-  door: {
-    label: "Door",
-    icon: "↪",
-    width: 82,
-    height: 42,
-  },
-  entrance: {
-    label: "Entrance",
-    icon: "⇥",
-    width: 110,
-    height: 44,
-  },
-  restroom: {
-    label: "Restroom",
-    icon: "WC",
-    width: 90,
-    height: 62,
-  },
-  wall: {
-    label: "Wall",
-    icon: "",
-    width: 150,
-    height: 26,
-  },
-};
-
-const clamp = (value: number, min: number, max: number) =>
-  Math.max(min, Math.min(max, value));
 
 export default function FloorPlanPage() {
   const router = useRouter();

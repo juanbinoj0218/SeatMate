@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import {
   useParams,
   useRouter,
+  useSearchParams,
 } from "next/navigation";
 
 import {
@@ -16,10 +17,17 @@ import {
 } from "firebase/firestore";
 
 import { db } from "@seatmate/shared/firebase";
+import {
+  clamp,
+  type FloorMarker,
+  MARKERS,
+  type MarkerType,
+} from "@seatmate/shared/floor-plan";
 
 import AccountMenu from "@/components/account-menu";
 import { useAccount } from "@/components/account-provider";
 import SaveButton from "@/components/save-button";
+import { useNow } from "@/lib/use-now";
 import { businessUrl } from "@seatmate/shared/site-urls";
 
 type Seat = {
@@ -37,91 +45,6 @@ type Table = {
   scale: number;
   occupancyUpdatedAt?: Timestamp | null;
 };
-
-type MarkerType =
-  | "outlet"
-  | "window"
-  | "register"
-  | "counter"
-  | "door"
-  | "entrance"
-  | "restroom"
-  | "wall";
-
-type FloorMarker = {
-  id: string;
-  type: MarkerType;
-  label: string;
-  xPct: number;
-  yPct: number;
-  scale: number;
-  rotation: number;
-};
-
-const MARKERS: Record<
-  MarkerType,
-  {
-    label: string;
-    icon: string;
-    width: number;
-    height: number;
-  }
-> = {
-  outlet: {
-    label: "Outlet",
-    icon: "⚡",
-    width: 54,
-    height: 54,
-  },
-  window: {
-    label: "Window",
-    icon: "▭",
-    width: 120,
-    height: 36,
-  },
-  register: {
-    label: "Cash Register",
-    icon: "▣",
-    width: 92,
-    height: 66,
-  },
-  counter: {
-    label: "Counter",
-    icon: "▰",
-    width: 135,
-    height: 54,
-  },
-  door: {
-    label: "Door",
-    icon: "↪",
-    width: 82,
-    height: 42,
-  },
-  entrance: {
-    label: "Entrance",
-    icon: "⇥",
-    width: 110,
-    height: 44,
-  },
-  restroom: {
-    label: "Restroom",
-    icon: "WC",
-    width: 90,
-    height: 62,
-  },
-  wall: {
-    label: "Wall",
-    icon: "",
-    width: 150,
-    height: 26,
-  },
-};
-
-const clamp = (
-  value: number,
-  min: number,
-  max: number
-) => Math.max(min, Math.min(max, value));
 
 type DayHours = {
   closed: boolean;
@@ -375,8 +298,9 @@ export default function PlacePage() {
 
   const router = useRouter();
 
-  const [fromBusiness, setFromBusiness] =
-    useState(false);
+  // Opened from the business portal's "View Customer Page" link.
+  const fromBusiness =
+    useSearchParams().get("from") === "business";
 
 const [business, setBusiness] =
     useState<PublicBusiness | null>(null);
@@ -393,30 +317,7 @@ const [business, setBusiness] =
   const [notFound, setNotFound] =
     useState(false);
   
-  const [now, setNow] =
-    useState(Date.now());
-
-  useEffect(() => {
-    const searchParams =
-      new URLSearchParams(
-        window.location.search
-      );
-
-    setFromBusiness(
-      searchParams.get("from") ===
-        "business"
-    );
-  }, []);
-
-useEffect(() => {
-  const interval = window.setInterval(() => {
-    setNow(Date.now());
-  }, 30000);
-
-  return () => {
-    window.clearInterval(interval);
-  };
-}, []);
+  const now = useNow();
 
   useEffect(() => {
     let unsubscribeTables:
@@ -853,9 +754,13 @@ return (
 
         <section className="grid gap-6 lg:grid-cols-[1.18fr_0.82fr] lg:items-stretch">
           <div className="relative min-h-[390px] overflow-hidden rounded-[32px] border border-gray-200 bg-gray-200 shadow-sm md:min-h-[470px]">
+            {/* Hero photo: loaded first. Owner photos can be on any host, so
+                this is a plain <img> rather than next/image. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={businessImage}
               alt={`${business.name} interior`}
+              fetchPriority="high"
               className="absolute inset-0 h-full w-full object-cover"
               onError={(event) => {
                 event.currentTarget.src = getFallbackPlaceImage(slug);

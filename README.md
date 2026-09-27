@@ -7,7 +7,7 @@ Next.js sites that share one Firebase project:
 | --- | --- | --- |
 | `apps/consumer` | Customer site (seatmate360.com) | `/`, `/about`, `/search`, `/place/[slug]`, `/api/place-details` |
 | `apps/business` | Business portal (seatmate360.net) | `/business/*`, `/staff/*`, `/admin` |
-| `packages/shared` | Shared code | Firebase setup, `BackButton`, `HomeButton`, global styles, cross-site URLs |
+| `packages/shared` | Shared code | Firebase setup, `BackButton`, `SeatMateMark` logo, floor-plan marker config, global styles, cross-site URLs |
 
 ## Local development
 
@@ -31,6 +31,9 @@ NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
 NEXT_PUBLIC_FIREBASE_APP_ID
 ```
+
+If `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` is missing, it defaults to
+`<projectId>.firebaseapp.com` (needed for Google sign-in).
 
 Each site links to the other by absolute URL:
 

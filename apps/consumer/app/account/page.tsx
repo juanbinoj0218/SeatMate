@@ -16,7 +16,7 @@ import {
   SiteFooter,
   SiteHeader,
 } from "@/components/site-chrome";
-import { type Availability, fetchAvailability } from "@/lib/availability";
+import { fetchPlaceSeats, type SeatSummary } from "@/lib/places";
 
 const viewedAtFormat = new Intl.DateTimeFormat(undefined, {
   month: "short",
@@ -210,7 +210,7 @@ export default function AccountPage() {
 function SavedGrid({ favorites }: { favorites: SavedPlace[] }) {
   const router = useRouter();
   const [availability, setAvailability] = useState<
-    Record<string, Availability | null>
+    Record<string, SeatSummary | null>
   >({});
 
   const slugs = useMemo(
@@ -228,7 +228,7 @@ function SavedGrid({ favorites }: { favorites: SavedPlace[] }) {
         .filter(Boolean)
         .map(async (slug) => {
           try {
-            return [slug, await fetchAvailability(slug)] as const;
+            return [slug, await fetchPlaceSeats(slug)] as const;
           } catch (error) {
             console.error(`Could not load seats for ${slug}:`, error);
             return [slug, undefined] as const;
@@ -239,7 +239,7 @@ function SavedGrid({ favorites }: { favorites: SavedPlace[] }) {
         return;
       }
 
-      const next: Record<string, Availability | null> = {};
+      const next: Record<string, SeatSummary | null> = {};
 
       entries.forEach(([slug, value]) => {
         if (value !== undefined) {
@@ -282,19 +282,19 @@ function SavedGrid({ favorites }: { favorites: SavedPlace[] }) {
                     <span className="text-gray-400">Checking seats…</span>
                   ) : seats === null ? (
                     <span className="text-gray-400">No longer listed</span>
-                  ) : seats.total === 0 ? (
+                  ) : seats.totalSeats === 0 ? (
                     <span className="text-gray-400">No seating data yet</span>
                   ) : (
                     <>
                       <span
                         className={`font-semibold ${
-                          seats.available > 0 ? "text-moss" : "text-seat-taken"
+                          seats.availableSeats > 0 ? "text-moss" : "text-seat-taken"
                         }`}
                       >
-                        {seats.available}
+                        {seats.availableSeats}
                       </span>{" "}
                       <span className="text-gray-500">
-                        of {seats.total} seats open
+                        of {seats.totalSeats} seats open
                       </span>
                     </>
                   )}

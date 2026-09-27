@@ -10,9 +10,6 @@ import {
 import BackButton from "@seatmate/shared/components/BackButton";
 <BackButton fallback="/business" />
 
-import HomeButton from "@seatmate/shared/components/HomeButton";
-<HomeButton />
-
 import {
   onAuthStateChanged,
   User,

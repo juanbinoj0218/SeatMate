@@ -10,9 +10,6 @@ import {
   User,
 } from "firebase/auth";
 
-import HomeButton from "@seatmate/shared/components/HomeButton";
-<HomeButton />
-
 import {
   doc,
   getDoc,

@@ -5,9 +5,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import BackButton from "@seatmate/shared/components/BackButton";
 
-import HomeButton from "@seatmate/shared/components/HomeButton";
-<HomeButton />
-
 import {
   onAuthStateChanged,
   signOut,

@@ -7,13 +7,7 @@ import {
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
-import {
-  collection,
-  getDocs,
-  Timestamp,
-} from "firebase/firestore";
 
-import { db } from "@seatmate/shared/firebase";
 import { businessUrl } from "@seatmate/shared/site-urls";
 
 import {
@@ -24,28 +18,20 @@ import {
 import { HeartIcon } from "@/components/account-menu";
 import { useAccount } from "@/components/account-provider";
 import SaveButton from "@/components/save-button";
+import {
+  fetchPublicPlaces,
+  type PlaceWithSeats,
+  withSeatSummaries,
+} from "@/lib/places";
+import { useNow } from "@/lib/use-now";
 
-type NearbyBusiness = {
-  slug: string;
-  businessId: string;
-  name: string;
-  address: string;
-  type: string;
-  zipcode: string;
-  availableSeats: number;
-  totalSeats: number;
-  latestUpdateMs: number | null;
-  imageUrl: string;
-};
+type NearbyBusiness = PlaceWithSeats;
 
 type LocationState =
   | "checking"
   | "ready"
   | "denied"
   | "unavailable";
-
-const getZipFromAddress = (address: string) =>
-  address.match(/\b\d{5}(?:-\d{4})?\b/)?.[0]?.slice(0, 5) || "";
 
 export default function HomePage() {
   const router = useRouter();
@@ -61,7 +47,7 @@ export default function HomePage() {
   const [detectedZip, setDetectedZip] = useState("");
   const [locationState, setLocationState] =
     useState<LocationState>("checking");
-  const [now, setNow] = useState(Date.now());
+  const now = useNow();
 
   const findBusiness = (event: FormEvent) => {
     event.preventDefault();
@@ -94,13 +80,13 @@ export default function HomePage() {
 
   // Tries to detect the user's ZIP code from browser location.
   // This does not use a Google Maps API key.
-  const detectLocation = () => {
+  // Starts a lookup; the status is updated from the callbacks, so this is
+  // safe to call on mount (the initial status is already "checking").
+  const requestLocation = () => {
     if (!navigator.geolocation) {
-      setLocationState("unavailable");
+      window.setTimeout(() => setLocationState("unavailable"), 0);
       return;
     }
-
-    setLocationState("checking");
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
@@ -154,133 +140,24 @@ export default function HomePage() {
   };
 
   useEffect(() => {
-    detectLocation();
-  }, []);
-
-  // Keep "updated X minutes ago" labels fresh.
-  useEffect(() => {
-    const interval = window.setInterval(() => {
-      setNow(Date.now());
-    }, 30000);
-
-    return () => {
-      window.clearInterval(interval);
-    };
+    requestLocation();
   }, []);
 
   // Load approved/public SeatMate locations and their live seat counts.
   useEffect(() => {
     const loadBusinesses = async () => {
       try {
-        setBusinessesLoading(true);
-
-        const businessesSnapshot = await getDocs(
-          collection(db, "publicBusinesses")
+        const places = await withSeatSummaries(
+          await fetchPublicPlaces()
         );
 
-        const approvedBusinesses =
-          businessesSnapshot.docs.map((businessDoc) => {
-            const data = businessDoc.data();
-
-            const address = String(data.address || "");
-
-            return {
-              slug: businessDoc.id,
-              businessId: String(data.businessId || ""),
-              name: String(data.name || "SeatMate location"),
-              address,
-              type: String(data.type || "Restaurant"),
-              zipcode: String(
-                data.zipcode ||
-                  data.zip ||
-                  getZipFromAddress(address)
-              ).trim(),
-              imageUrl: String(
-                data.imageUrl ||
-                  data.coverImageUrl ||
-                  data.photoUrl ||
-                  ""
-              ),
-            };
-          });
-
-        const withAvailability = await Promise.all(
-          approvedBusinesses.map(async (business) => {
-            if (!business.businessId) {
-              return {
-                ...business,
-                availableSeats: 0,
-                totalSeats: 0,
-                latestUpdateMs: null,
-              };
-            }
-
-            try {
-              const tablesSnapshot = await getDocs(
-                collection(
-                  db,
-                  "businesses",
-                  business.businessId,
-                  "tables"
-                )
-              );
-
-              let totalSeats = 0;
-              let availableSeats = 0;
-              let latestUpdateMs: number | null = null;
-
-              tablesSnapshot.docs.forEach((tableDoc) => {
-                const table = tableDoc.data();
-
-                const seats = Array.isArray(table.seats)
-                  ? table.seats
-                  : [];
-
-                totalSeats += seats.length;
-
-                availableSeats += seats.filter(
-                  (seat: { status?: string }) =>
-                    seat.status === "available"
-                ).length;
-
-                if (
-                  table.occupancyUpdatedAt instanceof Timestamp
-                ) {
-                  const updateMs =
-                    table.occupancyUpdatedAt.toMillis();
-
-                  if (
-                    latestUpdateMs === null ||
-                    updateMs > latestUpdateMs
-                  ) {
-                    latestUpdateMs = updateMs;
-                  }
-                }
-              });
-
-              return {
-                ...business,
-                availableSeats,
-                totalSeats,
-                latestUpdateMs,
-              };
-            } catch (error) {
-              console.error(
-                `Could not load seating for ${business.name}:`,
-                error
-              );
-
-              return {
-                ...business,
-                availableSeats: 0,
-                totalSeats: 0,
-                latestUpdateMs: null,
-              };
-            }
-          })
+        setBusinesses(
+          places.map((place) => ({
+            ...place,
+            name: place.name || "SeatMate location",
+            type: place.type || "Restaurant",
+          }))
         );
-
-        setBusinesses(withAvailability);
       } catch (error) {
         console.error(
           "Could not load SeatMate businesses:",
@@ -492,7 +369,10 @@ export default function HomePage() {
             {locationState !== "ready" && (
               <button
                 type="button"
-                onClick={detectLocation}
+                onClick={() => {
+                  setLocationState("checking");
+                  requestLocation();
+                }}
                 disabled={locationState === "checking"}
                 className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-4 py-2 text-sm font-medium transition hover:border-gray-300 disabled:opacity-60"
               >
@@ -776,9 +656,14 @@ function RestaurantCard({
         <div className="relative aspect-[16/10] overflow-hidden bg-[#eef2ec]">
           {/* REAL RESTAURANT PHOTO IF SAVED IN FIREBASE */}
           {business.imageUrl ? (
+            // Owner-supplied photos can be on any host, so these stay plain
+            // <img> tags rather than next/image; they load lazily below the fold.
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={business.imageUrl}
               alt={business.name}
+              loading="lazy"
+              decoding="async"
               className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
             />
           ) : (

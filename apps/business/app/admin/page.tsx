@@ -23,10 +23,8 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import { auth, db } from "@seatmate/shared/firebase";
+import { clamp, type MarkerType } from "@seatmate/shared/floor-plan";
 import { consumerUrl } from "@seatmate/shared/site-urls";
-
-import HomeButton from "@seatmate/shared/components/HomeButton";
-<HomeButton />
 
 type BusinessStatus =
   | "draft"
@@ -64,16 +62,6 @@ type ReviewTable = {
   shape: "rectangle" | "round";
   scale: number;
 };
-
-type MarkerType =
-  | "outlet"
-  | "window"
-  | "register"
-  | "counter"
-  | "door"
-  | "entrance"
-  | "restroom"
-  | "wall";
 
 type ReviewMarker = {
   id: string;
@@ -143,9 +131,6 @@ const MARKER_STYLE: Record<
     height: 18,
   },
 };
-
-const clamp = (value: number, min: number, max: number) =>
-  Math.max(min, Math.min(max, value));
 
 export default function AdminPage() {
   const router = useRouter();
