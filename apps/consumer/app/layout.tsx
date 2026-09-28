@@ -6,6 +6,8 @@ import {
 } from "next/font/google";
 import "./globals.css";
 
+import { CONSUMER_SITE_URL } from "@seatmate/shared/site-urls";
+
 import { AccountProvider } from "@/components/account-provider";
 
 // Body and interface text.
@@ -27,10 +29,20 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const description =
+  "Check live seating availability at cafés, restaurants and bars before you arrive.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(CONSUMER_SITE_URL),
   title: "SeatMate – Live seating availability",
-  description:
-    "Check live seating availability at cafés and restaurants before you arrive.",
+  description,
+  openGraph: {
+    siteName: "SeatMate",
+    type: "website",
+    title: "SeatMate – Live seating availability",
+    description,
+  },
+  twitter: { card: "summary_large_image" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

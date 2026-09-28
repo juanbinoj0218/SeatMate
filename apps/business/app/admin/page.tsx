@@ -770,6 +770,13 @@ export default function AdminPage() {
           <div className="flex gap-3">
             <button
               type="button"
+              onClick={() => router.push("/admin/inbox")}
+              className="border border-white/20 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-white/10"
+            >
+              Inbox
+            </button>
+            <button
+              type="button"
               onClick={() => window.location.assign(consumerUrl("/"))}
               className="border border-white/20 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-white/10"
             >

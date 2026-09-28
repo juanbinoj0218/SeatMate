@@ -4,59 +4,31 @@ import {
   getDoc,
   getDocs,
   Timestamp,
-  type DocumentData,
 } from "firebase/firestore";
 
 import { db } from "@seatmate/shared/firebase";
 
+import {
+  type PublicPlace,
+  type SeatSummary,
+  type PlaceWithSeats,
+  toPublicPlace,
+} from "@/lib/place-data";
+
+export {
+  type PublicPlace,
+  type SeatSummary,
+  type PlaceWithSeats,
+  zipFromAddress,
+} from "@/lib/place-data";
+
 // Public place data and live seat counts, shared by the home, search and
 // account pages.
-
-export type PublicPlace = {
-  slug: string;
-  businessId: string;
-  // Raw values: empty strings when missing, so each page picks its own
-  // display defaults.
-  name: string;
-  address: string;
-  type: string;
-  zipcode: string;
-  imageUrl: string;
-};
-
-export type SeatSummary = {
-  availableSeats: number;
-  totalSeats: number;
-  latestUpdateMs: number | null;
-};
-
-export type PlaceWithSeats = PublicPlace & SeatSummary;
 
 const NO_SEATS: SeatSummary = {
   availableSeats: 0,
   totalSeats: 0,
   latestUpdateMs: null,
-};
-
-export const zipFromAddress = (address: string) =>
-  address.match(/\b\d{5}(?:-\d{4})?\b/)?.[0]?.slice(0, 5) || "";
-
-const toPublicPlace = (slug: string, data: DocumentData): PublicPlace => {
-  const address = String(data.address || "");
-
-  return {
-    slug,
-    businessId: String(data.businessId || ""),
-    name: String(data.name || ""),
-    address,
-    type: String(data.type || ""),
-    zipcode: String(
-      data.zipcode || data.zip || zipFromAddress(address)
-    ).trim(),
-    imageUrl: String(
-      data.imageUrl || data.coverImageUrl || data.photoUrl || ""
-    ),
-  };
 };
 
 export async function fetchPublicPlaces(): Promise<PublicPlace[]> {

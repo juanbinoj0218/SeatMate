@@ -5,8 +5,8 @@ Next.js sites that share one Firebase project:
 
 | Folder | Site | Pages |
 | --- | --- | --- |
-| `apps/consumer` | Customer site (seatmate360.com) | `/`, `/about`, `/search`, `/place/[slug]`, `/api/place-details` |
-| `apps/business` | Business portal (seatmate360.net) | `/business/*`, `/staff/*`, `/admin` |
+| `apps/consumer` | Customer site (seatmate360.com) | `/`, `/about`, `/search`, `/place/[slug]`, `/places`, `/places/[city]`, `/suggest`, `/contact`, `/faq`, `/privacy`, `/terms`, `/account`, `/login`, `/auth/action`, `/api/place-details` |
+| `apps/business` | Business portal (seatmate360.net) | `/business/*`, `/staff/*`, `/admin`, `/admin/inbox`, `/api/seat-alerts` |
 | `packages/shared` | Shared code | Firebase setup, `BackButton`, `SeatMateMark` logo, floor-plan marker config, global styles, cross-site URLs |
 
 ## Local development
@@ -42,6 +42,9 @@ Each site links to the other by absolute URL:
 | consumer | `GOOGLE_MAPS_API_KEY` | Google reviews on place pages |
 | consumer | `NEXT_PUBLIC_BUSINESS_SITE_URL` | Optional; defaults to `https://seatmate360.net` |
 | business | `NEXT_PUBLIC_CONSUMER_SITE_URL` | Optional; defaults to `https://seatmate360.com` |
+| consumer | `NEXT_PUBLIC_CONTACT_EMAIL` | Optional; shown on Contact, Privacy and Terms. Defaults to `hello@seatmate360.com` |
+| consumer | `NEXT_PUBLIC_IOS_APP_URL` | Optional; App Store link. Shows "Coming soon" until set |
+| consumer | `NEXT_PUBLIC_ANDROID_APP_URL` | Optional; Google Play link. Shows "Coming soon" until set |
 
 In `npm run dev` the sites link to `http://localhost:3000` / `http://localhost:3001`.
 
@@ -116,3 +119,13 @@ email is printed to the terminal instead.
 
 Owners see both on `/business/analytics`. The QR sign on `/business/qr`
 links to the place page with `?ref=qr` so scans can be counted.
+
+## Suggestions, contact messages and SEO
+
+- "Suggest a place" (`/suggest`) saves to `placeRequests`; the contact form
+  (`/contact`) saves to `contactMessages`. Anyone can send, only admins can
+  read. Admins see both on the business site at `/admin/inbox`, with
+  repeated requests for the same place grouped together.
+- City pages (`/places`, `/places/[city]`), `sitemap.xml`, `robots.txt`
+  and link previews (Open Graph images) are rendered on the server from
+  `publicBusinesses` through Firestore's REST API, cached for 5 minutes.
