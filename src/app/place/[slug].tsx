@@ -22,6 +22,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { collection, doc, getDoc, onSnapshot } from "firebase/firestore";
 
+import { bumpPlaceStat, useAccount } from "../../lib/account";
 import { db } from "../../lib/firebase";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -114,6 +115,7 @@ type PublicBusiness = {
   name: string;
   address: string;
   type: string;
+  imageUrl: string;
 };
 
 type Bounds = {
@@ -351,6 +353,17 @@ export default function PlaceScreen() {
     return () => clearInterval(interval);
   }, []);
 
+  // Signed-in customer (same account as the website)
+  const { user, profileReady, isFavorite, toggleFavorite, recordView } =
+    useAccount();
+
+  // Count a view once per visit (same daily stats as the website)
+  useEffect(() => {
+    if (slug) {
+      bumpPlaceStat(slug, "views");
+    }
+  }, [slug]);
+
   // Load restaurant + live tables + live markers
   useEffect(() => {
     // No slug is shown as "not found" during render, so there's nothing to load
@@ -389,6 +402,9 @@ export default function PlaceScreen() {
           name: String(data.name ?? "SeatMate location"),
           address: String(data.address ?? ""),
           type: String(data.type ?? "Restaurant"),
+          imageUrl: String(
+            data.imageUrl || data.coverImageUrl || data.photoUrl || "",
+          ),
         };
 
         if (!businessData.businessId) {
@@ -711,6 +727,47 @@ export default function PlaceScreen() {
   const fullCount = tableSummaries.length - openTables.length;
 
   // -------------------------
+  // SAVE + RECENTLY VIEWED
+  // -------------------------
+
+  // Add this place to "Recently viewed" on the account page
+  useEffect(() => {
+    if (!business || !profileReady) {
+      return;
+    }
+
+    recordView({
+      slug,
+      name: business.name,
+      address: business.address,
+      type: business.type,
+      imageUrl: business.imageUrl,
+    });
+  }, [business, profileReady, slug, recordView]);
+
+  const saved = isFavorite(slug);
+
+  async function toggleSave() {
+    if (!business) {
+      return;
+    }
+
+    // Saving needs an account; send signed-out people to sign in first
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+
+    await toggleFavorite({
+      slug,
+      name: business.name,
+      address: business.address,
+      type: business.type,
+      imageUrl: business.imageUrl,
+    });
+  }
+
+  // -------------------------
   // DIRECTIONS
   // -------------------------
 
@@ -803,6 +860,26 @@ export default function PlaceScreen() {
               hitSlop={10}
             >
               <Ionicons name="chevron-back" size={20} color={C.text} />
+            </PressableScale>
+
+            {/* SAVE (heart) */}
+
+            <PressableScale
+              style={[styles.saveButton, saved ? styles.saveButtonActive : null]}
+              onPress={toggleSave}
+              hitSlop={10}
+            >
+              <Ionicons
+                name={saved ? "heart" : "heart-outline"}
+                size={18}
+                color={saved ? C.taken : C.text}
+              />
+
+              <Text
+                style={[styles.saveText, saved ? { color: C.takenText } : null]}
+              >
+                {saved ? "Saved" : "Save"}
+              </Text>
             </PressableScale>
           </View>
 
@@ -1536,7 +1613,27 @@ const styles = StyleSheet.create({
 
   // TOP BAR
 
-  topBar: { height: 52, flexDirection: "row", alignItems: "center" },
+  topBar: {
+    height: 52,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  saveButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    height: 38,
+    paddingHorizontal: 14,
+    borderRadius: 19,
+    backgroundColor: C.card,
+    borderWidth: 1,
+    borderColor: C.border,
+  },
+
+  saveButtonActive: { backgroundColor: C.takenSoft, borderColor: C.takenSoft },
+
+  saveText: { marginLeft: 6, fontSize: 14, fontWeight: "700", color: C.text },
 
   backButton: {
     width: 38,

@@ -27,6 +27,7 @@ import {
   where,
 } from "firebase/firestore";
 
+import { initialFor, useAccount } from "../lib/account";
 import { db } from "../lib/firebase";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -143,6 +144,10 @@ export default function HomeScreen() {
   const [availableOnly, setAvailableOnly] = useState(false);
   const [outletsOnly, setOutletsOnly] = useState(false);
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
+  const [savedOnly, setSavedOnly] = useState(false);
+
+  // Signed-in customer (same account as the website)
+  const { user, profile, favorites, isFavorite } = useAccount();
 
   // One live table listener per business
   const tableListeners = useRef(new Map<string, () => void>());
@@ -334,17 +339,31 @@ export default function HomeScreen() {
       return false;
     }
 
+    if (savedOnly && !isFavorite(place.slug)) {
+      return false;
+    }
+
     return true;
   });
 
   const filtersActive =
-    queryText !== "" || availableOnly || outletsOnly || typeFilter !== null;
+    queryText !== "" ||
+    availableOnly ||
+    outletsOnly ||
+    typeFilter !== null ||
+    savedOnly;
 
   function clearFilters() {
     setSearch("");
     setAvailableOnly(false);
     setOutletsOnly(false);
     setTypeFilter(null);
+    setSavedOnly(false);
+  }
+
+  // Signed in: your account. Signed out: sign in.
+  function openAccount() {
+    router.push(user ? "/account" : "/login");
   }
 
   // -------------------------
@@ -402,9 +421,38 @@ export default function HomeScreen() {
                   <Text style={styles.brandName}>SeatMate</Text>
                 </View>
 
-                <View style={styles.livePill}>
-                  <PulsingDot />
-                  <Text style={styles.livePillText}>LIVE</Text>
+                <View style={styles.heroTopRight}>
+                  <View style={styles.livePill}>
+                    <PulsingDot />
+                    <Text style={styles.livePillText}>LIVE</Text>
+                  </View>
+
+                  {/* ACCOUNT BUTTON */}
+
+                  <Pressable
+                    onPress={openAccount}
+                    hitSlop={8}
+                    accessibilityLabel={user ? "Your account" : "Sign in"}
+                    style={({ pressed }) => [
+                      styles.accountButton,
+                      user ? styles.accountButtonSignedIn : null,
+                      pressed ? { opacity: 0.7 } : null,
+                    ]}
+                  >
+                    {user?.photoURL ? (
+                      <Image
+                        source={{ uri: user.photoURL }}
+                        alt=""
+                        style={styles.accountPhoto}
+                      />
+                    ) : user ? (
+                      <Text style={styles.accountInitial}>
+                        {initialFor(profile, user)}
+                      </Text>
+                    ) : (
+                      <Ionicons name="person-outline" size={17} color="#FFFFFF" />
+                    )}
+                  </Pressable>
                 </View>
               </View>
 
@@ -497,6 +545,15 @@ export default function HomeScreen() {
                 active={availableOnly}
                 onPress={() => setAvailableOnly((value) => !value)}
               />
+
+              {user && favorites.length > 0 && (
+                <FilterChip
+                  label={`Saved · ${favorites.length}`}
+                  icon="heart-outline"
+                  active={savedOnly}
+                  onPress={() => setSavedOnly((value) => !value)}
+                />
+              )}
 
               <FilterChip
                 label="Has outlets"
@@ -887,6 +944,27 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     letterSpacing: -0.3,
   },
+
+  heroTopRight: { flexDirection: "row", alignItems: "center" },
+
+  accountButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    marginLeft: 10,
+    backgroundColor: "rgba(255,255,255,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.18)",
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+
+  accountButtonSignedIn: { backgroundColor: "#E4EFE7", borderColor: "#E4EFE7" },
+
+  accountPhoto: { width: 36, height: 36 },
+
+  accountInitial: { color: "#23804F", fontSize: 15, fontWeight: "800" },
 
   livePill: {
     flexDirection: "row",
