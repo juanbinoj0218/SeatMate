@@ -45,6 +45,7 @@ type Business = {
   hours?: Record<string, unknown>;
   timezone?: string;
   googlePlaceId?: string;
+  imageUrl?: string;
 };
 
 
@@ -251,6 +252,10 @@ export default function AdminPage() {
                     googlePlaceId:
                       typeof business.googlePlaceId === "string"
                         ? business.googlePlaceId
+                        : "",
+                    imageUrl:
+                      typeof business.imageUrl === "string"
+                        ? business.imageUrl
                         : "",
                   };
                 }
@@ -497,6 +502,9 @@ export default function AdminPage() {
             : {}),
           ...(business.timezone
             ? { timezone: business.timezone }
+            : {}),
+          ...(business.imageUrl
+            ? { imageUrl: business.imageUrl }
             : {}),
         },
         { merge: true }

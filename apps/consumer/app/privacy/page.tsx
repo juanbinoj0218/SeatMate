@@ -83,8 +83,9 @@ export default function PrivacyPage() {
           <li>Edit your name and home ZIP, remove saved places or clear your history from your account page.</li>
           <li>Cancel a seat alert from the place page.</li>
           <li>
-            To delete your account and its data, email <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>{" "}
-            from the address on your account.
+            Delete your account and its data any time from your account page (&ldquo;Delete
+            account&rdquo;). Or email <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> from the
+            address on your account, which also covers messages you sent us.
           </li>
         </ul>
       </section>

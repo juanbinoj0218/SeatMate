@@ -194,7 +194,7 @@ service cloud.firestore {
 
       // Admin can edit anything.
       //
-      // Owner can only update public hours.
+      // Owner can only update public hours and the cover photo link.
       allow update: if isAdmin()
         || (
           signedIn()
@@ -209,6 +209,8 @@ service cloud.firestore {
               "hours",
               "timezone",
               "hoursUpdatedAt",
+              "imageUrl",
+              "imageUpdatedAt",
               "updatedAt"
             ])
         );
@@ -239,6 +241,25 @@ service cloud.firestore {
     }
 
     // -------------------------
+    // COVER PHOTOS
+    // -------------------------
+
+    // One compressed JPEG per business, stored as a data URL. Public, since
+    // it's shown on the customer page; only the owner can change it.
+    match /businessPhotos/{businessId} {
+
+      allow read: if true;
+
+      allow create, update: if isOwner(businessId)
+        && request.resource.data.keys().hasOnly(["data", "contentType", "updatedAt"])
+        && request.resource.data.contentType == "image/jpeg"
+        && request.resource.data.data is string
+        && request.resource.data.data.size() <= 950000;
+
+      allow delete: if isOwner(businessId) || isAdmin();
+    }
+
+    // -------------------------
     // SEAT ALERTS
     // -------------------------
 
@@ -247,8 +268,12 @@ service cloud.firestore {
     // limited by these rules.
     match /seatAlerts/{alertId} {
 
-      allow read, delete: if signedIn()
+      allow get, delete: if signedIn()
         && alertId.matches('^' + request.auth.uid + '_.+$');
+
+      // A customer can list their own alerts (used when deleting an account).
+      allow list: if signedIn()
+        && resource.data.uid == request.auth.uid;
 
       allow create, update: if signedIn()
         && alertId == request.auth.uid + '_' + request.resource.data.slug

@@ -19,6 +19,7 @@ import {
 
 import { auth, db } from "@seatmate/shared/firebase";
 
+import CoverPhoto from "@/components/cover-photo";
 import UpdateReminder from "@/components/update-reminder";
 import { toggleSeat as toggleSeatStatus } from "@/lib/seat-updates";
 import {
@@ -969,6 +970,8 @@ export default function FloorPlanPage() {
             <Stat label="Occupied" value={occupiedSeats} />
           </div>
         </div>
+
+        {user && <CoverPhoto businessId={user.uid} />}
 
         {/* MODE + ZOOM */}
         <div className="bg-white border border-gray-200 rounded-2xl p-4 mt-8 flex flex-col xl:flex-row gap-4 justify-between">

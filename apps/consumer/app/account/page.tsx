@@ -10,6 +10,7 @@ import {
   useAccount,
 } from "@/components/account-provider";
 import { Avatar, HeartIcon } from "@/components/account-menu";
+import DeleteAccount from "@/components/delete-account";
 import SaveButton from "@/components/save-button";
 import {
   ArrowRightIcon,
@@ -38,12 +39,16 @@ export default function AccountPage() {
     signOut,
   } = useAccount();
 
+  // Set while deleting the account, so signing out as part of it goes home
+  // instead of to the sign-in page.
+  const [deleting, setDeleting] = useState(false);
+
   // This page is only for signed-in customers.
   useEffect(() => {
-    if (authReady && !user) {
+    if (authReady && !user && !deleting) {
       router.replace("/login?next=/account");
     }
-  }, [authReady, user, router]);
+  }, [authReady, user, deleting, router]);
 
   if (!authReady || !user) {
     return (
@@ -199,6 +204,8 @@ export default function AccountPage() {
               initial={profile}
             />
           )}
+
+          <DeleteAccount user={user} onDeleting={setDeleting} />
         </aside>
       </div>
 
