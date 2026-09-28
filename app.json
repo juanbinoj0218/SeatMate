@@ -35,6 +35,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "368ac5b7-c257-4104-aa70-bdf255524cc6"
+      }
+    },
+    "owner": "seatmate360"
   }
 }
