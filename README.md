@@ -7,7 +7,7 @@ three Next.js sites that share one Firebase project:
 | --- | --- | --- |
 | `apps/consumer` | Customer site (seatmate360.com) | `/`, `/about`, `/search`, `/place/[slug]`, `/places`, `/places/[city]`, `/suggest`, `/contact`, `/faq`, `/privacy`, `/terms`, `/account`, `/login`, `/auth/action`, `/api/place-details` |
 | `apps/business` | Business portal (seatmate360.net) | `/business/*`, `/staff/*`, `/api/seat-alerts` |
-| `apps/admin` | Admin site (your admin domain) | `/` overview, `/businesses`, `/inbox`, `/customers`, `/admins`, `/login`, `/api/admin/*` |
+| `apps/admin` | Admin site (seatmate360.info) | `/` overview, `/businesses`, `/inbox`, `/customers`, `/admins`, `/login`, `/api/admin/*` |
 | `packages/shared` | Shared code | Firebase setup, `BackButton`, `SeatMateMark` logo, floor-plan marker config, global styles, cross-site URLs |
 
 ## Local development
@@ -149,9 +149,8 @@ A separate site for SeatMate admins (anyone with `admins/{uid}.active == true`):
 - **Admins**: add an admin by email, remove admin access.
 
 Setup on Vercel: a third project with Root Directory `apps/admin` and your
-admin domain. It needs the same `NEXT_PUBLIC_FIREBASE_*` variables plus
+`seatmate360.info` as its domain. It needs the same `NEXT_PUBLIC_FIREBASE_*` variables plus
 `FIREBASE_SERVICE_ACCOUNT_KEY` (Overview, Customers and Admins read data on
-the server). Set `NEXT_PUBLIC_ADMIN_SITE_URL` to the admin domain in all
-three projects, and add the domain to Firebase → Authentication → Settings →
+the server). Add `seatmate360.info` to Firebase → Authentication → Settings →
 Authorized domains. The old `/admin` links on the other two sites forward to
 the admin site.
