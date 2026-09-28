@@ -1,11 +1,8 @@
-import { jsonError, requireAdmin } from "@/lib/require-admin";
+import { adminRoute, jsonError } from "@/lib/require-admin";
 
 // Account actions: disable/enable sign-in, or create a password reset link
 // to send to someone who's locked out.
-export async function POST(request: Request, { params }: { params: Promise<{ uid: string }> }) {
-  const admin = await requireAdmin(request);
-  if (admin instanceof Response) return admin;
-
+export const POST = adminRoute<{ uid: string }>(async (request, admin, { params }) => {
   const { uid } = await params;
   const body = await request.json().catch(() => ({}));
 
@@ -33,4 +30,4 @@ export async function POST(request: Request, { params }: { params: Promise<{ uid
     console.error("Customer action failed:", error);
     return jsonError("That didn't work. The account may no longer exist.", 400);
   }
-}
+});

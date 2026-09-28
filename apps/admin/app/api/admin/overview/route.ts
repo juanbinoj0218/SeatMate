@@ -1,7 +1,7 @@
 import { Timestamp } from "firebase-admin/firestore";
 
 import type { DayPoint, Overview, PlaceRow } from "@/lib/overview-types";
-import { requireAdmin } from "@/lib/require-admin";
+import { adminRoute } from "@/lib/require-admin";
 
 // Everything the admin Overview page shows, gathered on the server with the
 // Admin SDK: business counts, live seats, page views/saves/QR scans, seat
@@ -15,9 +15,7 @@ const dayKey = (date: Date) =>
 const num = (value: unknown) => (typeof value === "number" && Number.isFinite(value) ? value : 0);
 const ms = (value: unknown) => (value instanceof Timestamp ? value.toMillis() : null);
 
-export async function GET(request: Request) {
-  const admin = await requireAdmin(request);
-  if (admin instanceof Response) return admin;
+export const GET = adminRoute(async (request, admin) => {
   const { db } = admin;
 
   const rangeDays = [7, 30, 90].includes(Number(new URL(request.url).searchParams.get("days")))
@@ -162,4 +160,4 @@ export async function GET(request: Request) {
   };
 
   return Response.json(overview, { headers: { "Cache-Control": "no-store" } });
-}
+});
