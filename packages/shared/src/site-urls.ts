@@ -17,8 +17,18 @@ export const BUSINESS_SITE_URL = trimTrailingSlash(
     (isDev ? "http://localhost:3001" : "https://seatmate360.net")
 );
 
+// The admin site. Set NEXT_PUBLIC_ADMIN_SITE_URL to its domain in every
+// Vercel project; until then it falls back to an admin subdomain.
+export const ADMIN_SITE_URL = trimTrailingSlash(
+  process.env.NEXT_PUBLIC_ADMIN_SITE_URL ||
+    (isDev ? "http://localhost:3002" : "https://admin.seatmate360.com")
+);
+
 export const consumerUrl = (path: string) =>
   `${CONSUMER_SITE_URL}${path}`;
 
 export const businessUrl = (path: string) =>
   `${BUSINESS_SITE_URL}${path}`;
+
+export const adminUrl = (path: string) =>
+  `${ADMIN_SITE_URL}${path}`;

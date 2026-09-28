@@ -20,6 +20,7 @@ import {
 import { auth, db } from "@seatmate/shared/firebase";
 import BackButton from "@seatmate/shared/components/BackButton";
 import { resetSentMessage, sendResetLink } from "@seatmate/shared/password-reset";
+import { adminUrl } from "@seatmate/shared/site-urls";
 
 import {
   ClockIcon,
@@ -182,7 +183,7 @@ export default function BusinessLoginPage() {
           adminSnap.exists() &&
           adminSnap.data().active === true
         ) {
-          return "/admin";
+          return adminUrl("/");
         }
       } catch (adminError) {
         console.error(
@@ -370,7 +371,11 @@ export default function BusinessLoginPage() {
           credential.user.uid
         );
 
-      router.push(destination);
+      if (destination.startsWith("http")) {
+        window.location.assign(destination);
+      } else {
+        router.push(destination);
+      }
     } catch (err) {
       console.error(
         "Sign in error:",
@@ -511,7 +516,11 @@ export default function BusinessLoginPage() {
             result.user.uid
           );
 
+        if (destination.startsWith("http")) {
+        window.location.assign(destination);
+      } else {
         router.push(destination);
+      }
       } catch (err) {
         console.error(
           "Google sign-in error:",
