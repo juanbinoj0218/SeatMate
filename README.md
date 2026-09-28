@@ -1,12 +1,13 @@
 # SeatMate
 
-Live seating availability for cafés and restaurants. The repo holds two
-Next.js sites that share one Firebase project:
+Live seating availability for cafés, restaurants and bars. The repo holds
+three Next.js sites that share one Firebase project:
 
 | Folder | Site | Pages |
 | --- | --- | --- |
 | `apps/consumer` | Customer site (seatmate360.com) | `/`, `/about`, `/search`, `/place/[slug]`, `/places`, `/places/[city]`, `/suggest`, `/contact`, `/faq`, `/privacy`, `/terms`, `/account`, `/login`, `/auth/action`, `/api/place-details` |
-| `apps/business` | Business portal (seatmate360.net) | `/business/*`, `/staff/*`, `/admin`, `/admin/inbox`, `/api/seat-alerts` |
+| `apps/business` | Business portal (seatmate360.net) | `/business/*`, `/staff/*`, `/api/seat-alerts` |
+| `apps/admin` | Admin site (seatmate360.info) | `/` overview, `/businesses`, `/inbox`, `/customers`, `/admins`, `/login`, `/api/admin/*` |
 | `packages/shared` | Shared code | Firebase setup, `BackButton`, `SeatMateMark` logo, floor-plan marker config, global styles, cross-site URLs |
 
 ## Local development
@@ -15,9 +16,10 @@ Next.js sites that share one Firebase project:
 npm install              # once, from the repo root
 npm run dev:consumer     # http://localhost:3000
 npm run dev:business     # http://localhost:3001
+npm run dev:admin        # http://localhost:3002
 ```
 
-`npm run build` and `npm run lint` run for both apps.
+`npm run build` and `npm run lint` run for all apps.
 
 ## Environment variables
 
@@ -129,3 +131,26 @@ links to the place page with `?ref=qr` so scans can be counted.
 - City pages (`/places`, `/places/[city]`), `sitemap.xml`, `robots.txt`
   and link previews (Open Graph images) are rendered on the server from
   `publicBusinesses` through Firestore's REST API, cached for 5 minutes.
+
+## Admin site (`apps/admin`)
+
+A separate site for SeatMate admins (anyone with `admins/{uid}.active == true`):
+
+- **Overview**: customers, live places, seats open now, page views, saves,
+  QR scans, seat updates, new customers and new businesses per day (7/30/90
+  days), top places, and a "needs attention" list (approvals waiting, new
+  requests and messages, live places with stale or missing seat data).
+- **Businesses**: approve, reject, suspend and delete businesses and review
+  floor plans (moved here from the business site's `/admin`).
+- **Inbox**: place requests and contact messages.
+- **Customers**: every account with its role, sign-up and last sign-in
+  dates, saved places and home ZIP; search and filter; disable/enable an
+  account; copy a password reset link.
+- **Admins**: add an admin by email, remove admin access.
+
+Setup on Vercel: a third project with Root Directory `apps/admin` and your
+`seatmate360.info` as its domain. It needs the same `NEXT_PUBLIC_FIREBASE_*` variables plus
+`FIREBASE_SERVICE_ACCOUNT_KEY` (Overview, Customers and Admins read data on
+the server). Add `seatmate360.info` to Firebase → Authentication → Settings →
+Authorized domains. The old `/admin` links on the other two sites forward to
+the admin site.

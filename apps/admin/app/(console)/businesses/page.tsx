@@ -9,7 +9,6 @@ import {
 import { useRouter } from "next/navigation";
 import {
   onAuthStateChanged,
-  signOut,
 } from "firebase/auth";
 import {
   collection,
@@ -190,7 +189,7 @@ export default function AdminPage() {
       auth,
       async (currentUser) => {
         if (!currentUser) {
-          router.replace("/business/login?next=/admin");
+          router.replace("/login?next=/businesses");
           return;
         }
 
@@ -714,11 +713,6 @@ export default function AdminPage() {
     }
   };
 
-  const handleLogout = async () => {
-    await signOut(auth);
-    router.push("/business/login");
-  };
-
   if (loading) {
     return (
       <main className="min-h-screen bg-[#f7f8f5] flex items-center justify-center">
@@ -761,53 +755,11 @@ export default function AdminPage() {
 
   return (
     <main className="min-h-screen bg-[#f7f8f5]">
-      <header className="bg-[#101811] text-white">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 flex items-center justify-center text-white">
-              <SeatMateMark className="h-[85%] w-[85%]" />
-            </div>
-            <div>
-              <p className="font-bold">SeatMate</p>
-              <p className="text-xs text-white/50">
-                Admin Control Center
-              </p>
-            </div>
-          </div>
-
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={() => router.push("/admin/inbox")}
-              className="border border-white/20 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-white/10"
-            >
-              Inbox
-            </button>
-            <button
-              type="button"
-              onClick={() => window.location.assign(consumerUrl("/"))}
-              className="border border-white/20 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-white/10"
-            >
-              View SeatMate
-            </button>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="bg-white text-black px-4 py-2 rounded-xl text-sm font-semibold"
-            >
-              Log Out
-            </button>
-          </div>
-        </div>
-      </header>
 
       <div className="max-w-7xl mx-auto px-6 py-10">
         <div>
-          <p className="text-green-700 text-sm font-bold">
-            SEATMATE ADMIN
-          </p>
-          <h1 className="text-4xl md:text-5xl font-bold mt-2">
-            Control Center
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
+            Businesses
           </h1>
           <p className="text-gray-500 mt-3">
             Review businesses and control what appears publicly on SeatMate.

@@ -17,8 +17,17 @@ export const BUSINESS_SITE_URL = trimTrailingSlash(
     (isDev ? "http://localhost:3001" : "https://seatmate360.net")
 );
 
+// The admin site (seatmate360.info). NEXT_PUBLIC_ADMIN_SITE_URL overrides it.
+export const ADMIN_SITE_URL = trimTrailingSlash(
+  process.env.NEXT_PUBLIC_ADMIN_SITE_URL ||
+    (isDev ? "http://localhost:3002" : "https://seatmate360.info")
+);
+
 export const consumerUrl = (path: string) =>
   `${CONSUMER_SITE_URL}${path}`;
 
 export const businessUrl = (path: string) =>
   `${BUSINESS_SITE_URL}${path}`;
+
+export const adminUrl = (path: string) =>
+  `${ADMIN_SITE_URL}${path}`;

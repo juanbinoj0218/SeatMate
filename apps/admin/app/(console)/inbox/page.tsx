@@ -15,7 +15,6 @@ import {
   updateDoc,
 } from "firebase/firestore";
 
-import SeatMateMark from "@seatmate/shared/components/SeatMateMark";
 import { auth, db } from "@seatmate/shared/firebase";
 
 // Admin inbox: "suggest a place" requests (grouped, so the most-wanted
@@ -60,7 +59,7 @@ export default function AdminInboxPage() {
 
     const stopAuth = onAuthStateChanged(auth, async (user) => {
       if (!user) {
-        router.replace("/business/login?next=/admin/inbox");
+        router.replace("/login?next=/inbox");
         return;
       }
 
@@ -150,26 +149,6 @@ export default function AdminInboxPage() {
 
   return (
     <main className="min-h-screen bg-[#f7f8f5]">
-      <header className="bg-[#101811] text-white">
-        <div className="max-w-5xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 flex items-center justify-center">
-              <SeatMateMark className="h-[85%] w-[85%]" />
-            </div>
-            <div>
-              <p className="font-bold">SeatMate</p>
-              <p className="text-xs text-white/50">Admin Inbox</p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => router.push("/admin")}
-            className="border border-white/20 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-white/10"
-          >
-            ← Control Center
-          </button>
-        </div>
-      </header>
 
       <div className="max-w-5xl mx-auto px-6 py-10">
         <h1 className="text-4xl font-bold tracking-tight">Inbox</h1>

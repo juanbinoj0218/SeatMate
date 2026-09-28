@@ -276,12 +276,15 @@ button:disabled {
    LINKS
    ========================= */
 
-a {
-  color:
-    inherit;
+/* In the base layer so color/underline utilities on a link win. */
+@layer base {
+  a {
+    color:
+      inherit;
 
-  text-decoration:
-    none;
+    text-decoration:
+      none;
+  }
 }
 
 /* =========================
