@@ -1,5 +1,6 @@
-import { useEffect } from "react";
-import { DefaultTheme, Stack, ThemeProvider } from "expo-router";
+import { useEffect, useRef } from "react";
+import { DefaultTheme, Stack, ThemeProvider, useRouter } from "expo-router";
+import * as Notifications from "expo-notifications";
 import * as SplashScreen from "expo-splash-screen";
 
 import { AccountProvider } from "../lib/account";
@@ -7,9 +8,36 @@ import { AccountProvider } from "../lib/account";
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  const router = useRouter();
+
   useEffect(() => {
     SplashScreen.hideAsync();
   }, []);
+
+  // Tapping a "seat just opened" notification opens that place.
+  // Works whether the app was closed, in the background, or open.
+  const lastResponse = Notifications.useLastNotificationResponse();
+  const handledId = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!lastResponse) {
+      return;
+    }
+
+    const id = lastResponse.notification.request.identifier;
+
+    if (handledId.current === id) {
+      return;
+    }
+
+    handledId.current = id;
+
+    const slug = lastResponse.notification.request.content.data?.slug;
+
+    if (typeof slug === "string" && slug !== "") {
+      router.push({ pathname: "/place/[slug]", params: { slug } });
+    }
+  }, [lastResponse, router]);
 
   return (
     <ThemeProvider value={DefaultTheme}>

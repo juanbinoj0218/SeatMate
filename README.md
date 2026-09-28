@@ -32,3 +32,20 @@ EXPO_PUBLIC_FIREBASE_APP_ID=...
 - `src/app/place/[slug].tsx`: a place's live seats and floor plan
 - `src/app/login.tsx`: sign in / create account
 - `src/app/account.tsx`: saved places, recently viewed, profile, delete account
+
+## Seat notifications ("Notify me when a seat opens")
+
+The app saves what you're waiting for on `users/{uid}`, and a Firebase Cloud
+Function (`functions/index.js`) sends the notification when staff mark a seat
+open, even if the app is closed.
+
+One-time setup:
+
+1. Link the app to Expo (gives it a project ID for notifications):
+   `npx eas-cli@latest init`
+2. Switch Firebase to the Blaze (pay-as-you-go) plan. At SeatMate's size this
+   stays within the free allowance.
+3. Deploy the function (use the project ID from `.env.local`):
+   `npx firebase-tools@latest deploy --only functions --project YOUR_PROJECT_ID`
+
+Notifications work in Expo Go on iPhone. Android needs a development build.

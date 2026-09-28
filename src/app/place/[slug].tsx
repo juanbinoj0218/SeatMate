@@ -354,8 +354,22 @@ export default function PlaceScreen() {
   }, []);
 
   // Signed-in customer (same account as the website)
-  const { user, profileReady, isFavorite, toggleFavorite, recordView } =
-    useAccount();
+  const {
+    user,
+    profileReady,
+    isFavorite,
+    toggleFavorite,
+    recordView,
+    isWatching,
+    watchSeats,
+    unwatchSeats,
+  } = useAccount();
+
+  // "Notify me when a seat opens"
+  const [watchBusy, setWatchBusy] = useState(false);
+  const [watchProblem, setWatchProblem] = useState<
+    "" | "denied" | "simulator" | "not-configured" | "error"
+  >("");
 
   // Count a view once per visit (same daily stats as the website)
   useEffect(() => {
@@ -768,6 +782,51 @@ export default function PlaceScreen() {
   }
 
   // -------------------------
+  // NOTIFY ME WHEN A SEAT OPENS
+  // -------------------------
+
+  const watching = isWatching(slug);
+
+  // Full, or no single table has room for the whole group
+  const noRoom = totalSeats > 0 && openTables.length === 0;
+
+  async function toggleWatch() {
+    if (!business) {
+      return;
+    }
+
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+
+    setWatchProblem("");
+    setWatchBusy(true);
+
+    try {
+      if (watching) {
+        await unwatchSeats(slug, business.businessId);
+      } else {
+        const result = await watchSeats(
+          { slug, businessId: business.businessId, placeName: business.name },
+          party,
+        );
+
+        if (result === "signin") {
+          router.push("/login");
+        } else if (result !== "ok") {
+          setWatchProblem(result);
+        }
+      }
+    } catch (watchError) {
+      console.error("Seat alert error:", watchError);
+      setWatchProblem("error");
+    } finally {
+      setWatchBusy(false);
+    }
+  }
+
+  // -------------------------
   // DIRECTIONS
   // -------------------------
 
@@ -974,6 +1033,92 @@ export default function PlaceScreen() {
               )}
             </View>
           </View>
+
+          {/* NOTIFY ME WHEN A SEAT OPENS */}
+
+          {(noRoom || watching) && (
+            <View style={styles.watchCard}>
+              <View style={styles.watchHeader}>
+                <View
+                  style={[
+                    styles.watchIcon,
+                    watching ? { backgroundColor: C.freeSoft } : null,
+                  ]}
+                >
+                  <Ionicons
+                    name={watching ? "notifications" : "notifications-outline"}
+                    size={18}
+                    color={watching ? C.freeText : C.text}
+                  />
+                </View>
+
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={styles.watchTitle}>
+                    {watching
+                      ? "We'll let you know"
+                      : party > 1
+                        ? `No table for ${partyLabel} right now`
+                        : "Full right now"}
+                  </Text>
+
+                  <Text style={styles.watchText}>
+                    {watching
+                      ? `You'll get a notification when ${
+                          party > 1 ? `a table for ${partyLabel}` : "a seat"
+                        } opens here. Alerts last 12 hours.`
+                      : "Get a notification the moment a seat opens up."}
+                  </Text>
+                </View>
+              </View>
+
+              <PressableScale
+                style={[
+                  styles.watchButton,
+                  watching ? styles.watchButtonOff : null,
+                  watchBusy ? { opacity: 0.6 } : null,
+                ]}
+                onPress={toggleWatch}
+                disabled={watchBusy}
+              >
+                {watchBusy ? (
+                  <ActivityIndicator color={watching ? C.text : "#FFFFFF"} />
+                ) : (
+                  <Text
+                    style={[
+                      styles.watchButtonText,
+                      watching ? { color: C.text } : null,
+                    ]}
+                  >
+                    {watching
+                      ? "Turn off alert"
+                      : party > 1
+                        ? `Notify me when a table for ${partyLabel} opens`
+                        : "Notify me when a seat opens"}
+                  </Text>
+                )}
+              </PressableScale>
+
+              {watchProblem !== "" && (
+                <View style={styles.watchProblem}>
+                  <Text style={styles.watchProblemText}>
+                    {watchProblem === "denied"
+                      ? "Notifications are turned off for SeatMate."
+                      : watchProblem === "simulator"
+                        ? "Notifications only work on a real phone."
+                        : watchProblem === "not-configured"
+                          ? "Notifications aren't set up in this build yet."
+                          : "We couldn't turn on the alert. Please try again."}
+                  </Text>
+
+                  {watchProblem === "denied" && (
+                    <PressableScale onPress={() => Linking.openSettings()}>
+                      <Text style={styles.watchSettingsLink}>Open Settings</Text>
+                    </PressableScale>
+                  )}
+                </View>
+              )}
+            </View>
+          )}
 
           {error !== "" && (
             <View style={styles.errorBox}>
@@ -1749,6 +1894,67 @@ const styles = StyleSheet.create({
     color: C.text,
     fontSize: 13,
     fontWeight: "700",
+  },
+
+  // NOTIFY ME
+
+  watchCard: {
+    marginTop: 12,
+    backgroundColor: C.card,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: C.border,
+    padding: 16,
+  },
+
+  watchHeader: { flexDirection: "row", alignItems: "center" },
+
+  watchIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: C.page,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  watchTitle: { fontSize: 16, fontWeight: "800", color: C.text },
+
+  watchText: { marginTop: 2, fontSize: 13, lineHeight: 18, color: C.textSoft },
+
+  watchButton: {
+    marginTop: 14,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: C.dark,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 16,
+  },
+
+  watchButtonOff: {
+    backgroundColor: C.card,
+    borderWidth: 1,
+    borderColor: C.border,
+  },
+
+  watchButtonText: { color: "#FFFFFF", fontSize: 15, fontWeight: "700" },
+
+  watchProblem: {
+    marginTop: 12,
+    backgroundColor: C.someSoft,
+    borderRadius: 12,
+    padding: 12,
+  },
+
+  watchProblemText: { color: C.someText, fontSize: 13, lineHeight: 18 },
+
+  watchSettingsLink: {
+    marginTop: 6,
+    color: C.text,
+    fontSize: 13,
+    fontWeight: "700",
+    textDecorationLine: "underline",
   },
 
   errorBox: {

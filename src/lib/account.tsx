@@ -29,19 +29,25 @@ import {
 } from "firebase/auth";
 
 import {
+  arrayRemove,
+  arrayUnion,
   collection,
   deleteDoc,
+  deleteField,
   doc,
+  FieldPath,
   getDocs,
   increment,
   onSnapshot,
   serverTimestamp,
   setDoc,
   Timestamp,
+  updateDoc,
 } from "firebase/firestore";
 
 import { auth } from "./auth";
 import { db } from "./firebase";
+import { getPushToken } from "./notifications";
 
 // -------------------------
 // TYPES (same shape as the website)
@@ -63,17 +69,63 @@ export type RecentPlace = PlaceSummary & {
   viewedAtMs: number;
 };
 
+// "Notify me when a seat opens" for one place. Stored on users/{uid} as
+// seatWatches.{slug}; the Cloud Function removes it once it has notified you.
+export type SeatWatch = {
+  businessId: string;
+  placeName: string;
+  // Group size: only notify when one table has this many free seats
+  party: number;
+  createdAtMs: number;
+};
+
+// Watches expire after 12 hours (same as the website's email alerts)
+export const SEAT_WATCH_TTL_MS = 12 * 60 * 60 * 1000;
+
+export type WatchResult =
+  | "ok"
+  | "signin"
+  | "denied"
+  | "simulator"
+  | "not-configured"
+  | "error";
+
 export type Profile = {
   displayName: string;
   homeZip: string;
   recentlyViewed: RecentPlace[];
+  seatWatches: Record<string, SeatWatch>;
 };
 
 const EMPTY_PROFILE: Profile = {
   displayName: "",
   homeZip: "",
   recentlyViewed: [],
+  seatWatches: {},
 };
+
+function toSeatWatches(value: unknown): Record<string, SeatWatch> {
+  if (!value || typeof value !== "object") {
+    return {};
+  }
+
+  const watches: Record<string, SeatWatch> = {};
+
+  Object.entries(value as Record<string, Record<string, unknown>>).forEach(([slug, watch]) => {
+    if (!watch || typeof watch !== "object") {
+      return;
+    }
+
+    watches[slug] = {
+      businessId: String(watch.businessId || ""),
+      placeName: String(watch.placeName || ""),
+      party: Math.max(1, Number(watch.party) || 1),
+      createdAtMs: Number(watch.createdAtMs) || 0,
+    };
+  });
+
+  return watches;
+}
 
 const MAX_RECENT = 8;
 
@@ -96,6 +148,13 @@ type AccountContextValue = {
   usesPassword: boolean;
   // Permanently deletes the account and everything saved under it
   deleteAccount: (password: string) => Promise<void>;
+  // "Notify me when a seat opens"
+  isWatching: (slug: string) => boolean;
+  watchSeats: (
+    place: { slug: string; businessId: string; placeName: string },
+    party: number
+  ) => Promise<WatchResult>;
+  unwatchSeats: (slug: string, businessId: string) => Promise<void>;
 };
 
 const AccountContext = createContext<AccountContextValue | null>(null);
@@ -238,6 +297,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
                   viewedAtMs: Number(item.viewedAtMs) || 0,
                 }))
               : [],
+            seatWatches: toSeatWatches(data.seatWatches),
           });
 
           setProfileReady(true);
@@ -377,6 +437,76 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     await firebaseSignOut(auth);
   }, []);
 
+  const isWatching = useCallback(
+    (slug: string) => {
+      const watch = profile.seatWatches[slug];
+      return !!watch && Date.now() - watch.createdAtMs < SEAT_WATCH_TTL_MS;
+    },
+    [profile.seatWatches]
+  );
+
+  const watchSeats = useCallback(
+    async (
+      place: { slug: string; businessId: string; placeName: string },
+      party: number
+    ): Promise<WatchResult> => {
+      if (!user) {
+        return "signin";
+      }
+
+      const push = await getPushToken();
+
+      if (!push.ok) {
+        return push.reason;
+      }
+
+      try {
+        await setDoc(
+          doc(db, "users", user.uid),
+          {
+            pushTokens: arrayUnion(push.token),
+            seatWatches: {
+              [place.slug]: {
+                businessId: place.businessId,
+                placeName: place.placeName,
+                party,
+                createdAtMs: Date.now(),
+              },
+            },
+            seatWatchBusinessIds: arrayUnion(place.businessId),
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true }
+        );
+
+        return "ok";
+      } catch (error) {
+        console.error("Could not save seat alert:", error);
+        return "error";
+      }
+    },
+    [user]
+  );
+
+  const unwatchSeats = useCallback(
+    async (slug: string, businessId: string) => {
+      if (!user) {
+        return;
+      }
+
+      await updateDoc(
+        doc(db, "users", user.uid),
+        new FieldPath("seatWatches", slug),
+        deleteField(),
+        "seatWatchBusinessIds",
+        arrayRemove(businessId),
+        "updatedAt",
+        serverTimestamp()
+      );
+    },
+    [user]
+  );
+
   const usesPassword =
     user?.providerData.some((provider) => provider.providerId === "password") ?? false;
 
@@ -448,6 +578,9 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       signOut,
       usesPassword,
       deleteAccount,
+      isWatching,
+      watchSeats,
+      unwatchSeats,
     }),
     [
       user,
@@ -464,6 +597,9 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       signOut,
       usesPassword,
       deleteAccount,
+      isWatching,
+      watchSeats,
+      unwatchSeats,
     ]
   );
 

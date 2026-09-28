@@ -1,0 +1,13 @@
+{
+  "name": "seatmate-functions",
+  "description": "Sends 'a seat just opened' push notifications to the SeatMate app",
+  "private": true,
+  "main": "index.js",
+  "engines": {
+    "node": "22"
+  },
+  "dependencies": {
+    "firebase-admin": "^14.5.0",
+    "firebase-functions": "^7.3.0"
+  }
+}
