@@ -83,6 +83,9 @@ type AccountContextValue = {
   signOut: () => Promise<void>;
   // Sends signed-out visitors to /login and brings them back afterwards.
   goToSignIn: () => void;
+  // Stops live syncing of the profile and saved places (used right before
+  // deleting the account, so the profile isn't recreated as it's removed).
+  pauseSync: () => void;
 };
 
 const AccountContext = createContext<AccountContextValue | null>(null);
@@ -135,6 +138,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   // Latest profile for callbacks, so they don't need to be recreated (and
   // re-trigger effects) every time the profile document changes.
   const profileRef = useRef(profile);
+  const stopSyncRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     profileRef.current = profile;
@@ -144,9 +148,16 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     let stopProfile: (() => void) | undefined;
     let stopFavorites: (() => void) | undefined;
 
-    const stopAuth = onAuthStateChanged(auth, (nextUser) => {
+    const stopSync = () => {
       stopProfile?.();
       stopFavorites?.();
+      stopProfile = undefined;
+      stopFavorites = undefined;
+    };
+    stopSyncRef.current = stopSync;
+
+    const stopAuth = onAuthStateChanged(auth, (nextUser) => {
+      stopSync();
 
       setUser(nextUser);
       setAuthReady(true);
@@ -360,6 +371,8 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     await firebaseSignOut(auth);
   }, []);
 
+  const pauseSync = useCallback(() => stopSyncRef.current(), []);
+
   const value = useMemo<AccountContextValue>(
     () => ({
       user,
@@ -375,6 +388,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       saveProfile,
       signOut,
       goToSignIn,
+      pauseSync,
     }),
     [
       user,
@@ -390,6 +404,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       saveProfile,
       signOut,
       goToSignIn,
+      pauseSync,
     ]
   );
 

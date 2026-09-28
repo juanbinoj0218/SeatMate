@@ -16,6 +16,7 @@ import {
   SiteFooter,
   SiteHeader,
 } from "@/components/site-chrome";
+import AccountDeletedNotice from "@/components/account-deleted-notice";
 import { HeartIcon } from "@/components/account-menu";
 import { useAccount } from "@/components/account-provider";
 import SaveButton from "@/components/save-button";
@@ -208,6 +209,7 @@ export default function HomePage() {
   return (
     <main className="min-h-screen bg-paper text-ink">
       <SiteHeader />
+      <AccountDeletedNotice />
 
       {/* HERO */}
       <section className="mx-auto grid max-w-6xl items-center gap-14 px-5 pb-20 pt-12 sm:px-8 md:pt-20 lg:grid-cols-[1.05fr_1fr] lg:gap-16 lg:pb-28">

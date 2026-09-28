@@ -247,8 +247,12 @@ service cloud.firestore {
     // limited by these rules.
     match /seatAlerts/{alertId} {
 
-      allow read, delete: if signedIn()
+      allow get, delete: if signedIn()
         && alertId.matches('^' + request.auth.uid + '_.+$');
+
+      // A customer can list their own alerts (used when deleting an account).
+      allow list: if signedIn()
+        && resource.data.uid == request.auth.uid;
 
       allow create, update: if signedIn()
         && alertId == request.auth.uid + '_' + request.resource.data.slug
