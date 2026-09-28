@@ -44,7 +44,7 @@ Each site links to the other by absolute URL:
 | consumer | `GOOGLE_MAPS_API_KEY` | Google reviews on place pages |
 | consumer | `NEXT_PUBLIC_BUSINESS_SITE_URL` | Optional; defaults to `https://seatmate360.net` |
 | business | `NEXT_PUBLIC_CONSUMER_SITE_URL` | Optional; defaults to `https://seatmate360.com` |
-| consumer | `NEXT_PUBLIC_CONTACT_EMAIL` | Optional; shown on Contact, Privacy and Terms. Defaults to `hello@seatmate360.com` |
+| consumer | `NEXT_PUBLIC_CONTACT_EMAIL` | Optional; shown on Contact, Privacy and Terms. Defaults to `admin@seatmate360.com` |
 | consumer | `NEXT_PUBLIC_IOS_APP_URL` | Optional; App Store link. Shows "Coming soon" until set |
 | consumer | `NEXT_PUBLIC_ANDROID_APP_URL` | Optional; Google Play link. Shows "Coming soon" until set |
 

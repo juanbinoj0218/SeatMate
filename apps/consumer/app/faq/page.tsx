@@ -29,10 +29,6 @@ const SECTIONS: { title: string; items: { q: string; a: React.ReactNode }[] }[] 
         a: "Yes. Sign in, open a full place and tap “Email me when a seat opens”. We'll email you once, the next time a seat opens in the following 12 hours.",
       },
       {
-        q: "Do I need an account?",
-        a: "No. Anyone can search and see live seats. An account lets you save places, set a home ZIP, see recently viewed places and get seat alerts.",
-      },
-      {
         q: "My favorite place isn't on SeatMate.",
         a: (
           <>
