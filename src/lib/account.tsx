@@ -19,12 +19,20 @@ import {
   useState,
 } from "react";
 
-import { onAuthStateChanged, signOut as firebaseSignOut, User } from "firebase/auth";
+import {
+  deleteUser,
+  EmailAuthProvider,
+  onAuthStateChanged,
+  reauthenticateWithCredential,
+  signOut as firebaseSignOut,
+  User,
+} from "firebase/auth";
 
 import {
   collection,
   deleteDoc,
   doc,
+  getDocs,
   increment,
   onSnapshot,
   serverTimestamp,
@@ -84,6 +92,10 @@ type AccountContextValue = {
   clearRecentlyViewed: () => Promise<void>;
   saveProfile: (changes: Partial<Pick<Profile, "displayName" | "homeZip">>) => Promise<void>;
   signOut: () => Promise<void>;
+  // True if the account signs in with email + password (needs it to delete)
+  usesPassword: boolean;
+  // Permanently deletes the account and everything saved under it
+  deleteAccount: (password: string) => Promise<void>;
 };
 
 const AccountContext = createContext<AccountContextValue | null>(null);
@@ -166,6 +178,9 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   // Latest profile for callbacks
   const profileRef = useRef(profile);
 
+  // While deleting an account, don't re-create the profile document
+  const deletingRef = useRef(false);
+
   useEffect(() => {
     profileRef.current = profile;
   }, [profile]);
@@ -194,7 +209,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       stopProfile = onSnapshot(
         userRef,
         (snapshot) => {
-          if (!snapshot.exists()) {
+          if (!snapshot.exists() && !deletingRef.current) {
             // First time with this account: create the profile document
             setDoc(
               userRef,
@@ -362,6 +377,61 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     await firebaseSignOut(auth);
   }, []);
 
+  const usesPassword =
+    user?.providerData.some((provider) => provider.providerId === "password") ?? false;
+
+  // Apple requires apps with accounts to let people delete them in the app.
+  const deleteAccount = useCallback(async (password: string) => {
+    const current = auth.currentUser;
+
+    if (!current) {
+      return;
+    }
+
+    // 1. Confirm it's really them (Firebase requires a recent sign-in)
+    const hasPassword = current.providerData.some(
+      (provider) => provider.providerId === "password"
+    );
+
+    if (hasPassword && current.email) {
+      await reauthenticateWithCredential(
+        current,
+        EmailAuthProvider.credential(current.email, password)
+      );
+    }
+
+    deletingRef.current = true;
+
+    try {
+      const uid = current.uid;
+
+      // 2. Delete saved places
+      const favoritesSnapshot = await getDocs(collection(db, "users", uid, "favorites"));
+
+      await Promise.all(favoritesSnapshot.docs.map((favoriteDoc) => deleteDoc(favoriteDoc.ref)));
+
+      // 3. Delete any "tell me when a seat opens" alerts for places they used
+      const slugs = new Set([
+        ...favoritesSnapshot.docs.map((favoriteDoc) => favoriteDoc.id),
+        ...profileRef.current.recentlyViewed.map((place) => place.slug),
+      ]);
+
+      await Promise.all(
+        Array.from(slugs).map((slug) =>
+          deleteDoc(doc(db, "seatAlerts", `${uid}_${slug}`)).catch(() => {})
+        )
+      );
+
+      // 4. Delete the profile (name, home ZIP, recently viewed)
+      await deleteDoc(doc(db, "users", uid));
+
+      // 5. Delete the sign-in account itself
+      await deleteUser(current);
+    } finally {
+      deletingRef.current = false;
+    }
+  }, []);
+
   const value = useMemo<AccountContextValue>(
     () => ({
       user,
@@ -376,6 +446,8 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       clearRecentlyViewed,
       saveProfile,
       signOut,
+      usesPassword,
+      deleteAccount,
     }),
     [
       user,
@@ -390,6 +462,8 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       clearRecentlyViewed,
       saveProfile,
       signOut,
+      usesPassword,
+      deleteAccount,
     ]
   );
 

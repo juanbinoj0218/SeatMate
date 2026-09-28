@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Image,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
   SafeAreaView,
@@ -21,6 +22,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 
 import { db } from "../lib/firebase";
+import { CONTACT_URL, FAQ_URL, PRIVACY_URL, TERMS_URL } from "../lib/site";
 import {
   firstName,
   initialFor,
@@ -179,6 +181,8 @@ export default function AccountScreen() {
               <Text style={styles.linkText}>Create an account</Text>
             </Pressable>
           </View>
+
+          <LegalLinks />
         </View>
       </SafeAreaView>
     );
@@ -313,9 +317,17 @@ export default function AccountScreen() {
             }}
             style={({ pressed }) => [styles.signOutButton, pressed ? { opacity: 0.7 } : null]}
           >
-            <Ionicons name="log-out-outline" size={18} color={C.takenText} />
+            <Ionicons name="log-out-outline" size={18} color={C.textSoft} />
             <Text style={styles.signOutText}>Sign out</Text>
           </Pressable>
+
+          {/* HELP & LEGAL */}
+
+          <LegalLinks />
+
+          {/* DELETE ACCOUNT */}
+
+          <DeleteAccount onDeleted={() => router.replace("/")} />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -496,6 +508,163 @@ function SavedList({
           </Pressable>
         );
       })}
+    </View>
+  );
+}
+
+// Help, privacy policy and terms (these pages live on the website)
+function LegalLinks() {
+  const links = [
+    { label: "Help & FAQ", icon: "help-circle-outline" as const, url: FAQ_URL },
+    { label: "Contact support", icon: "mail-outline" as const, url: CONTACT_URL },
+    { label: "Privacy Policy", icon: "shield-checkmark-outline" as const, url: PRIVACY_URL },
+    { label: "Terms of Service", icon: "document-text-outline" as const, url: TERMS_URL },
+  ];
+
+  return (
+    <View style={[styles.listCard, { marginTop: 26 }]}>
+      {links.map((link, index) => (
+        <Pressable
+          key={link.label}
+          onPress={() => Linking.openURL(link.url)}
+          style={({ pressed }) => [
+            styles.linkRow,
+            index > 0 ? styles.listRowBorder : null,
+            pressed ? { backgroundColor: "#F7F8F5" } : null,
+          ]}
+        >
+          <Ionicons name={link.icon} size={18} color={C.textSoft} />
+          <Text style={styles.linkRowText}>{link.label}</Text>
+          <Ionicons name="open-outline" size={15} color={C.textMuted} />
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
+function deleteErrorMessage(error: unknown) {
+  const code =
+    typeof error === "object" && error !== null && "code" in error
+      ? String((error as { code: unknown }).code)
+      : "";
+
+  switch (code) {
+    case "auth/invalid-credential":
+    case "auth/wrong-password":
+      return "Incorrect password.";
+    case "auth/missing-password":
+      return "Enter your password.";
+    case "auth/requires-recent-login":
+      return "For your security, sign out, sign back in, then try again.";
+    case "auth/too-many-requests":
+      return "Too many attempts. Wait a moment and try again.";
+    case "auth/network-request-failed":
+      return "Network error. Check your connection and try again.";
+    default:
+      console.error("Account deletion failed:", error);
+      return "We couldn't delete your account. Please try again.";
+  }
+}
+
+// Apple requires a way to delete your account from inside the app
+function DeleteAccount({ onDeleted }: { onDeleted: () => void }) {
+  const { usesPassword, deleteAccount } = useAccount();
+
+  const [open, setOpen] = useState(false);
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  async function confirmDelete() {
+    setError("");
+
+    if (usesPassword && !password) {
+      setError("Enter your password.");
+      return;
+    }
+
+    setBusy(true);
+
+    try {
+      await deleteAccount(password);
+      onDeleted();
+    } catch (caught) {
+      setError(deleteErrorMessage(caught));
+      setBusy(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <Pressable
+        onPress={() => setOpen(true)}
+        hitSlop={8}
+        style={({ pressed }) => [styles.deleteLink, pressed ? { opacity: 0.6 } : null]}
+      >
+        <Text style={styles.deleteLinkText}>Delete account</Text>
+      </Pressable>
+    );
+  }
+
+  return (
+    <View style={styles.deleteCard}>
+      <Text style={styles.deleteTitle}>Delete your account?</Text>
+
+      <Text style={styles.deleteText}>
+        {"This permanently deletes your SeatMate account, saved places, recently viewed places and profile, on the app and the website. This can't be undone."}
+      </Text>
+
+      {usesPassword && (
+        <>
+          <Text style={[styles.fieldLabel, { marginTop: 14 }]}>
+            Enter your password to confirm
+          </Text>
+
+          <TextInput
+            value={password}
+            onChangeText={setPassword}
+            placeholder="Your password"
+            placeholderTextColor={C.textMuted}
+            secureTextEntry
+            autoCapitalize="none"
+            autoCorrect={false}
+            textContentType="password"
+            style={styles.input}
+          />
+        </>
+      )}
+
+      {error !== "" && <Text style={styles.formError}>{error}</Text>}
+
+      <View style={styles.deleteButtons}>
+        <Pressable
+          onPress={() => {
+            setOpen(false);
+            setPassword("");
+            setError("");
+          }}
+          disabled={busy}
+          style={({ pressed }) => [styles.cancelButton, pressed ? { opacity: 0.7 } : null]}
+        >
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </Pressable>
+
+        <Pressable
+          onPress={confirmDelete}
+          disabled={busy}
+          style={({ pressed }) => [
+            styles.dangerButton,
+            busy ? { opacity: 0.6 } : null,
+            pressed && !busy ? { opacity: 0.8 } : null,
+          ]}
+        >
+          {busy ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.dangerButtonText}>Delete account</Text>
+          )}
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -796,5 +965,61 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  signOutText: { marginLeft: 8, color: C.takenText, fontSize: 16, fontWeight: "600" },
+  signOutText: { marginLeft: 8, color: C.text, fontSize: 16, fontWeight: "600" },
+
+  // HELP & LEGAL
+
+  linkRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+
+  linkRowText: { flex: 1, marginLeft: 12, fontSize: 15, color: C.text },
+
+  // DELETE ACCOUNT
+
+  deleteLink: { alignSelf: "center", marginTop: 26, padding: 6 },
+
+  deleteLinkText: { color: C.takenText, fontSize: 14, fontWeight: "600" },
+
+  deleteCard: {
+    marginTop: 26,
+    backgroundColor: C.card,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#F3D6D6",
+    padding: 16,
+  },
+
+  deleteTitle: { fontSize: 17, fontWeight: "800", color: C.text },
+
+  deleteText: { marginTop: 6, fontSize: 14, lineHeight: 20, color: C.textSoft },
+
+  deleteButtons: { flexDirection: "row", marginTop: 16 },
+
+  cancelButton: {
+    flex: 1,
+    height: 48,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: C.border,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 8,
+  },
+
+  cancelButtonText: { fontSize: 15, fontWeight: "600", color: C.text },
+
+  dangerButton: {
+    flex: 1,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: "#C94A4A",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  dangerButtonText: { fontSize: 15, fontWeight: "700", color: "#FFFFFF" },
 });

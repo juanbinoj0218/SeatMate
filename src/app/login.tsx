@@ -3,6 +3,7 @@ import { ReactNode, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
   SafeAreaView,
@@ -26,6 +27,7 @@ import {
 
 import { auth } from "../lib/auth";
 import { useAccount } from "../lib/account";
+import { PRIVACY_URL, TERMS_URL } from "../lib/site";
 
 // Same messages as the website's sign-in page
 function errorMessage(error: unknown) {
@@ -285,7 +287,17 @@ export default function LoginScreen() {
           </View>
 
           <Text style={styles.footnote}>
-            {"An account is optional. You can always check seats without one. It's the same account as the SeatMate website."}
+            {signingUp
+              ? "By creating an account, you agree to the SeatMate "
+              : "An account is optional. You can always check seats without one. See our "}
+            <Text style={styles.footnoteLink} onPress={() => Linking.openURL(TERMS_URL)}>
+              Terms of Service
+            </Text>
+            {" and "}
+            <Text style={styles.footnoteLink} onPress={() => Linking.openURL(PRIVACY_URL)}>
+              Privacy Policy
+            </Text>
+            {". It's the same account as the SeatMate website."}
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -417,6 +429,8 @@ const styles = StyleSheet.create({
   switchText: { color: "#5F6763", fontSize: 14 },
 
   switchLink: { color: "#1F2522", fontSize: 14, fontWeight: "700", textDecorationLine: "underline" },
+
+  footnoteLink: { color: "#5F6763", fontWeight: "600", textDecorationLine: "underline" },
 
   footnote: {
     marginTop: 18,
