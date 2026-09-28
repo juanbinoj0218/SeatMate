@@ -14,11 +14,13 @@ import {
   withSeatSummaries,
 } from "@/lib/places";
 import { fallbackImageFor } from "@/lib/place-data";
+import { useFeatures } from "@/lib/use-features";
 import { useNow } from "@/lib/use-now";
 
 type SearchResult = PlaceWithSeats;
 
 function SearchPageContent() {
+  const features = useFeatures();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -295,6 +297,7 @@ function SearchPageContent() {
                   ? `No approved SeatMate locations were found in ZIP ${initialZip}.`
                   : "Try another business name or ZIP code."}
               </p>
+              {features.suggestPlace && (
               <button
                 type="button"
                 onClick={() =>
@@ -308,6 +311,7 @@ function SearchPageContent() {
               >
                 Ask for it on SeatMate →
               </button>
+              )}
             </div>
           ) : (
             <div className="grid gap-5 lg:grid-cols-2">

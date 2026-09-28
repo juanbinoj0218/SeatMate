@@ -17,6 +17,8 @@ import {
 
 import { auth, db } from "@seatmate/shared/firebase";
 
+import { logAction, useAdmin } from "@/lib/admin-session";
+
 // Admin inbox: "suggest a place" requests (grouped, so the most-wanted
 // places float to the top as sales leads) and contact form messages.
 
@@ -47,6 +49,7 @@ const toMs = (value: unknown) => (value instanceof Timestamp ? value.toMillis() 
 const key = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 
 export default function AdminInboxPage() {
+  const user = useAdmin();
   const router = useRouter();
   const [state, setState] = useState<"loading" | "denied" | "ready">("loading");
   const [tab, setTab] = useState<"requests" | "messages">("requests");
@@ -131,10 +134,17 @@ export default function AdminInboxPage() {
 
   const visibleMessages = messages.filter((message) => showDone || message.status !== "done");
 
-  const markDone = (collectionName: string, ids: string[], done: boolean) =>
-    Promise.all(ids.map((id) => updateDoc(doc(db, collectionName, id), { status: done ? "done" : "new" }))).catch(
-      (error) => console.error("Could not update:", error)
-    );
+  const markDone = (collectionName: string, ids: string[], done: boolean, label: string) =>
+    Promise.all(ids.map((id) => updateDoc(doc(db, collectionName, id), { status: done ? "done" : "new" })))
+      .then(() =>
+        logAction(user, {
+          action: done ? "inbox.handled" : "inbox.reopened",
+          targetId: ids[0],
+          targetName: label,
+          details: collectionName === "placeRequests" ? "Place request" : "Contact message",
+        })
+      )
+      .catch((error) => console.error("Could not update:", error));
 
   if (state !== "ready") {
     return (
@@ -226,7 +236,7 @@ export default function AdminInboxPage() {
 
                       <button
                         type="button"
-                        onClick={() => markDone("placeRequests", group.map((request) => request.id), !done)}
+                        onClick={() => markDone("placeRequests", group.map((request) => request.id), !done, original.placeName)}
                         className="shrink-0 rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold hover:bg-gray-50"
                       >
                         {done ? "Reopen" : "Mark handled"}
@@ -264,7 +274,7 @@ export default function AdminInboxPage() {
                     </a>
                     <button
                       type="button"
-                      onClick={() => markDone("contactMessages", [message.id], message.status !== "done")}
+                      onClick={() => markDone("contactMessages", [message.id], message.status !== "done", message.email)}
                       className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold hover:bg-gray-50"
                     >
                       {message.status === "done" ? "Reopen" : "Done"}

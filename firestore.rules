@@ -332,6 +332,17 @@ service cloud.firestore {
     }
 
     // -------------------------
+    // SITE SETTINGS
+    // -------------------------
+
+    // Feature switches. Everyone can read them; only the admin site's
+    // server (which isn't limited by these rules) writes them.
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // -------------------------
     // STAFF INVITES
     // -------------------------
 

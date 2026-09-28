@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import LiveSeats from "@/components/live-seats";
+import SuggestLink from "@/components/suggest-link";
 import { SiteFooter, SiteHeader } from "@/components/site-chrome";
 import { fallbackImageFor } from "@/lib/place-data";
 import { listCitiesServer } from "@/lib/places-server";
@@ -80,13 +81,12 @@ export default async function CityPage({ params }: PageProps<"/places/[city]">) 
         </ul>
 
         <p className="mt-12 text-gray-600">
-          Missing a favorite spot in {city.name}?{" "}
-          <Link
+          <SuggestLink
             href={`/suggest?location=${encodeURIComponent(`${city.name}, ${city.state}`)}`}
-            className="font-semibold text-ink underline decoration-line underline-offset-4 hover:decoration-ink"
+            before={<>Missing a favorite spot in {city.name}? </>}
           >
             Ask for it on SeatMate
-          </Link>
+          </SuggestLink>
         </p>
       </section>
 

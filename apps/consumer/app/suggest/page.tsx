@@ -11,6 +11,7 @@ import { businessUrl } from "@seatmate/shared/site-urls";
 import { useAccount } from "@/components/account-provider";
 import { FormDone, FormField } from "@/components/form-bits";
 import { SiteFooter, SiteHeader } from "@/components/site-chrome";
+import { useFeatures } from "@/lib/use-features";
 
 const TYPES = ["Café", "Restaurant", "Bar", "Bakery", "Other"];
 
@@ -64,6 +65,7 @@ function SuggestForm() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
+  const { suggestPlace } = useFeatures();
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -95,6 +97,19 @@ function SuggestForm() {
       setBusy(false);
     }
   };
+
+  if (!suggestPlace) {
+    return (
+      <FormDone
+        title="Suggestions are paused"
+        body="We're not taking new place suggestions right now. Check back soon, or browse the places already on SeatMate."
+      >
+        <Link href="/search" className="rounded-full border border-line px-4 py-2 text-sm font-semibold transition hover:border-gray-300">
+          Browse places
+        </Link>
+      </FormDone>
+    );
+  }
 
   if (done) {
     return (

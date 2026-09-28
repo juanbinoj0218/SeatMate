@@ -10,6 +10,7 @@ import { useAccount } from "@/components/account-provider";
 import { FormDone, FormField } from "@/components/form-bits";
 import { SiteFooter, SiteHeader } from "@/components/site-chrome";
 import { CONTACT_EMAIL } from "@/lib/site-info";
+import { useFeatures } from "@/lib/use-features";
 
 const TOPICS = ["General question", "I run a business", "Report a problem", "Press", "Other"];
 
@@ -23,6 +24,7 @@ export default function ContactPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
+  const { contactForm } = useFeatures();
 
   const replyTo = email.trim() || user?.email || "";
 
@@ -92,7 +94,13 @@ export default function ContactPage() {
           </dl>
         </div>
 
-        {done ? (
+        {!contactForm ? (
+          <FormDone title="Email us" body={`The contact form is off right now. Write to ${CONTACT_EMAIL} and we'll get back to you.`}>
+            <a href={`mailto:${CONTACT_EMAIL}`} className="inline-flex rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-white hover:bg-black">
+              Email {CONTACT_EMAIL}
+            </a>
+          </FormDone>
+        ) : done ? (
           <FormDone title="Message sent" body={`Thanks${name.trim() ? `, ${name.trim().split(" ")[0]}` : ""}! We'll reply to ${replyTo}.`} />
         ) : (
           <form onSubmit={submit} className="space-y-5 rounded-3xl border border-line bg-white p-7 sm:p-9">

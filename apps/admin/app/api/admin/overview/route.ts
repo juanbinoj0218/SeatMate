@@ -46,11 +46,13 @@ export const GET = adminRoute(async (request, admin) => {
     ]);
 
   // Businesses by status, new sign-ups per day, and the approval queue.
+  const nudgedAt = new Map<string, number | null>();
   const businessCounts: Record<string, number> = { draft: 0, pending: 0, approved: 0, suspended: 0, rejected: 0 };
   const pending: Overview["pending"] = [];
 
   businesses.forEach((business) => {
     const status = String(business.get("status") || "approved");
+    nudgedAt.set(business.id, ms(business.get("lastNudgedAt")));
     businessCounts[status] = (businessCounts[status] || 0) + 1;
 
     const created = ms(business.get("createdAt"));
@@ -92,9 +94,12 @@ export const GET = adminRoute(async (request, admin) => {
   // Per-place rows for the live listings.
   const placeRows = new Map<string, PlaceRow>();
   publicPlaces.forEach((place) => {
-    const seats = seatsByBusiness.get(String(place.get("businessId") || ""));
+    const businessId = String(place.get("businessId") || "");
+    const seats = seatsByBusiness.get(businessId);
     placeRows.set(place.id, {
       slug: place.id,
+      businessId,
+      lastNudgedMs: nudgedAt.get(businessId) ?? null,
       name: String(place.get("name") || place.id),
       type: String(place.get("type") || ""),
       views: 0,

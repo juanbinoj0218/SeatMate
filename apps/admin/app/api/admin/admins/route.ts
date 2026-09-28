@@ -1,6 +1,7 @@
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 
 import type { AdminEntry } from "@/lib/people-types";
+import { writeLog } from "@/lib/activity-log";
 import { adminRoute, jsonError } from "@/lib/require-admin";
 
 // List admins, and make an existing SeatMate account an admin by email.
@@ -41,6 +42,7 @@ export const POST = adminRoute(async (request, admin) => {
       { active: true, addedAt: FieldValue.serverTimestamp(), addedBy: admin.uid, addedByEmail: admin.email },
       { merge: true }
     );
+    await writeLog(admin, { action: "admin.add", targetType: "admin", targetId: user.uid, targetName: email });
     return Response.json({ ok: true });
   } catch {
     return jsonError(`No SeatMate account uses ${email}. They need to sign up first (on any SeatMate site).`, 404);

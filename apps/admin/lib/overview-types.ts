@@ -4,6 +4,8 @@ export type DayPoint = { day: string; views: number; saves: number; scans: numbe
 
 export type PlaceRow = {
   slug: string;
+  businessId: string;
+  lastNudgedMs: number | null;
   name: string;
   type: string;
   views: number;

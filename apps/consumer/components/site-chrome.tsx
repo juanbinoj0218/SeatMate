@@ -8,6 +8,7 @@ import { businessUrl } from "@seatmate/shared/site-urls";
 
 import AccountMenu from "@/components/account-menu";
 import { ANDROID_APP_URL, IOS_APP_URL } from "@/lib/site-info";
+import { useFeatures } from "@/lib/use-features";
 
 // Header, footer and brand pieces shared by the consumer pages.
 
@@ -99,6 +100,8 @@ const FOOTER_COLUMNS: { title: string; links: { label: string; href: string; ext
 ];
 
 export function SiteFooter() {
+  const features = useFeatures();
+
   return (
     <footer className="border-t border-line">
       <div className="mx-auto grid max-w-6xl grid-cols-2 gap-x-6 gap-y-10 px-5 py-12 sm:grid-cols-3 sm:px-8 lg:grid-cols-[1.3fr_repeat(3,1fr)_1.2fr]">
@@ -116,7 +119,7 @@ export function SiteFooter() {
           <nav key={column.title} aria-label={column.title}>
             <p className="text-sm font-semibold">{column.title}</p>
             <ul className="mt-3 space-y-2 text-sm text-gray-600">
-              {column.links.map((link) => (
+              {column.links.filter((link) => features.suggestPlace || link.href !== "/suggest").map((link) => (
                 <li key={link.label}>
                   {link.external ? (
                     <a href={link.href} className="transition hover:text-ink">
@@ -133,10 +136,12 @@ export function SiteFooter() {
           </nav>
         ))}
 
-        <div className="col-span-2 sm:col-span-3 lg:col-span-1">
-          <p className="text-sm font-semibold">Get the app</p>
-          <AppBadges className="mt-3" />
-        </div>
+        {features.appBadges && (
+          <div className="col-span-2 sm:col-span-3 lg:col-span-1">
+            <p className="text-sm font-semibold">Get the app</p>
+            <AppBadges className="mt-3" />
+          </div>
+        )}
       </div>
 
       <div className="border-t border-line">
