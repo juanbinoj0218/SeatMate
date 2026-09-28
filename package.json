@@ -12,5 +12,8 @@
     "build": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "dev:admin": "npm run dev --workspace=@seatmate/admin"
+  },
+  "engines": {
+    "node": "22.x"
   }
 }
