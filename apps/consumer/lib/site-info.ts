@@ -2,7 +2,7 @@
 // Override with environment variables in Vercel without touching code.
 
 export const CONTACT_EMAIL =
-  process.env.NEXT_PUBLIC_CONTACT_EMAIL || "hello@seatmate360.com";
+  process.env.NEXT_PUBLIC_CONTACT_EMAIL || "admin@seatmate360.com";
 
 // Leave empty until the app is live in that store; the site then shows
 // "Coming soon" instead of a badge.
