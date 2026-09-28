@@ -257,6 +257,56 @@ service cloud.firestore {
     }
 
     // -------------------------
+    // PLACE REQUESTS & CONTACT
+    // -------------------------
+
+    // Checks shared by the public forms: only the expected fields, a
+    // real server time, and the sender's own uid (or none).
+    function validForm(fields) {
+      let data = request.resource.data;
+      return data.keys().hasOnly(fields)
+        && data.status == "new"
+        && data.createdAt == request.time
+        && (data.uid == null || (signedIn() && data.uid == request.auth.uid));
+    }
+
+    // A text field of at most `max` characters (and at least `min`).
+    function textField(name, min, max) {
+      return request.resource.data[name] is string
+        && request.resource.data[name].size() >= min
+        && request.resource.data[name].size() <= max;
+    }
+
+    // "Suggest a place". Anyone can send one; only admins can read them.
+    match /placeRequests/{requestId} {
+
+      allow create: if validForm(
+          ["placeName", "location", "type", "note", "email", "uid", "status", "createdAt"]
+        )
+        && textField("placeName", 1, 120)
+        && textField("location", 1, 160)
+        && textField("type", 0, 40)
+        && textField("note", 0, 500)
+        && textField("email", 0, 200);
+
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Contact form. Anyone can send; only admins can read.
+    match /contactMessages/{messageId} {
+
+      allow create: if validForm(
+          ["name", "email", "topic", "message", "uid", "status", "createdAt"]
+        )
+        && textField("name", 0, 100)
+        && textField("email", 4, 200)
+        && textField("topic", 0, 40)
+        && textField("message", 1, 3000);
+
+      allow read, update, delete: if isAdmin();
+    }
+
+    // -------------------------
     // STAFF INVITES
     // -------------------------
 

@@ -12,6 +12,7 @@ import { businessUrl } from "@seatmate/shared/site-urls";
 
 import {
   ArrowRightIcon,
+  AppBadges,
   SiteFooter,
   SiteHeader,
 } from "@/components/site-chrome";
@@ -518,8 +519,22 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* APP */}
+      <section className="mx-auto max-w-6xl px-5 pt-20 sm:px-8 lg:pt-28">
+        <div className="flex flex-col gap-6 rounded-3xl border border-line bg-white p-8 sm:p-10 md:flex-row md:items-center md:justify-between">
+          <div className="max-w-md">
+            <h2 className="font-display text-3xl sm:text-4xl">Take SeatMate with you.</h2>
+            <p className="mt-3 text-gray-600">
+              Check seats on the way, get alerts when a full place opens up, and keep your saved
+              places in your pocket.
+            </p>
+          </div>
+          <AppBadges />
+        </div>
+      </section>
+
       {/* BUSINESS */}
-      <section className="mx-auto max-w-6xl px-5 py-20 sm:px-8 lg:py-28">
+      <section className="mx-auto max-w-6xl px-5 pb-20 pt-10 sm:px-8 lg:pb-28 lg:pt-12">
         <div className="grid overflow-hidden rounded-3xl bg-ink text-white lg:grid-cols-2">
           <div className="p-8 sm:p-12 lg:p-14">
             <p className="text-sm font-medium text-green-400">

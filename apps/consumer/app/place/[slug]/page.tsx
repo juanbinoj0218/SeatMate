@@ -2,6 +2,7 @@
 
 import SeatMateMark from "@seatmate/shared/components/SeatMateMark";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   useParams,
   useRouter,
@@ -36,6 +37,9 @@ import AccountMenu from "@/components/account-menu";
 import { useAccount } from "@/components/account-provider";
 import SeatAlertButton from "@/components/seat-alert-button";
 import SaveButton from "@/components/save-button";
+import ShareButton from "@/components/share-button";
+import { SiteFooter } from "@/components/site-chrome";
+import { cityFromAddress } from "@/lib/place-data";
 import { useNow } from "@/lib/use-now";
 import { businessUrl } from "@seatmate/shared/site-urls";
 
@@ -404,6 +408,8 @@ const [business, setBusiness] =
     );
   }
 
+  const city = cityFromAddress(business.address);
+
   const totalSeats = tables.reduce(
     (total, table) =>
       total + table.seats.length,
@@ -646,6 +652,14 @@ return (
 
               <p className="mt-3 max-w-2xl text-sm leading-6 text-white/75 sm:text-base">
                 {business.address}
+                {city && (
+                  <>
+                    {" · "}
+                    <Link href={`/places/${city.slug}`} className="font-semibold text-white underline decoration-white/40 underline-offset-4 hover:decoration-white">
+                      More in {city.name}
+                    </Link>
+                  </>
+                )}
               </p>
 
               <div className="mt-5 flex flex-wrap items-center gap-3">
@@ -662,6 +676,11 @@ return (
                       business.photoUrl ||
                       "",
                   }}
+                />
+
+                <ShareButton
+                  title={`${business.name} on SeatMate`}
+                  text={`See open seats at ${business.name} right now.`}
                 />
 
                 {openStatus && (
@@ -1186,6 +1205,7 @@ return (
         </p>
 
       </div>
+      <SiteFooter />
     </main>
   );
 }

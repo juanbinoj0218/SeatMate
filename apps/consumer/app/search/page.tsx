@@ -7,31 +7,16 @@ import { isBar } from "@seatmate/shared/floor-plan";
 
 import AccountMenu from "@/components/account-menu";
 import SaveButton from "@/components/save-button";
+import { SiteFooter } from "@/components/site-chrome";
 import {
   fetchPublicPlaces,
   type PlaceWithSeats,
   withSeatSummaries,
 } from "@/lib/places";
+import { fallbackImageFor } from "@/lib/place-data";
 import { useNow } from "@/lib/use-now";
 
-const FALLBACK_IMAGES = [
-  "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=1200&q=82",
-  "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=82",
-  "https://images.unsplash.com/photo-1552566626-52f8b828add9?auto=format&fit=crop&w=1200&q=82",
-  "https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=1200&q=82",
-];
-
 type SearchResult = PlaceWithSeats;
-
-function hashString(value: string) {
-  return value.split("").reduce((total, character) => {
-    return total + character.charCodeAt(0);
-  }, 0);
-}
-
-function fallbackImageFor(value: string) {
-  return FALLBACK_IMAGES[hashString(value) % FALLBACK_IMAGES.length];
-}
 
 function SearchPageContent() {
   const router = useRouter();
@@ -310,6 +295,19 @@ function SearchPageContent() {
                   ? `No approved SeatMate locations were found in ZIP ${initialZip}.`
                   : "Try another business name or ZIP code."}
               </p>
+              <button
+                type="button"
+                onClick={() =>
+                  router.push(
+                    `/suggest?${new URLSearchParams(
+                      initialZip ? { location: initialZip } : { name: initialQuery }
+                    ).toString()}`
+                  )
+                }
+                className="mt-6 inline-flex items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-black"
+              >
+                Ask for it on SeatMate →
+              </button>
             </div>
           ) : (
             <div className="grid gap-5 lg:grid-cols-2">
@@ -466,6 +464,8 @@ function SearchPageContent() {
           )}
         </div>
       </div>
+
+      <SiteFooter />
     </main>
   );
 }
