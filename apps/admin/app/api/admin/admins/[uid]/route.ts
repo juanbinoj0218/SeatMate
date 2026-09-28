@@ -1,5 +1,6 @@
 import { FieldValue } from "firebase-admin/firestore";
 
+import { writeLog } from "@/lib/activity-log";
 import { adminRoute, jsonError } from "@/lib/require-admin";
 
 // Remove someone's admin access (their account itself stays).
@@ -14,6 +15,9 @@ export const DELETE = adminRoute<{ uid: string }>(async (request, admin, { param
     { active: false, removedAt: FieldValue.serverTimestamp(), removedBy: admin.uid },
     { merge: true }
   );
+
+  const removed = await admin.auth.getUser(uid).catch(() => null);
+  await writeLog(admin, { action: "admin.remove", targetType: "admin", targetId: uid, targetName: removed?.email || uid });
 
   return Response.json({ ok: true });
 });

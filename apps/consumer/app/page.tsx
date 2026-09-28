@@ -19,6 +19,7 @@ import {
 import AccountDeletedNotice from "@/components/account-deleted-notice";
 import { HeartIcon } from "@/components/account-menu";
 import { useAccount } from "@/components/account-provider";
+import { useFeatures } from "@/lib/use-features";
 import SaveButton from "@/components/save-button";
 import {
   fetchPublicPlaces,
@@ -36,6 +37,7 @@ type LocationState =
   | "unavailable";
 
 export default function HomePage() {
+  const features = useFeatures();
   const router = useRouter();
   const { profile, favorites } = useAccount();
 
@@ -522,18 +524,20 @@ export default function HomePage() {
       </section>
 
       {/* APP */}
-      <section className="mx-auto max-w-6xl px-5 pt-20 sm:px-8 lg:pt-28">
-        <div className="flex flex-col gap-6 rounded-3xl border border-line bg-white p-8 sm:p-10 md:flex-row md:items-center md:justify-between">
-          <div className="max-w-md">
-            <h2 className="font-display text-3xl sm:text-4xl">Take SeatMate with you.</h2>
-            <p className="mt-3 text-gray-600">
-              Check seats on the way, get alerts when a full place opens up, and keep your saved
-              places in your pocket.
-            </p>
+      {features.appBadges && (
+        <section className="mx-auto max-w-6xl px-5 pt-20 sm:px-8 lg:pt-28">
+          <div className="flex flex-col gap-6 rounded-3xl border border-line bg-white p-8 sm:p-10 md:flex-row md:items-center md:justify-between">
+            <div className="max-w-md">
+              <h2 className="font-display text-3xl sm:text-4xl">Take SeatMate with you.</h2>
+              <p className="mt-3 text-gray-600">
+                Check seats on the way, get alerts when a full place opens up, and keep your saved
+                places in your pocket.
+              </p>
+            </div>
+            <AppBadges />
           </div>
-          <AppBadges />
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* BUSINESS */}
       <section className="mx-auto max-w-6xl px-5 pb-20 pt-10 sm:px-8 lg:pb-28 lg:pt-12">

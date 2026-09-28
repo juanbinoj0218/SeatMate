@@ -18,6 +18,7 @@ import {
 } from "@seatmate/shared/seat-alerts";
 
 import { useAccount } from "@/components/account-provider";
+import { useFeatures } from "@/lib/use-features";
 
 // "Email me when a seat opens" on a full place.
 export default function SeatAlertButton({
@@ -30,6 +31,7 @@ export default function SeatAlertButton({
   placeName: string;
 }) {
   const { user, goToSignIn } = useAccount();
+  const { seatAlerts } = useFeatures();
   const [active, setActive] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -95,6 +97,10 @@ export default function SeatAlertButton({
       setBusy(false);
     }
   };
+
+  if (!seatAlerts) {
+    return null;
+  }
 
   // Treat a signed-out visitor as not subscribed.
   const on = Boolean(user) && active;

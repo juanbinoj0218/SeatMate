@@ -73,3 +73,12 @@ export async function adminFetch<T>(user: User, path: string, init: RequestInit 
 
   return body as T;
 }
+
+// Records an action done directly from the browser in the activity log.
+// Best effort: logging problems never block the action.
+export function logAction(
+  user: User,
+  entry: { action: string; targetId: string; targetName?: string; details?: string }
+) {
+  void adminFetch(user, "/api/admin/activity", { method: "POST", body: JSON.stringify(entry) }).catch(() => {});
+}

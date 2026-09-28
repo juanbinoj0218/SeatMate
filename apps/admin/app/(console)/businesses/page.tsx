@@ -25,6 +25,10 @@ import { auth, db } from "@seatmate/shared/firebase";
 import { clamp, type MarkerType } from "@seatmate/shared/floor-plan";
 import { consumerUrl } from "@seatmate/shared/site-urls";
 
+import Link from "next/link";
+
+import { logAction, useAdmin } from "@/lib/admin-session";
+
 type BusinessStatus =
   | "draft"
   | "pending"
@@ -145,6 +149,7 @@ const MARKER_STYLE: Record<
 };
 
 export default function AdminPage() {
+  const user = useAdmin();
   const router = useRouter();
 
   const [businesses, setBusinesses] = useState<Business[]>([]);
@@ -510,6 +515,7 @@ export default function AdminPage() {
       );
 
       await batch.commit();
+      logAction(user, { action: "business.approve", targetId: business.id, targetName: business.name });
       setMessage(
         `${business.name} is now approved and public.`
       );
@@ -567,6 +573,12 @@ export default function AdminPage() {
 
       await batch.commit();
 
+      logAction(user, {
+        action: "business.googleLink",
+        targetId: business.id,
+        targetName: business.name,
+        details: googlePlaceId ? `Google Place ID ${googlePlaceId}` : "Removed Google link",
+      });
       setMessage(
         googlePlaceId
           ? `${business.name} is linked to Google Places.`
@@ -611,6 +623,11 @@ export default function AdminPage() {
 
       await batch.commit();
 
+      logAction(user, {
+        action: newStatus === "suspended" ? "business.suspend" : "business.reject",
+        targetId: business.id,
+        targetName: business.name,
+      });
       setMessage(
         newStatus === "suspended"
           ? `${business.name} has been suspended.`
@@ -702,6 +719,7 @@ export default function AdminPage() {
       await finalBatch.commit();
 
       setDeleteTarget(null);
+      logAction(user, { action: "business.delete", targetId: business.id, targetName: business.name });
       setMessage(
         `${business.name} was permanently deleted.`
       );
@@ -811,7 +829,7 @@ export default function AdminPage() {
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="text-xl font-bold">
-                          {business.name}
+                          <Link href={`/businesses/${business.id}`} className="hover:underline">{business.name}</Link>
                         </h3>
                         <StatusBadge status={business.status} />
                       </div>
@@ -937,7 +955,7 @@ export default function AdminPage() {
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="text-xl font-bold">
-                      {business.name}
+                      <Link href={`/businesses/${business.id}`} className="hover:underline">{business.name}</Link>
                     </h2>
                     <StatusBadge status={business.status} />
                   </div>

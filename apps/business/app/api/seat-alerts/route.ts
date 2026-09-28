@@ -1,5 +1,6 @@
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 
+import { FEATURES_DOC, readFeatures } from "@seatmate/shared/features";
 import { SEAT_ALERT_TTL_MS, SEAT_ALERTS } from "@seatmate/shared/seat-alerts";
 import { consumerUrl } from "@seatmate/shared/site-urls";
 
@@ -22,6 +23,12 @@ export async function POST(request: Request) {
 
   if (!db || !emailConfigured()) {
     return Response.json({ sent: 0, skipped: "Seat alerts are not configured." }, { status: 503 });
+  }
+
+  const features = readFeatures((await db.doc(FEATURES_DOC.join("/")).get()).data());
+
+  if (!features.seatAlerts) {
+    return Response.json({ sent: 0, skipped: "Seat alerts are turned off." });
   }
 
   const tables = await db.collection("businesses").doc(businessId).collection("tables").get();

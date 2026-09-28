@@ -147,6 +147,18 @@ A separate site for SeatMate admins (anyone with `admins/{uid}.active == true`):
   dates, saved places and home ZIP; search and filter; disable/enable an
   account; copy a password reset link.
 - **Admins**: add an admin by email, remove admin access.
+- **Business pages** (`/businesses/[id]`): edit name, type, address, ZIP
+  and Google Place ID (the live listing updates too), remove a cover photo,
+  30-day views/saves/scans/seat updates, busiest hours, seats now, owner
+  and staff, and that business's admin history.
+- **Seat-update reminders**: "Send reminder" on places with no seat update
+  in 24 h emails the owner (via `RESEND_API_KEY` in the admin project) or
+  opens a ready-to-send email in your own mail app if Resend isn't set up.
+- **Activity**: every admin action (approvals, edits, account changes,
+  reminders, settings) with who did it and when (`adminLog` collection).
+- **Settings**: feature switches for the customer site (seat alerts,
+  suggest a place, contact form, share button, app buttons), stored in
+  `settings/features`.
 
 Setup on Vercel: a third project with Root Directory `apps/admin` and your
 `seatmate360.info` as its domain. It needs the same `NEXT_PUBLIC_FIREBASE_*` variables plus

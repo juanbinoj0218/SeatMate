@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { ArrowRightIcon, SiteFooter, SiteHeader } from "@/components/site-chrome";
+import SuggestLink from "@/components/suggest-link";
 import { listCitiesServer } from "@/lib/places-server";
 
 export const metadata: Metadata = {
@@ -21,11 +22,8 @@ export default async function CitiesPage() {
         <p className="text-sm font-medium text-moss">Cities</p>
         <h1 className="font-display mt-3 text-5xl sm:text-6xl">Where SeatMate is live</h1>
         <p className="mt-4 max-w-xl text-lg text-gray-600">
-          Every city with at least one place showing live seats. Don&apos;t see yours?{" "}
-          <Link href="/suggest" className="font-semibold text-ink underline decoration-line underline-offset-4 hover:decoration-ink">
-            Suggest a place
-          </Link>
-          .
+          Every city with at least one place showing live seats.
+          <SuggestLink before={<> Don&apos;t see yours? </>}>Suggest a place</SuggestLink>
         </p>
 
         {cities.length === 0 ? (

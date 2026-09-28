@@ -2,10 +2,13 @@
 
 import { useState } from "react";
 
+import { useFeatures } from "@/lib/use-features";
+
 // Shares a place with the phone's share sheet, or copies the link on
 // browsers without one.
 export default function ShareButton({ title, text }: { title: string; text: string }) {
   const [copied, setCopied] = useState(false);
+  const { shareButton } = useFeatures();
 
   const share = async () => {
     // Drop tracking params like ?ref=qr or ?from=business from shared links.
@@ -28,6 +31,10 @@ export default function ShareButton({ title, text }: { title: string; text: stri
       window.prompt("Copy this link:", url);
     }
   };
+
+  if (!shareButton) {
+    return null;
+  }
 
   return (
     <button

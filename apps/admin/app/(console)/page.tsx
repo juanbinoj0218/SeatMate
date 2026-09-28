@@ -3,10 +3,9 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
-import { consumerUrl } from "@seatmate/shared/site-urls";
-
 import { PageHeader } from "@/components/admin-shell";
 import BarChart from "@/components/bar-chart";
+import NudgeButton from "@/components/nudge-button";
 import { adminFetch, useAdmin } from "@/lib/admin-session";
 import type { DayPoint, Overview } from "@/lib/overview-types";
 
@@ -172,7 +171,7 @@ export default function OverviewPage() {
                 {topPlaces.map((place) => (
                   <tr key={place.slug} className="border-t border-gray-100">
                     <td className="py-2.5 pr-2">
-                      <a href={consumerUrl(`/place/${place.slug}`)} target="_blank" rel="noreferrer" className="font-semibold hover:underline">{place.name}</a>
+                      <Link href={`/businesses/${place.businessId}`} className="font-semibold hover:underline">{place.name}</Link>
                       <span className="block text-xs text-gray-400">{place.type}</span>
                     </td>
                     <td className="py-2.5 text-right tabular-nums">{place.views.toLocaleString()}</td>
@@ -213,12 +212,25 @@ export default function OverviewPage() {
               label="new place requests"
             />
             <Attention href="/inbox" count={data ? data.totals.openMessages : undefined} tone="bg-sky-100 text-sky-700" label="unanswered messages" />
-            <Attention
-              count={data ? stale.length : undefined}
-              tone="bg-orange-100 text-orange-700"
-              label="live places with no seat update in 24 h"
-              detail={data ? stale.slice(0, 4).map((place) => `${place.name} (${place.lastUpdateMs ? ago(place.lastUpdateMs, data.generatedAtMs) : "never"})`).join(", ") : ""}
-            />
+            <Attention count={data ? stale.length : undefined} tone="bg-orange-100 text-orange-700" label="live places with no seat update in 24 h" />
+            {data && stale.length > 0 && (
+              <li>
+                <ul className="ml-11 space-y-2">
+                  {stale.slice(0, 6).map((place) => (
+                    <li key={place.slug} className="flex items-center justify-between gap-2">
+                      <span className="min-w-0">
+                        <Link href={`/businesses/${place.businessId}`} className="block truncate font-medium hover:underline">{place.name}</Link>
+                        <span className="block text-xs text-gray-400">
+                          {place.lastUpdateMs ? `Updated ${ago(place.lastUpdateMs, data.generatedAtMs)}` : "Never updated"}
+                          {place.lastNudgedMs ? ` · reminded ${ago(place.lastNudgedMs, data.generatedAtMs)}` : ""}
+                        </span>
+                      </span>
+                      <NudgeButton businessId={place.businessId} />
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            )}
             <Attention
               count={data ? noSeats.length : undefined}
               tone="bg-gray-100 text-gray-700"

@@ -15,6 +15,8 @@ const NAV = [
   { href: "/inbox", label: "Inbox", icon: "M4 13h4l1.5 3h5L16 13h4M5 5h14l1 8v6H4v-6l1-8Z" },
   { href: "/customers", label: "Customers", icon: "M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm-5.5 8a5.5 5.5 0 0 1 11 0M17 11a2.3 2.3 0 1 0 0-4.6M16 14.2a4.5 4.5 0 0 1 4.5 4.8" },
   { href: "/admins", label: "Admins", icon: "M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6l-7-3Zm-3 9 2 2 4-4" },
+  { href: "/activity", label: "Activity", icon: "M12 7v5l3 2M3.5 12a8.5 8.5 0 1 0 2.5-6M3 4v4h4" },
+  { href: "/settings", label: "Settings", icon: "M4 7h10M18 7h2M4 17h4M12 17h8M14 5v4M8 15v4" },
 ];
 
 // Sidebar layout for every admin page. Sends signed-out visitors to the
