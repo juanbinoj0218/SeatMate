@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
-  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
   updateProfile,
@@ -13,6 +12,7 @@ import {
 
 import { auth } from "@seatmate/shared/firebase";
 import SeatMateMark from "@seatmate/shared/components/SeatMateMark";
+import { resetSentMessage, sendResetLink } from "@seatmate/shared/password-reset";
 
 import { useAccount } from "@/components/account-provider";
 import { HeartIcon } from "@/components/account-menu";
@@ -157,8 +157,8 @@ function LoginContent() {
     }
 
     try {
-      await sendPasswordResetEmail(auth, email.trim());
-      setNotice(`We sent a password reset link to ${email.trim()}.`);
+      await sendResetLink(email.trim(), `${window.location.origin}/login`);
+      setNotice(resetSentMessage(email.trim()));
     } catch (caught) {
       setError(errorMessage(caught));
     }

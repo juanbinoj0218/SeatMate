@@ -20,10 +20,13 @@ import {
 import { auth, db } from "@seatmate/shared/firebase";
 import { consumerUrl } from "@seatmate/shared/site-urls";
 
+import UpdateReminder from "@/components/update-reminder";
 import {
+  ChartIcon,
   ChevronRightIcon,
   ClockIcon,
   FloorPlanIcon,
+  QrIcon,
   StaffIcon,
   StorefrontIcon,
 } from "@/components/portal-icons";
@@ -62,6 +65,8 @@ export default function BusinessDashboard() {
   const [business, setBusiness] =
     useState<Business | null>(null);
 
+  const [businessId, setBusinessId] = useState("");
+
   const [loading, setLoading] = useState(true);
 
   const [seats, setSeats] =
@@ -94,6 +99,8 @@ export default function BusinessDashboard() {
           setBusiness(
             businessSnap.data() as Business
           );
+
+          setBusinessId(currentUser.uid);
 
           setLoading(false);
 
@@ -270,7 +277,12 @@ export default function BusinessDashboard() {
         )}
 
         {seats && seats.total > 0 && (
-          <SeatSummary seats={seats} />
+          <>
+            <div className="mt-8">
+              <UpdateReminder businessId={businessId} />
+            </div>
+            <SeatSummary seats={seats} />
+          </>
         )}
 
         <ul className="mt-6 bg-white border border-gray-200 rounded-2xl divide-y divide-gray-200 overflow-hidden">
@@ -297,6 +309,24 @@ export default function BusinessDashboard() {
             description="Set the hours customers see on your page."
             onClick={() => router.push("/business/hours")}
           />
+
+          <DashboardLink
+            title="Analytics"
+            Icon={ChartIcon}
+            tile="bg-rose-100 text-rose-600"
+            description="Page views, saves and your busiest hours."
+            onClick={() => router.push("/business/analytics")}
+          />
+
+          {businessStatus === "approved" && business.slug && (
+            <DashboardLink
+              title="QR code"
+              Icon={QrIcon}
+              tile="bg-slate-200 text-slate-700"
+              description="Print a sign so customers can check seats from their phone."
+              onClick={() => router.push("/business/qr")}
+            />
+          )}
 
           {businessStatus === "approved" && business.slug && (
             <DashboardLink

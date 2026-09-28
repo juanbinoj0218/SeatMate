@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation";
 import {
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
-  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
   updateProfile,
@@ -20,6 +19,7 @@ import {
 
 import { auth, db } from "@seatmate/shared/firebase";
 import BackButton from "@seatmate/shared/components/BackButton";
+import { resetSentMessage, sendResetLink } from "@seatmate/shared/password-reset";
 
 import {
   ClockIcon,
@@ -543,13 +543,13 @@ export default function BusinessLoginPage() {
       }
 
       try {
-        await sendPasswordResetEmail(
-          auth,
-          email.trim()
+        await sendResetLink(
+          email.trim(),
+          `${window.location.origin}/business/login`
         );
 
         setMessage(
-          "Password reset email sent."
+          resetSentMessage(email.trim())
         );
       } catch (err) {
         console.error(

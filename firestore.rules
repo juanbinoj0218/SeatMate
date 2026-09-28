@@ -1,0 +1,394 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && exists(
+          /databases/$(database)/documents/admins/$(request.auth.uid)
+        )
+        && get(
+          /databases/$(database)/documents/admins/$(request.auth.uid)
+        ).data.active == true;
+    }
+
+    function isOwner(businessId) {
+      return signedIn()
+        && request.auth.uid == businessId;
+    }
+
+    function isStaff(businessId) {
+      return signedIn()
+        && exists(
+          /databases/$(database)/documents/staffUsers/$(request.auth.uid)
+        )
+        && get(
+          /databases/$(database)/documents/staffUsers/$(request.auth.uid)
+        ).data.businessId == businessId
+        && get(
+          /databases/$(database)/documents/staffUsers/$(request.auth.uid)
+        ).data.active == true;
+    }
+
+    // A daily counter that may only go up by one (page views, saves,
+    // QR scans). Anyone can bump it; nobody can set it to other values.
+    function bumpsByOne(field) {
+      let before = resource == null ? {} : resource.data;
+      return request.resource.data.diff(before).affectedKeys().hasOnly([field])
+        && request.resource.data[field] == before.get(field, 0) + 1;
+    }
+
+    // -------------------------
+    // ADMINS
+    // -------------------------
+
+    match /admins/{adminId} {
+
+      allow get: if signedIn()
+        && adminId == request.auth.uid;
+
+      allow list: if false;
+
+      // Admin accounts are created manually.
+      allow create, update, delete: if false;
+    }
+
+    // -------------------------
+    // BUSINESSES
+    // -------------------------
+
+    match /businesses/{businessId} {
+
+      allow get: if isOwner(businessId)
+        || isAdmin();
+
+      allow list: if isAdmin();
+
+      // New business starts as a draft.
+      allow create: if isOwner(businessId)
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.status == "draft";
+
+      // Admin can edit anything.
+      //
+      // Owner can:
+      // 1. Edit normal business fields.
+      // 2. Submit draft/rejected business for approval.
+      allow update: if isAdmin()
+        || (
+          isOwner(businessId)
+          && resource.data.ownerId == request.auth.uid
+          && request.resource.data.ownerId == request.auth.uid
+          && (
+            // Normal owner edits.
+            !request.resource.data
+              .diff(resource.data)
+              .affectedKeys()
+              .hasAny([
+                "status",
+                "reviewedAt",
+                "reviewedBy",
+                "ownerId"
+              ])
+
+            ||
+
+            // Owner submits for approval.
+            (
+              (
+                resource.data.status == "draft"
+                || resource.data.status == "rejected"
+              )
+              && request.resource.data.status == "pending"
+              && request.resource.data
+                .diff(resource.data)
+                .affectedKeys()
+                .hasOnly([
+                  "status",
+                  "submittedAt",
+                  "updatedAt"
+                ])
+            )
+          )
+        );
+
+      allow delete: if isAdmin();
+
+      // -------------------------
+      // TABLES
+      // -------------------------
+
+      match /tables/{tableId} {
+
+        // Needed so customers can see live seating.
+        allow read: if true;
+
+        allow create, delete:
+          if isOwner(businessId)
+          || isAdmin();
+
+        allow update:
+          if isOwner(businessId)
+          || isAdmin()
+          || (
+            isStaff(businessId)
+            && request.resource.data
+              .diff(resource.data)
+              .affectedKeys()
+              .hasOnly([
+                "seats",
+                "occupancyUpdatedAt"
+              ])
+          );
+      }
+
+      // -------------------------
+      // SEAT ANALYTICS (daily)
+      // -------------------------
+
+      match /stats/{day} {
+
+        allow read:
+          if isOwner(businessId)
+          || isStaff(businessId)
+          || isAdmin();
+
+        allow create, update:
+          if isOwner(businessId)
+          || isStaff(businessId);
+      }
+
+      // -------------------------
+      // FLOOR MARKERS
+      // -------------------------
+
+      match /floorMarkers/{markerId} {
+
+        // Needed so floor-plan markers can load.
+        allow read: if true;
+
+        // Business owner/admin can create,
+        // move, resize, rotate, or delete markers.
+        allow create, update, delete:
+          if isOwner(businessId)
+          || isAdmin();
+      }
+    }
+
+    // -------------------------
+    // PUBLIC BUSINESSES
+    // -------------------------
+
+    match /publicBusinesses/{slug} {
+
+      allow read: if true;
+
+      // Only SeatMate admins can publish
+      // or remove a business.
+      allow create, delete: if isAdmin();
+
+      // Admin can edit anything.
+      //
+      // Owner can only update public hours.
+      allow update: if isAdmin()
+        || (
+          signedIn()
+          && resource.data.businessId
+            == request.auth.uid
+          && request.resource.data.businessId
+            == request.auth.uid
+          && request.resource.data
+            .diff(resource.data)
+            .affectedKeys()
+            .hasOnly([
+              "hours",
+              "timezone",
+              "hoursUpdatedAt",
+              "updatedAt"
+            ])
+        );
+
+      // -------------------------
+      // PUBLIC ANALYTICS (daily)
+      // -------------------------
+
+      // Page views, saves and QR scans. Only the owner can read them.
+      match /stats/{day} {
+
+        allow read: if isAdmin()
+          || (
+            signedIn()
+            && get(
+              /databases/$(database)/documents/publicBusinesses/$(slug)
+            ).data.businessId == request.auth.uid
+          );
+
+        allow create, update:
+          if day.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+          && (
+            bumpsByOne("views")
+            || bumpsByOne("saves")
+            || bumpsByOne("scans")
+          );
+      }
+    }
+
+    // -------------------------
+    // SEAT ALERTS
+    // -------------------------
+
+    // "Email me when a seat opens". Document id is {uid}_{slug}.
+    // Emails are sent by the business site's server, which isn't
+    // limited by these rules.
+    match /seatAlerts/{alertId} {
+
+      allow read, delete: if signedIn()
+        && alertId.matches('^' + request.auth.uid + '_.+$');
+
+      allow create, update: if signedIn()
+        && alertId == request.auth.uid + '_' + request.resource.data.slug
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.active == true;
+    }
+
+    // -------------------------
+    // STAFF INVITES
+    // -------------------------
+
+    match /staffInvites/{inviteId} {
+
+      allow create:
+        if signedIn()
+        && request.resource.data.businessId
+          == request.auth.uid;
+
+      allow get: if signedIn();
+
+      allow list:
+        if isAdmin()
+        || (
+          signedIn()
+          && resource.data.businessId
+            == request.auth.uid
+        );
+
+      allow update:
+        if isAdmin()
+        || (
+          // Owner can edit their own invites,
+          // but can never move an invite to another business.
+          signedIn()
+          && resource.data.businessId
+            == request.auth.uid
+          && request.resource.data.businessId
+            == request.auth.uid
+        )
+        || (
+          signedIn()
+          && resource.data.active == true
+          && request.resource.data.active == false
+          && request.resource.data.claimedBy
+            == request.auth.uid
+          && request.resource.data
+            .diff(resource.data)
+            .affectedKeys()
+            .hasOnly([
+              "active",
+              "claimedBy",
+              "claimedAt"
+            ])
+        );
+
+      allow delete:
+        if isAdmin()
+        || (
+          signedIn()
+          && resource.data.businessId
+            == request.auth.uid
+        );
+    }
+
+    // -------------------------
+    // STAFF USERS
+    // -------------------------
+
+    match /staffUsers/{staffId} {
+
+      allow read:
+        if isAdmin()
+        || (
+          signedIn()
+          && (
+            staffId == request.auth.uid
+            || resource.data.businessId
+              == request.auth.uid
+          )
+        );
+
+      allow create:
+        if signedIn()
+        && staffId == request.auth.uid
+        && exists(
+          /databases/$(database)/documents/staffInvites/$(request.resource.data.inviteId)
+        )
+        && get(
+          /databases/$(database)/documents/staffInvites/$(request.resource.data.inviteId)
+        ).data.active == true
+        && get(
+          /databases/$(database)/documents/staffInvites/$(request.resource.data.inviteId)
+        ).data.businessId
+          == request.resource.data.businessId
+        && request.resource.data.role == "staff"
+        && request.resource.data.active == true;
+
+      allow update:
+        if isAdmin()
+        || (
+          // Owner can manage their own staff (e.g. deactivate them),
+          // but can never move a staff member to another business
+          // or change their role.
+          signedIn()
+          && resource.data.businessId
+            == request.auth.uid
+          && request.resource.data.businessId
+            == resource.data.businessId
+          && request.resource.data.role
+            == resource.data.role
+        );
+
+      allow delete:
+        if isAdmin()
+        || (
+          signedIn()
+          && (
+            staffId == request.auth.uid
+            || resource.data.businessId
+              == request.auth.uid
+          )
+        );
+    }
+
+    // -------------------------
+    // CUSTOMER ACCOUNTS
+    // -------------------------
+
+    // Each signed-in customer can read and write only their own
+    // profile (name, home ZIP, recently viewed) and saved places.
+    match /users/{userId} {
+
+      allow read, write: if signedIn()
+        && request.auth.uid == userId;
+
+      match /favorites/{slug} {
+
+        allow read, write: if signedIn()
+          && request.auth.uid == userId;
+      }
+    }
+  }
+}
