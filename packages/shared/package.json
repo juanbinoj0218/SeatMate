@@ -12,7 +12,8 @@
     "./seat-alerts": "./src/seat-alerts.ts",
     "./analytics": "./src/analytics.ts",
     "./business-hours": "./src/business-hours.ts",
-    "./place-photos": "./src/place-photos.ts"
+    "./place-photos": "./src/place-photos.ts",
+    "./service-account": "./src/service-account.ts"
   },
   "peerDependencies": {
     "firebase": "^12.19.0",

@@ -1,7 +1,7 @@
 import type { UserRecord } from "firebase-admin/auth";
 
 import type { Person, Role } from "@/lib/people-types";
-import { requireAdmin } from "@/lib/require-admin";
+import { adminRoute } from "@/lib/require-admin";
 
 // Every sign-in account (customers, business owners, staff and admins) with
 // their role, saved-place count and home ZIP.
@@ -9,9 +9,7 @@ import { requireAdmin } from "@/lib/require-admin";
 const MAX_USERS = 5000;
 const toMs = (value?: string) => (value ? Date.parse(value) || null : null);
 
-export async function GET(request: Request) {
-  const admin = await requireAdmin(request);
-  if (admin instanceof Response) return admin;
+export const GET = adminRoute(async (request, admin) => {
   const { auth, db } = admin;
 
   const users: UserRecord[] = [];
@@ -67,4 +65,4 @@ export async function GET(request: Request) {
   people.sort((a, b) => (b.createdMs ?? 0) - (a.createdMs ?? 0));
 
   return Response.json({ people, truncated: users.length >= MAX_USERS }, { headers: { "Cache-Control": "no-store" } });
-}
+});

@@ -32,16 +32,48 @@ export async function requireAdmin(request: Request): Promise<AdminContext | Res
     return jsonError("Sign in first.", 401);
   }
 
+  let uid: string;
+  let email: string;
+
   try {
     const decoded = await auth.verifyIdToken(token);
-    const admin = await db.collection("admins").doc(decoded.uid).get();
+    uid = decoded.uid;
+    email = decoded.email || "";
+  } catch (error) {
+    console.error("Admin token check failed:", error);
+    return jsonError(`Couldn't verify your sign-in: ${describe(error)}`, 401);
+  }
+
+  try {
+    const admin = await db.collection("admins").doc(uid).get();
 
     if (admin.get("active") !== true) {
       return jsonError("Admins only.", 403);
     }
-
-    return { uid: decoded.uid, email: decoded.email || "", db, auth };
-  } catch {
-    return jsonError("Your session expired. Sign in again.", 401);
+  } catch (error) {
+    console.error("Admin lookup failed:", error);
+    return jsonError(`Couldn't read Firestore with the service account key: ${describe(error)}`, 500);
   }
+
+  return { uid, email, db, auth };
+}
+
+const describe = (error: unknown) =>
+  error instanceof Error ? error.message.split("\n")[0].slice(0, 300) : String(error);
+
+// Wraps an /api/admin route: checks the caller is an admin, then turns any
+// unexpected error into a readable message instead of a blank 500.
+export function adminRoute<Params = Record<string, never>>(
+  handler: (request: Request, admin: AdminContext, context: { params: Promise<Params> }) => Promise<Response>
+) {
+  return async (request: Request, context: { params: Promise<Params> }) => {
+    try {
+      const admin = await requireAdmin(request);
+      if (admin instanceof Response) return admin;
+      return await handler(request, admin, context);
+    } catch (error) {
+      console.error(`Admin route ${new URL(request.url).pathname} failed:`, error);
+      return jsonError(`Server error: ${describe(error)}`, 500);
+    }
+  };
 }

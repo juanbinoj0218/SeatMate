@@ -1,6 +1,8 @@
 import { cert, getApps, initializeApp, type App } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 
+import { parseServiceAccount } from "@seatmate/shared/service-account";
+
 // Server-side Firestore access for API routes. Needs the
 // FIREBASE_SERVICE_ACCOUNT_KEY environment variable (the service account
 // JSON from Firebase → Project settings → Service accounts). Returns null
@@ -19,16 +21,23 @@ function adminApp(): App | null {
     return initializeApp({ projectId });
   }
 
-  const key = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-
-  if (!key) {
-    return null;
-  }
-
   try {
-    return initializeApp({ credential: cert(JSON.parse(key)), projectId });
+    const account = parseServiceAccount(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+
+    if (!account) {
+      return null;
+    }
+
+    return initializeApp({
+      credential: cert({
+        projectId: account.project_id,
+        clientEmail: account.client_email,
+        privateKey: account.private_key,
+      }),
+      projectId: account.project_id || projectId,
+    });
   } catch (error) {
-    console.error("FIREBASE_SERVICE_ACCOUNT_KEY is not valid JSON:", error);
+    console.error("FIREBASE_SERVICE_ACCOUNT_KEY could not be read:", error);
     return null;
   }
 }

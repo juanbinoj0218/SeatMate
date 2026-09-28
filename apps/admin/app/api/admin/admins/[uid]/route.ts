@@ -1,12 +1,9 @@
 import { FieldValue } from "firebase-admin/firestore";
 
-import { jsonError, requireAdmin } from "@/lib/require-admin";
+import { adminRoute, jsonError } from "@/lib/require-admin";
 
 // Remove someone's admin access (their account itself stays).
-export async function DELETE(request: Request, { params }: { params: Promise<{ uid: string }> }) {
-  const admin = await requireAdmin(request);
-  if (admin instanceof Response) return admin;
-
+export const DELETE = adminRoute<{ uid: string }>(async (request, admin, { params }) => {
   const { uid } = await params;
 
   if (uid === admin.uid) {
@@ -19,4 +16,4 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ u
   );
 
   return Response.json({ ok: true });
-}
+});
