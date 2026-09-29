@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: PageProps<"/places/[city]">):
   return {
     title: `Live seating in ${city.name}, ${city.state} – SeatMate`,
     description: `See open seats right now at ${city.places.length} ${
-      city.places.length === 1 ? "café, restaurant or bar" : "cafés, restaurants and bars"
+      city.places.length === 1 ? "place" : "places"
     } in ${city.name}, ${city.state}, before you go.`,
   };
 }

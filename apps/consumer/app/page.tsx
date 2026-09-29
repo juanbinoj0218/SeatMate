@@ -228,22 +228,22 @@ export default function HomePage() {
           </h1>
 
           <p className="mt-6 max-w-md text-lg text-gray-600">
-            Check live seating availability at cafés and restaurants before
-            you arrive.
+            Check live seating at cafés, restaurants, bars and barbershops
+            before you arrive.
           </p>
 
           <form onSubmit={findBusiness} className="mt-9 max-w-xl">
             <div className="flex flex-col rounded-2xl border border-line bg-white p-1.5 shadow-[0_1px_2px_rgba(16,24,17,0.04),0_16px_36px_-16px_rgba(16,24,17,0.22)] transition focus-within:border-moss/40 sm:flex-row sm:items-center">
               <label className="flex flex-1 items-center gap-3 px-4">
                 <SearchIcon className="h-4 w-4 shrink-0 text-gray-400" />
-                <span className="sr-only">Café or restaurant</span>
+                <span className="sr-only">Place name</span>
                 <input
                   value={search}
                   onChange={(event) => {
                     setSearch(event.target.value);
                     setMessage("");
                   }}
-                  placeholder="Café or restaurant"
+                  placeholder="Place name"
                   className="bare-input h-12 w-full min-w-0 text-[15px] text-ink outline-none"
                 />
               </label>

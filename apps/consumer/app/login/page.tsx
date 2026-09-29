@@ -4,6 +4,7 @@ import { FormEvent, Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   GoogleAuthProvider,
+  type MultiFactorResolver,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -12,7 +13,9 @@ import {
 
 import { auth } from "@seatmate/shared/firebase";
 import SeatMateMark from "@seatmate/shared/components/SeatMateMark";
-import { resetSentMessage, sendResetLink } from "@seatmate/shared/password-reset";
+import ResetPassword from "@seatmate/shared/components/ResetPassword";
+import TwoFactorPrompt from "@seatmate/shared/components/TwoFactorPrompt";
+import { twoFactorResolver } from "@seatmate/shared/two-factor";
 
 import { useAccount } from "@/components/account-provider";
 import { HeartIcon } from "@/components/account-menu";
@@ -88,6 +91,9 @@ function LoginContent() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  // The card shows the form, the reset screen or the two-factor code step.
+  const [resetting, setResetting] = useState(false);
+  const [twoFactor, setTwoFactor] = useState<MultiFactorResolver | null>(null);
 
   // Already signed in (or just finished signing in): continue.
   useEffect(() => {
@@ -129,8 +135,13 @@ function LoginContent() {
         await signInWithEmailAndPassword(auth, email.trim(), password);
       }
     } catch (caught) {
-      setError(errorMessage(caught));
       setBusy(false);
+      const resolver = twoFactorResolver(caught);
+      if (resolver) {
+        setTwoFactor(resolver);
+        return;
+      }
+      setError(errorMessage(caught));
     }
   };
 
@@ -142,27 +153,22 @@ function LoginContent() {
     try {
       await signInWithPopup(auth, new GoogleAuthProvider());
     } catch (caught) {
-      setError(errorMessage(caught));
       setBusy(false);
+      const resolver = twoFactorResolver(caught);
+      if (resolver) {
+        setTwoFactor(resolver);
+        return;
+      }
+      setError(errorMessage(caught));
     }
   };
 
-  const resetPassword = async () => {
+  const resetPassword = () => {
     setError("");
     setNotice("");
-
-    if (!email.trim()) {
-      setError("Enter your email above, then choose “Forgot password?”.");
-      return;
-    }
-
-    try {
-      await sendResetLink(email.trim(), `${window.location.origin}/login`);
-      setNotice(resetSentMessage(email.trim()));
-    } catch (caught) {
-      setError(errorMessage(caught));
-    }
+    setResetting(true);
   };
+
 
   const signingUp = mode === "signup";
 
@@ -201,6 +207,21 @@ function LoginContent() {
         </div>
 
         <div className="rounded-3xl border border-line bg-white p-6 shadow-[0_1px_2px_rgba(16,24,17,0.04),0_30px_60px_-30px_rgba(16,24,17,0.25)] sm:p-9">
+          {twoFactor ? (
+            // Signing in finishes here; the redirect above takes over.
+            <TwoFactorPrompt
+              resolver={twoFactor}
+              onSignedIn={() => undefined}
+              onCancel={() => setTwoFactor(null)}
+            />
+          ) : resetting ? (
+            <ResetPassword
+              initialEmail={email}
+              continueUrl={`${window.location.origin}/login`}
+              onBack={() => setResetting(false)}
+            />
+          ) : (
+          <>
           <h2 className="font-display text-4xl">
             {signingUp ? "Create your account" : "Welcome back"}
           </h2>
@@ -315,6 +336,8 @@ function LoginContent() {
               {signingUp ? "Sign in" : "Create an account"}
             </button>
           </p>
+          </>
+          )}
         </div>
       </section>
     </main>

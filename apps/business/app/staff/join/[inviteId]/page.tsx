@@ -7,9 +7,6 @@ import {
   useRouter,
 } from "next/navigation";
 
-import BackButton from "@seatmate/shared/components/BackButton";
-<BackButton fallback="/business" />
-
 import {
   onAuthStateChanged,
   User,

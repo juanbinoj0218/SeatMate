@@ -22,7 +22,8 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import { auth, db } from "@seatmate/shared/firebase";
-import { clamp, type MarkerType } from "@seatmate/shared/floor-plan";
+import { clamp, isGameMarker, MARKERS, type MarkerType, markerStatus } from "@seatmate/shared/floor-plan";
+import GameStatus from "@seatmate/shared/components/GameStatus";
 import { consumerUrl } from "@seatmate/shared/site-urls";
 
 import Link from "next/link";
@@ -83,84 +84,16 @@ type ReviewMarker = {
   yPct: number;
   scale: number;
   rotation: number;
+  status: "available" | "occupied";
 };
 
-const MARKER_STYLE: Record<
-  MarkerType,
-  {
-    label: string;
-    icon: string;
-    width: number;
-    height: number;
-  }
-> = {
-  outlet: {
-    label: "Outlet",
-    icon: "⚡",
-    width: 42,
-    height: 42,
-  },
-  window: {
-    label: "Window",
-    icon: "▭",
-    width: 95,
-    height: 28,
-  },
-  register: {
-    label: "Cash Register",
-    icon: "▣",
-    width: 72,
-    height: 52,
-  },
-  counter: {
-    label: "Counter",
-    icon: "▰",
-    width: 110,
-    height: 42,
-  },
-  barCounter: {
-    label: "Bar Counter",
-    icon: "🍸",
-    width: 190,
-    height: 40,
-  },
-  door: {
-    label: "Door",
-    icon: "↪",
-    width: 68,
-    height: 34,
-  },
-  entrance: {
-    label: "Entrance",
-    icon: "⇥",
-    width: 88,
-    height: 36,
-  },
-  restroom: {
-    label: "Restroom",
-    icon: "",
-    width: 72,
-    height: 50,
-  },
-  wall: {
-    label: "Wall",
-    icon: "",
-    width: 120,
-    height: 18,
-  },
-  poolTable: {
-    label: "Pool Table",
-    icon: "🎱",
-    width: 120,
-    height: 68,
-  },
-  darts: {
-    label: "Darts",
-    icon: "🎯",
-    width: 72,
-    height: 56,
-  },
-};
+// The review map is drawn at 80% of the editor's size.
+const MARKER_STYLE = Object.fromEntries(
+  Object.entries(MARKERS).map(([type, info]) => [
+    type,
+    { ...info, width: info.width * 0.8, height: info.height * 0.8 },
+  ])
+) as Record<MarkerType, (typeof MARKERS)[MarkerType]>;
 
 export default function AdminPage() {
   const user = useAdmin();
@@ -439,6 +372,7 @@ export default function AdminPage() {
                 typeof marker.rotation === "number"
                   ? marker.rotation
                   : 0,
+              status: markerStatus(marker.status),
             };
           })
           .filter(
@@ -1352,6 +1286,9 @@ export default function AdminPage() {
                                       }
                                     </div>
                                   )}
+                                {isGameMarker(marker.type) && (
+                                  <GameStatus status={marker.status} size={8} />
+                                )}
                               </div>
                             </div>
                           );

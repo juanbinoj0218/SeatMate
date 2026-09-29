@@ -16,6 +16,7 @@ export const ACTIONS = {
   "admin.add": "Added admin",
   "admin.remove": "Removed admin",
   "settings.features": "Changed feature switches",
+  "settings.twoFactor": "Changed two-factor sign-in",
   "inbox.handled": "Marked inbox item handled",
   "inbox.reopened": "Reopened inbox item",
 } as const;

@@ -24,6 +24,7 @@ import {
   type Hours,
   toMinutes,
 } from "@seatmate/shared/business-hours";
+import GameStatus from "@seatmate/shared/components/GameStatus";
 import TableWithSeats, {
   parseTableRotation,
   parseTableShape,
@@ -38,6 +39,8 @@ import {
   MARKERS,
   markerClassName,
   type MarkerType,
+  isGameMarker,
+  markerStatus,
 } from "@seatmate/shared/floor-plan";
 
 import AccountMenu from "@/components/account-menu";
@@ -300,6 +303,8 @@ const [business, setBusiness] =
                       typeof marker.rotation === "number"
                         ? marker.rotation
                         : 0,
+
+                    status: markerStatus(marker.status),
                   };
                 }
               );
@@ -1016,6 +1021,13 @@ return (
                         <div className="mt-0.5">
                           {marker.label}
                         </div>
+                      )}
+
+                      {isGameMarker(marker.type) && (
+                        <GameStatus
+                          status={marker.status ?? "available"}
+                          size={Math.max(9, 10 * displayScale)}
+                        />
                       )}
 
                     </div>

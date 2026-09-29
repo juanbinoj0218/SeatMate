@@ -4,7 +4,6 @@ import SeatMateMark from "@seatmate/shared/components/SeatMateMark";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged, User } from "firebase/auth";
-import BackButton from "@seatmate/shared/components/BackButton";
 
 import {
   addDoc,
@@ -21,8 +20,10 @@ import { auth, db } from "@seatmate/shared/firebase";
 
 import CoverPhoto from "@/components/cover-photo";
 import UpdateReminder from "@/components/update-reminder";
+import GameStatus from "@seatmate/shared/components/GameStatus";
 import TableWithSeats, {
   parseTableRotation,
+  isSingleSeat,
   parseTableShape,
   tableSize,
   type TableRotation,
@@ -32,11 +33,13 @@ import { toggleSeat as toggleSeatStatus } from "@/lib/seat-updates";
 import {
   clamp,
   type FloorMarker,
-  BAR_ONLY_MARKERS,
-  isBar,
+  isBarbershop,
+  isGameMarker,
+  markerAllowed,
   MARKERS,
   markerClassName,
   type MarkerType,
+  markerStatus,
 } from "@seatmate/shared/floor-plan";
 
 type SeatStatus = "available" | "occupied";
@@ -89,7 +92,7 @@ export default function FloorPlanPage() {
   const [creatingMarker, setCreatingMarker] = useState(false);
 
   // Bars also get pool table and darts markers.
-  const [businessIsBar, setBusinessIsBar] = useState(false);
+  const [businessType, setBusinessType] = useState("");
   const [message, setMessage] = useState("");
 
   const [businessStatus, setBusinessStatus] =
@@ -152,7 +155,7 @@ export default function FloorPlanPage() {
             return;
           }
 
-          setBusinessIsBar(isBar(businessSnap.data().type));
+          setBusinessType(String(businessSnap.data().type || ""));
 
           const rawStatus = businessSnap.data().status;
 
@@ -255,6 +258,7 @@ export default function FloorPlanPage() {
                       typeof marker.rotation === "number"
                         ? marker.rotation
                         : 0,
+                    status: markerStatus(marker.status),
                   };
                 }
               );
@@ -300,7 +304,7 @@ export default function FloorPlanPage() {
   const createTable = async () => {
     if (!user) return;
 
-    const stool = newTableShape === "stool";
+    const stool = isSingleSeat(newTableShape);
     const numberOfSeats = stool ? 1 : Number(seatCount);
 
     if (
@@ -324,17 +328,18 @@ export default function FloorPlanPage() {
         })
       );
 
-      // Stools line up to the right of the rightmost one; tables fill a
-      // 3×3 grid.
-      const lastStool = tables
-        .filter((table) => table.shape === "stool" && table.yPct <= 100)
+      // Stools and chairs line up to the right of the rightmost one of the
+      // same kind; tables fill a 3×3 grid.
+      const sameKind = tables.filter((table) => table.shape === newTableShape);
+      const lastStool = sameKind
+        .filter((table) => table.yPct <= 100)
         .sort((a, b) => a.xPct - b.xPct)
         .at(-1);
-      const index = tables.filter((table) => table.shape !== "stool").length;
+      const index = tables.filter((table) => !isSingleSeat(table.shape)).length;
       const position = stool
         ? lastStool
-          ? { xPct: clamp(lastStool.xPct + 6, 4, 96), yPct: lastStool.yPct }
-          : { xPct: 50, yPct: 85 }
+          ? { xPct: clamp(lastStool.xPct + (newTableShape === "barberChair" ? 9 : 6), 4, 96), yPct: lastStool.yPct }
+          : { xPct: newTableShape === "barberChair" ? 20 : 50, yPct: newTableShape === "barberChair" ? 50 : 85 }
         : {
             xPct: 18 + (index % 3) * 31,
             yPct: 22 + (Math.floor(index / 3) % 3) * 28,
@@ -350,9 +355,11 @@ export default function FloorPlanPage() {
         {
           name:
             tableName.trim() ||
-            (stool
-              ? `Stool ${tables.filter((table) => table.shape === "stool").length + 1}`
-              : `Table ${tables.filter((table) => table.shape !== "stool").length + 1}`),
+            (newTableShape === "stool"
+              ? `Stool ${sameKind.length + 1}`
+              : newTableShape === "barberChair"
+                ? `Chair ${sameKind.length + 1}`
+                : `Table ${index + 1}`),
           seats,
           shape: newTableShape,
           rotation: 0,
@@ -647,6 +654,24 @@ export default function FloorPlanPage() {
         updatedAt: serverTimestamp(),
       }
     );
+  };
+
+  // Pool tables and darts: tap in occupancy mode to flip open / in use.
+  const toggleGame = async (marker: FloorMarker) => {
+    if (!user) return;
+
+    try {
+      await updateDoc(
+        doc(db, "businesses", user.uid, "floorMarkers", marker.id),
+        {
+          status: marker.status === "occupied" ? "available" : "occupied",
+          statusUpdatedAt: serverTimestamp(),
+        }
+      );
+    } catch (error) {
+      console.error(error);
+      setMessage("Could not update that game. Try again.");
+    }
   };
 
   const deleteMarker = async (marker: FloorMarker) => {
@@ -962,8 +987,6 @@ export default function FloorPlanPage() {
       <header className="bg-white border-b border-[#e3e7e2]">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-5">
-            <BackButton fallback="/business" />
-
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 flex items-center justify-center text-[#101811]">
                 <SeatMateMark className="h-[85%] w-[85%]" />
@@ -1102,8 +1125,8 @@ export default function FloorPlanPage() {
                   type="number"
                   min="1"
                   max="12"
-                  value={newTableShape === "stool" ? "1" : seatCount}
-                  disabled={newTableShape === "stool"}
+                  value={isSingleSeat(newTableShape) ? "1" : seatCount}
+                  disabled={isSingleSeat(newTableShape)}
                   aria-label="Seats"
                   onChange={(event) => setSeatCount(event.target.value)}
                   className="h-11 w-24 border border-gray-200 rounded-xl px-3 text-black disabled:bg-gray-50 disabled:text-gray-400"
@@ -1121,6 +1144,9 @@ export default function FloorPlanPage() {
                   <option value="rectangle">Rectangle</option>
                   <option value="round">Round</option>
                   <option value="stool">Bar stool (1 seat)</option>
+                  {isBarbershop(businessType) && (
+                    <option value="barberChair">Barber chair (1 seat)</option>
+                  )}
                 </select>
 
                 <button
@@ -1132,7 +1158,9 @@ export default function FloorPlanPage() {
                     ? "Adding..."
                     : newTableShape === "stool"
                       ? "+ Add Stool"
-                      : "+ Add Table"}
+                      : newTableShape === "barberChair"
+                        ? "+ Add Chair"
+                        : "+ Add Table"}
                 </button>
               </div>
             </div>
@@ -1151,16 +1179,12 @@ export default function FloorPlanPage() {
                   className="h-11 flex-1 border border-gray-200 rounded-xl px-3 bg-white text-black"
                 >
                   {(Object.keys(MARKERS) as MarkerType[])
-                    .filter(
-                      (type) =>
-                        businessIsBar ||
-                        !BAR_ONLY_MARKERS.includes(type)
-                    )
+                    .filter((type) => markerAllowed(type, businessType))
                     .map((type) => (
                       <option key={type} value={type}>
                         {type === "wall"
                           ? "Wall / Divider"
-                          : `${MARKERS[type].icon} ${MARKERS[type].label}`}
+                          : `${MARKERS[type].icon} ${MARKERS[type].label}`.trim()}
                       </option>
                     ))}
                 </select>
@@ -1183,7 +1207,11 @@ export default function FloorPlanPage() {
           <div className="bg-green-50 border border-green-200 rounded-2xl p-4 mt-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div>
               <p className="text-xs font-bold tracking-wider text-green-700">
-                {selectedTable.shape === "stool" ? "SELECTED STOOL" : "SELECTED TABLE"}
+                {selectedTable.shape === "stool"
+                  ? "SELECTED STOOL"
+                  : selectedTable.shape === "barberChair"
+                    ? "SELECTED CHAIR"
+                    : "SELECTED TABLE"}
               </p>
               <p className="font-bold mt-1">{selectedTable.name}</p>
             </div>
@@ -1192,7 +1220,7 @@ export default function FloorPlanPage() {
               <ToolButton onClick={() => renameTable(selectedTable)}>
                 Rename
               </ToolButton>
-              {selectedTable.shape !== "stool" && (
+              {!isSingleSeat(selectedTable.shape) && (
                 <>
                   <ToolButton
                     onClick={() => void changeShape(selectedTable)}
@@ -1281,7 +1309,9 @@ export default function FloorPlanPage() {
 
         <p className="text-sm text-gray-500 mt-4">
           {mode === "occupancy"
-            ? "Tap a seat when somebody sits down or leaves."
+            ? markers.some((marker) => isGameMarker(marker.type))
+              ? "Tap a seat when somebody sits down or leaves. Tap a pool table or darts board to mark it in use."
+              : "Tap a seat when somebody sits down or leaves."
             : "This is your top-down restaurant map. Drag objects to match the real room."}
         </p>
 
@@ -1357,12 +1387,22 @@ export default function FloorPlanPage() {
                     if (mode === "layout") {
                       setSelectedMarkerId(marker.id);
                       setSelectedTableId(null);
+                    } else if (isGameMarker(marker.type)) {
+                      void toggleGame(marker);
                     }
                   }}
+                  role={mode === "occupancy" && isGameMarker(marker.type) ? "button" : undefined}
+                  aria-label={
+                    mode === "occupancy" && isGameMarker(marker.type)
+                      ? `${marker.label}: ${marker.status === "occupied" ? "in use" : "open"}`
+                      : undefined
+                  }
                   className={`absolute flex items-center justify-center border text-center font-bold select-none ${markerClassName(marker.type)} ${
                     mode === "layout"
                       ? "cursor-grab active:cursor-grabbing"
-                      : "pointer-events-none"
+                      : isGameMarker(marker.type)
+                        ? "cursor-pointer transition-transform hover:scale-[1.03] active:scale-95"
+                        : "pointer-events-none"
                   } ${
                     selected
                       ? "ring-4 ring-blue-300 ring-offset-2"
@@ -1396,6 +1436,12 @@ export default function FloorPlanPage() {
                       )}
                       {marker.scale >= 0.75 && (
                         <div className="mt-0.5">{marker.label}</div>
+                      )}
+                      {isGameMarker(marker.type) && (
+                        <GameStatus
+                          status={marker.status ?? "available"}
+                          size={Math.max(9, 10 * displayScale)}
+                        />
                       )}
                     </div>
                   )}
@@ -1442,7 +1488,7 @@ export default function FloorPlanPage() {
                   }}
                 >
                   {mode === "layout" && selected && (
-                    <div className={`absolute -inset-2 border-2 border-green-400 bg-green-50/30 pointer-events-none ${table.shape === "rectangle" ? "rounded-3xl" : "rounded-full"}`} />
+                    <div className={`absolute -inset-2 border-2 border-green-400 bg-green-50/30 pointer-events-none ${table.shape === "round" || table.shape === "stool" ? "rounded-full" : "rounded-3xl"}`} />
                   )}
 
                   <TableWithSeats

@@ -13,7 +13,7 @@ export default function PrivacyPage() {
   return (
     <ProsePage eyebrow="Legal" title="Privacy Policy" updated="September 28, 2026">
       <p>
-        SeatMate shows live seating at cafés, restaurants and bars. This policy explains what we
+        SeatMate shows live seating at cafés, restaurants, bars and barbershops. This policy explains what we
         collect when you use seatmate360.com, the SeatMate business portal (seatmate360.net) and the
         SeatMate app, and what we do with it. The short version: we collect only what the product
         needs, we don&apos;t sell your data, and we don&apos;t show ads.

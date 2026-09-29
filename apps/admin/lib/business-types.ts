@@ -26,4 +26,4 @@ export type BusinessDetail = {
   generatedAtMs: number;
 };
 
-export const BUSINESS_TYPES = ["Cafe", "Restaurant", "Coffee Shop", "Bakery", "Bar", "Food Hall", "Other"];
+export { BUSINESS_TYPES } from "@seatmate/shared/floor-plan";

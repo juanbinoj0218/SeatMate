@@ -30,7 +30,7 @@ const geistMono = Geist_Mono({
 });
 
 const description =
-  "Check live seating availability at cafés, restaurants and bars before you arrive.";
+  "Check live seating availability at cafés, restaurants, bars and barbershops before you arrive.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(CONSUMER_SITE_URL),

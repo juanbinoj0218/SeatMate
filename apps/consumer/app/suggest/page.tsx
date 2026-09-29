@@ -13,7 +13,7 @@ import { FormDone, FormField } from "@/components/form-bits";
 import { SiteFooter, SiteHeader } from "@/components/site-chrome";
 import { useFeatures } from "@/lib/use-features";
 
-const TYPES = ["Café", "Restaurant", "Bar", "Bakery", "Other"];
+const TYPES = ["Café", "Restaurant", "Bar", "Barbershop", "Bakery", "Other"];
 
 export default function SuggestPage() {
   return (

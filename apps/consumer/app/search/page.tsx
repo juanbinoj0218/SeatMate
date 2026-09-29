@@ -1,9 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import SeatMateMark from "@seatmate/shared/components/SeatMateMark";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { isBar } from "@seatmate/shared/floor-plan";
+import { isBar, isBarbershop } from "@seatmate/shared/floor-plan";
 
 import AccountMenu from "@/components/account-menu";
 import SaveButton from "@/components/save-button";
@@ -123,6 +124,10 @@ function SearchPageContent() {
       filtered = filtered.filter((business) => isBar(business.type));
     }
 
+    if (filter === "barbershop") {
+      filtered = filtered.filter((business) => isBarbershop(business.type));
+    }
+
     if (filter === "restaurant") {
       filtered = filtered.filter((business) =>
         business.type.toLowerCase().includes("restaurant")
@@ -183,13 +188,12 @@ function SearchPageContent() {
 
       <section className="border-b border-gray-200 bg-white">
         <div className="mx-auto max-w-7xl px-5 py-10 sm:px-6 md:py-14">
-          <button
-            type="button"
-            onClick={() => router.back()}
+          <Link
+            href="/"
             className="text-sm font-semibold text-gray-500 transition hover:text-black"
           >
-            ← Back
-          </button>
+            ← Home
+          </Link>
 
           <div className="mt-6 flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
             <div>
@@ -202,7 +206,7 @@ function SearchPageContent() {
               <p className="mt-3 max-w-xl text-gray-500">
                 {initialZip
                   ? `Showing SeatMate locations in ZIP ${initialZip}.`
-                  : "Search restaurants and cafés and see live seating before you go."}
+                  : "Search cafés, restaurants, bars and barbershops and see live seating before you go."}
               </p>
             </div>
 
@@ -272,6 +276,7 @@ function SearchPageContent() {
             <FilterButton active={filter === "cafe"} onClick={() => setFilter("cafe")}>Café</FilterButton>
             <FilterButton active={filter === "restaurant"} onClick={() => setFilter("restaurant")}>Restaurant</FilterButton>
             <FilterButton active={filter === "bar"} onClick={() => setFilter("bar")}>Bar</FilterButton>
+            <FilterButton active={filter === "barbershop"} onClick={() => setFilter("barbershop")}>Barbershop</FilterButton>
           </div>
 
           <select
