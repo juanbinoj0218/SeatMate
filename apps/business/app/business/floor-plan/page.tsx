@@ -21,6 +21,7 @@ import { auth, db } from "@seatmate/shared/firebase";
 
 import CoverPhoto from "@/components/cover-photo";
 import UpdateReminder from "@/components/update-reminder";
+import TableWithSeats, { tableSize } from "@seatmate/shared/components/TableWithSeats";
 import { toggleSeat as toggleSeatStatus } from "@/lib/seat-updates";
 import {
   clamp,
@@ -1345,8 +1346,7 @@ export default function FloorPlanPage() {
 
             {tables.map((table) => {
               const displayScale = table.scale * floorZoom;
-              const baseWidth = table.shape === "round" ? 175 : 210;
-              const baseHeight = table.shape === "round" ? 175 : 165;
+              const box = tableSize(table.shape, table.seats.length, displayScale);
               const selected = selectedTableId === table.id;
 
               return (
@@ -1376,92 +1376,25 @@ export default function FloorPlanPage() {
                   style={{
                     left: `${table.xPct}%`,
                     top: `${table.yPct}%`,
-                    width: `${baseWidth * displayScale}px`,
-                    height: `${baseHeight * displayScale}px`,
+                    width: `${box.width}px`,
+                    height: `${box.height}px`,
                     transform: "translate(-50%, -50%)",
                     zIndex: draggingTable === table.id ? 70 : 20,
                   }}
                 >
                   {mode === "layout" && selected && (
-                    <div className="absolute -inset-2 rounded-3xl border-2 border-green-400 bg-green-50/30 pointer-events-none" />
+                    <div className={`absolute -inset-2 border-2 border-green-400 bg-green-50/30 pointer-events-none ${table.shape === "round" ? "rounded-full" : "rounded-3xl"}`} />
                   )}
 
-                  <div
-                    className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#101811] text-white flex items-center justify-center text-center shadow-md ${
-                      table.shape === "round"
-                        ? "rounded-full"
-                        : "rounded-2xl"
-                    }`}
-                    style={{
-                      width:
-                        table.shape === "round"
-                          ? `${88 * displayScale}px`
-                          : `${125 * displayScale}px`,
-                      height:
-                        table.shape === "round"
-                          ? `${88 * displayScale}px`
-                          : `${76 * displayScale}px`,
-                      fontSize: `${Math.max(9, 13 * displayScale)}px`,
-                      padding: `${6 * displayScale}px`,
-                    }}
-                  >
-                    <div>
-                      <div className="font-bold">{table.name}</div>
-                      <div className="text-white/50 font-semibold mt-1">
-                        {table.seats.length} seats
-                      </div>
-                    </div>
-                  </div>
-
-                  {table.seats.map((seat, index) => {
-                    const angle =
-                      -Math.PI / 2 +
-                      (index / Math.max(table.seats.length, 1)) *
-                        Math.PI *
-                        2;
-
-                    const radiusX = table.shape === "round" ? 43 : 45;
-                    const radiusY = table.shape === "round" ? 43 : 42;
-                    const left = 50 + Math.cos(angle) * radiusX;
-                    const top = 50 + Math.sin(angle) * radiusY;
-                    const seatSize = clamp(30 * displayScale, 22, 45);
-
-                    return (
-                      <button
-                        key={seat.id}
-                        disabled={mode === "layout"}
-                        onPointerDown={(event) => event.stopPropagation()}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          void toggleSeat(table.id, seat.id);
-                        }}
-                        title={
-                          seat.status === "available"
-                            ? "Available"
-                            : "Occupied"
-                        }
-                        className={`absolute rounded-full text-white font-bold border-2 border-white shadow-sm ${
-                          seat.status === "available"
-                            ? "bg-green-500"
-                            : "bg-red-500"
-                        } ${
-                          mode === "occupancy"
-                            ? "hover:scale-110 transition-transform"
-                            : "opacity-90"
-                        }`}
-                        style={{
-                          left: `${left}%`,
-                          top: `${top}%`,
-                          width: `${seatSize}px`,
-                          height: `${seatSize}px`,
-                          transform: "translate(-50%, -50%)",
-                          fontSize: `${Math.max(8, 10 * displayScale)}px`,
-                        }}
-                      >
-                        {seat.id}
-                      </button>
-                    );
-                  })}
+                  <TableWithSeats
+                    name={table.name}
+                    shape={table.shape}
+                    seats={table.seats}
+                    width={box.width}
+                    height={box.height}
+                    onSeatClick={(seatId) => void toggleSeat(table.id, seatId)}
+                    seatsDisabled={mode === "layout"}
+                  />
                 </div>
               );
             })}

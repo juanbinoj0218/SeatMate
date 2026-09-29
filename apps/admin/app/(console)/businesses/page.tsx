@@ -27,6 +27,8 @@ import { consumerUrl } from "@seatmate/shared/site-urls";
 
 import Link from "next/link";
 
+import TableWithSeats, { tableSize } from "@seatmate/shared/components/TableWithSeats";
+
 import { logAction, useAdmin } from "@/lib/admin-session";
 
 type BusinessStatus =
@@ -1346,108 +1348,30 @@ export default function AdminPage() {
                         }
                       )}
 
-                      {reviewTables.map(
-                        (table) => {
-                          const width =
-                            165 *
-                            table.scale;
+                      {reviewTables.map((table) => {
+                        const box = tableSize(table.shape, table.seats.length, table.scale * 0.8);
 
-                          const tableHeight =
-                            table.shape ===
-                            "round"
-                              ? width
-                              : 105 *
-                                table.scale;
-
-                          return (
-                            <div
-                              key={
-                                table.id
-                              }
-                              className="absolute"
-                              style={{
-                                left: `${table.xPct}%`,
-                                top: `${table.yPct}%`,
-                                width: `${Math.max(
-                                  width,
-                                  110
-                                )}px`,
-                                transform:
-                                  "translate(-50%, -50%)",
-                                zIndex: 8,
-                              }}
-                            >
-                              <div
-                                className={`border border-green-200 bg-green-50/95 shadow-md p-2 ${
-                                  table.shape ===
-                                  "round"
-                                    ? "rounded-full"
-                                    : "rounded-2xl"
-                                }`}
-                                style={{
-                                  minHeight: `${Math.max(
-                                    tableHeight,
-                                    82
-                                  )}px`,
-                                }}
-                              >
-                                <div
-                                  className={`bg-[#101811] text-white flex items-center justify-center text-center px-2 ${
-                                    table.shape ===
-                                    "round"
-                                      ? "rounded-full mx-auto"
-                                      : "rounded-xl"
-                                  }`}
-                                  style={{
-                                    width:
-                                      table.shape ===
-                                      "round"
-                                        ? `${Math.max(
-                                            62,
-                                            78 *
-                                              table.scale
-                                          )}px`
-                                        : "100%",
-                                    height: `${Math.max(
-                                      52,
-                                      58 *
-                                        table.scale
-                                    )}px`,
-                                  }}
-                                >
-                                  <span className="text-xs font-bold">
-                                    {
-                                      table.name
-                                    }
-                                  </span>
-                                </div>
-
-                                <div className="flex flex-wrap justify-center gap-1 mt-2">
-                                  {table.seats.map(
-                                    (seat) => (
-                                      <span
-                                        key={
-                                          seat.id
-                                        }
-                                        className={`w-5 h-5 rounded-full text-[8px] text-white font-bold flex items-center justify-center ${
-                                          seat.status ===
-                                          "available"
-                                            ? "bg-green-500"
-                                            : "bg-red-500"
-                                        }`}
-                                      >
-                                        {
-                                          seat.id
-                                        }
-                                      </span>
-                                    )
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        }
-                      )}
+                        return (
+                          <div
+                            key={table.id}
+                            className="absolute"
+                            style={{
+                              left: `${table.xPct}%`,
+                              top: `${table.yPct}%`,
+                              transform: "translate(-50%, -50%)",
+                              zIndex: 8,
+                            }}
+                          >
+                            <TableWithSeats
+                              name={table.name}
+                              shape={table.shape}
+                              seats={table.seats}
+                              width={box.width}
+                              height={box.height}
+                            />
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 </>

@@ -18,6 +18,8 @@ import {
 
 import { auth, db } from "@seatmate/shared/firebase";
 
+import TableWithSeats, { tableSize } from "@seatmate/shared/components/TableWithSeats";
+
 import UpdateReminder from "@/components/update-reminder";
 import { toggleSeat as toggleSeatStatus } from "@/lib/seat-updates";
 
@@ -481,82 +483,31 @@ export default function StaffConsolePage() {
 
             {/* TABLES */}
 
-            {tables.map(
-              (table) => (
+            {tables.map((table) => {
+              // A bit larger than the owner's view so seats are easy to tap.
+              const box = tableSize(table.shape, table.seats.length, 1.15);
 
+              return (
                 <div
                   key={table.id}
+                  className="absolute"
                   style={{
-                    position:
-                      "absolute",
-
                     left: `${table.xPct}%`,
-
                     top: `${table.yPct}%`,
-
-                    width:
-                      "190px",
+                    transform: "translate(-50%, -50%)",
                   }}
-                  className="bg-white rounded-[22px] border border-gray-200 p-3 shadow-md"
                 >
-
-                  {/* TABLE TOP */}
-
-                  <div
-                    className={`bg-[#101811] flex items-center justify-center px-3 ${
-                      table.shape ===
-                      "round"
-                        ? "w-24 h-24 rounded-full mx-auto"
-                        : "h-20 rounded-2xl"
-                    }`}
-                  >
-
-                    <span className="text-white text-sm font-semibold text-center truncate">
-
-                      {table.name}
-
-                    </span>
-
-                  </div>
-
-                  {/* SEATS */}
-
-                  <div className="flex flex-wrap justify-center gap-2 mt-3">
-
-                    {table.seats.map(
-                      (seat) => (
-
-                        <button
-                          key={
-                            seat.id
-                          }
-                          onClick={() =>
-                            toggleSeat(
-                              table.id,
-                              seat.id
-                            )
-                          }
-                          className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white transition hover:scale-110 active:scale-95 ${
-                            seat.status ===
-                            "available"
-                              ? "bg-green-500 hover:bg-green-600"
-                              : "bg-red-500 hover:bg-red-600"
-                          }`}
-                        >
-
-                          {seat.id}
-
-                        </button>
-
-                      )
-                    )}
-
-                  </div>
-
+                  <TableWithSeats
+                    name={table.name}
+                    shape={table.shape}
+                    seats={table.seats}
+                    width={box.width}
+                    height={box.height}
+                    onSeatClick={(seatId) => toggleSeat(table.id, seatId)}
+                  />
                 </div>
-
-              )
-            )}
+              );
+            })}
 
           </div>
 
