@@ -12,9 +12,7 @@ export type MarkerType =
   | "restroom"
   | "wall"
   | "poolTable"
-  | "darts"
-  | "washStation"
-  | "waitingArea";
+  | "darts";
 
 export type FloorMarker = {
   id: string;
@@ -104,23 +102,10 @@ export const MARKERS: Record<
     width: 92,
     height: 70,
   },
-  washStation: {
-    label: "Wash Station",
-    icon: "🚿",
-    width: 96,
-    height: 60,
-  },
-  waitingArea: {
-    label: "Waiting Area",
-    icon: "🛋️",
-    width: 150,
-    height: 70,
-  },
 };
 
-// Markers only offered in the editor for bars / barbershops.
+// Markers only offered in the editor for bars.
 export const BAR_ONLY_MARKERS: MarkerType[] = ["poolTable", "darts"];
-export const BARBERSHOP_ONLY_MARKERS: MarkerType[] = ["washStation", "waitingArea"];
 
 // Markers that staff can mark as open or in use.
 export const GAME_MARKERS: MarkerType[] = ["poolTable", "darts"];
@@ -140,8 +125,7 @@ export const isBarbershop = (businessType: unknown) =>
 
 // Whether the editor offers a marker type to this kind of business.
 export const markerAllowed = (type: MarkerType, businessType: unknown) =>
-  (!BAR_ONLY_MARKERS.includes(type) || isBar(businessType)) &&
-  (!BARBERSHOP_ONLY_MARKERS.includes(type) || isBarbershop(businessType));
+  !BAR_ONLY_MARKERS.includes(type) || isBar(businessType);
 
 // Every business type a place can pick, in the order shown.
 export const BUSINESS_TYPES = [
@@ -173,10 +157,6 @@ export const markerClassName = (type: MarkerType) => {
       return "bg-emerald-700 border-[6px] border-amber-900 text-white rounded-lg shadow-sm";
     case "darts":
       return "bg-rose-50 border-rose-300 text-rose-800 rounded-full";
-    case "washStation":
-      return "bg-cyan-50 border-cyan-300 text-cyan-800 rounded-xl";
-    case "waitingArea":
-      return "bg-violet-50 border-violet-200 text-violet-800 rounded-2xl";
     default:
       return "bg-white border-gray-300 text-[#101811] rounded-xl shadow-sm";
   }
