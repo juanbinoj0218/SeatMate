@@ -27,6 +27,13 @@ import { consumerUrl } from "@seatmate/shared/site-urls";
 
 import Link from "next/link";
 
+import TableWithSeats, {
+  parseTableRotation,
+  parseTableShape,
+  type TableRotation,
+  type TableShape,
+} from "@seatmate/shared/components/TableWithSeats";
+
 import { logAction, useAdmin } from "@/lib/admin-session";
 
 type BusinessStatus =
@@ -63,7 +70,8 @@ type ReviewTable = {
   seats: ReviewSeat[];
   xPct: number;
   yPct: number;
-  shape: "rectangle" | "round";
+  shape: TableShape;
+  rotation: TableRotation;
   scale: number;
 };
 
@@ -110,6 +118,12 @@ const MARKER_STYLE: Record<
     width: 110,
     height: 42,
   },
+  barCounter: {
+    label: "Bar Counter",
+    icon: "🍸",
+    width: 190,
+    height: 40,
+  },
   door: {
     label: "Door",
     icon: "↪",
@@ -124,7 +138,7 @@ const MARKER_STYLE: Record<
   },
   restroom: {
     label: "Restroom",
-    icon: "WC",
+    icon: "",
     width: 72,
     height: 50,
   },
@@ -383,10 +397,8 @@ export default function AdminPage() {
               typeof table.yPct === "number"
                 ? clamp(table.yPct, 0, 100)
                 : 15 + Math.floor(index / 3) * 28,
-            shape:
-              table.shape === "round"
-                ? "round"
-                : "rectangle",
+            shape: parseTableShape(table.shape),
+            rotation: parseTableRotation(table.rotation),
             scale:
               typeof table.scale === "number"
                 ? clamp(table.scale, 0.65, 1.8)
@@ -1324,11 +1336,11 @@ export default function AdminPage() {
                                   transform: `rotate(${-marker.rotation}deg)`,
                                 }}
                               >
-                                <div className="text-sm leading-none">
-                                  {
-                                    info.icon
-                                  }
-                                </div>
+                                {info.icon && (
+                                  <div className="text-sm leading-none">
+                                    {info.icon}
+                                  </div>
+                                )}
 
                                 {marker.scale >=
                                   0.75 &&
@@ -1346,108 +1358,28 @@ export default function AdminPage() {
                         }
                       )}
 
-                      {reviewTables.map(
-                        (table) => {
-                          const width =
-                            165 *
-                            table.scale;
-
-                          const tableHeight =
-                            table.shape ===
-                            "round"
-                              ? width
-                              : 105 *
-                                table.scale;
-
-                          return (
-                            <div
-                              key={
-                                table.id
-                              }
-                              className="absolute"
-                              style={{
-                                left: `${table.xPct}%`,
-                                top: `${table.yPct}%`,
-                                width: `${Math.max(
-                                  width,
-                                  110
-                                )}px`,
-                                transform:
-                                  "translate(-50%, -50%)",
-                                zIndex: 8,
-                              }}
-                            >
-                              <div
-                                className={`border border-green-200 bg-green-50/95 shadow-md p-2 ${
-                                  table.shape ===
-                                  "round"
-                                    ? "rounded-full"
-                                    : "rounded-2xl"
-                                }`}
-                                style={{
-                                  minHeight: `${Math.max(
-                                    tableHeight,
-                                    82
-                                  )}px`,
-                                }}
-                              >
-                                <div
-                                  className={`bg-[#101811] text-white flex items-center justify-center text-center px-2 ${
-                                    table.shape ===
-                                    "round"
-                                      ? "rounded-full mx-auto"
-                                      : "rounded-xl"
-                                  }`}
-                                  style={{
-                                    width:
-                                      table.shape ===
-                                      "round"
-                                        ? `${Math.max(
-                                            62,
-                                            78 *
-                                              table.scale
-                                          )}px`
-                                        : "100%",
-                                    height: `${Math.max(
-                                      52,
-                                      58 *
-                                        table.scale
-                                    )}px`,
-                                  }}
-                                >
-                                  <span className="text-xs font-bold">
-                                    {
-                                      table.name
-                                    }
-                                  </span>
-                                </div>
-
-                                <div className="flex flex-wrap justify-center gap-1 mt-2">
-                                  {table.seats.map(
-                                    (seat) => (
-                                      <span
-                                        key={
-                                          seat.id
-                                        }
-                                        className={`w-5 h-5 rounded-full text-[8px] text-white font-bold flex items-center justify-center ${
-                                          seat.status ===
-                                          "available"
-                                            ? "bg-green-500"
-                                            : "bg-red-500"
-                                        }`}
-                                      >
-                                        {
-                                          seat.id
-                                        }
-                                      </span>
-                                    )
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        }
-                      )}
+                      {reviewTables.map((table) => {
+                        return (
+                          <div
+                            key={table.id}
+                            className="absolute"
+                            style={{
+                              left: `${table.xPct}%`,
+                              top: `${table.yPct}%`,
+                              transform: "translate(-50%, -50%)",
+                              zIndex: 8,
+                            }}
+                          >
+                            <TableWithSeats
+                              name={table.name}
+                              shape={table.shape}
+                              seats={table.seats}
+                              scale={table.scale * 0.8}
+                              rotation={table.rotation}
+                            />
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 </>

@@ -21,6 +21,13 @@ import { auth, db } from "@seatmate/shared/firebase";
 
 import CoverPhoto from "@/components/cover-photo";
 import UpdateReminder from "@/components/update-reminder";
+import TableWithSeats, {
+  parseTableRotation,
+  parseTableShape,
+  tableSize,
+  type TableRotation,
+  type TableShape,
+} from "@seatmate/shared/components/TableWithSeats";
 import { toggleSeat as toggleSeatStatus } from "@/lib/seat-updates";
 import {
   clamp,
@@ -33,7 +40,6 @@ import {
 } from "@seatmate/shared/floor-plan";
 
 type SeatStatus = "available" | "occupied";
-type TableShape = "rectangle" | "round";
 type Mode = "occupancy" | "layout";
 type BusinessStatus =
   | "draft"
@@ -54,6 +60,7 @@ type Table = {
   xPct: number;
   yPct: number;
   shape: TableShape;
+  rotation: TableRotation;
   scale: number;
 };
 
@@ -187,10 +194,8 @@ export default function FloorPlanPage() {
                       typeof table.yPct === "number"
                         ? table.yPct
                         : 18 + Math.floor(index / 3) * 30,
-                    shape:
-                      table.shape === "round"
-                        ? "round"
-                        : "rectangle",
+                    shape: parseTableShape(table.shape),
+                    rotation: parseTableRotation(table.rotation),
                     scale:
                       typeof table.scale === "number"
                         ? clamp(table.scale, 0.65, 1.8)
@@ -295,7 +300,8 @@ export default function FloorPlanPage() {
   const createTable = async () => {
     if (!user) return;
 
-    const numberOfSeats = Number(seatCount);
+    const stool = newTableShape === "stool";
+    const numberOfSeats = stool ? 1 : Number(seatCount);
 
     if (
       !Number.isInteger(numberOfSeats) ||
@@ -318,7 +324,21 @@ export default function FloorPlanPage() {
         })
       );
 
-      const index = tables.length;
+      // Stools line up to the right of the rightmost one; tables fill a
+      // 3×3 grid.
+      const lastStool = tables
+        .filter((table) => table.shape === "stool" && table.yPct <= 100)
+        .sort((a, b) => a.xPct - b.xPct)
+        .at(-1);
+      const index = tables.filter((table) => table.shape !== "stool").length;
+      const position = stool
+        ? lastStool
+          ? { xPct: clamp(lastStool.xPct + 6, 4, 96), yPct: lastStool.yPct }
+          : { xPct: 50, yPct: 85 }
+        : {
+            xPct: 18 + (index % 3) * 31,
+            yPct: 22 + (Math.floor(index / 3) % 3) * 28,
+          };
 
       const newTable = await addDoc(
         collection(
@@ -330,12 +350,14 @@ export default function FloorPlanPage() {
         {
           name:
             tableName.trim() ||
-            `Table ${tables.length + 1}`,
+            (stool
+              ? `Stool ${tables.filter((table) => table.shape === "stool").length + 1}`
+              : `Table ${tables.filter((table) => table.shape !== "stool").length + 1}`),
           seats,
           shape: newTableShape,
+          rotation: 0,
           scale: 1,
-          xPct: 18 + (index % 3) * 31,
-          yPct: 22 + Math.floor(index / 3) * 28,
+          ...position,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         }
@@ -530,6 +552,24 @@ export default function FloorPlanPage() {
       ),
       {
         shape: newShape,
+        updatedAt: serverTimestamp(),
+      }
+    );
+  };
+
+  const rotateTable = async (table: Table) => {
+    if (!user) return;
+
+    await updateDoc(
+      doc(
+        db,
+        "businesses",
+        user.uid,
+        "tables",
+        table.id
+      ),
+      {
+        rotation: table.rotation === 90 ? 0 : 90,
         updatedAt: serverTimestamp(),
       }
     );
@@ -1062,9 +1102,11 @@ export default function FloorPlanPage() {
                   type="number"
                   min="1"
                   max="12"
-                  value={seatCount}
+                  value={newTableShape === "stool" ? "1" : seatCount}
+                  disabled={newTableShape === "stool"}
+                  aria-label="Seats"
                   onChange={(event) => setSeatCount(event.target.value)}
-                  className="h-11 w-24 border border-gray-200 rounded-xl px-3 text-black"
+                  className="h-11 w-24 border border-gray-200 rounded-xl px-3 text-black disabled:bg-gray-50 disabled:text-gray-400"
                 />
 
                 <select
@@ -1078,6 +1120,7 @@ export default function FloorPlanPage() {
                 >
                   <option value="rectangle">Rectangle</option>
                   <option value="round">Round</option>
+                  <option value="stool">Bar stool (1 seat)</option>
                 </select>
 
                 <button
@@ -1085,7 +1128,11 @@ export default function FloorPlanPage() {
                   disabled={creating}
                   className="h-11 bg-[#101811] text-white px-5 rounded-xl font-semibold disabled:opacity-50"
                 >
-                  {creating ? "Adding..." : "+ Add Table"}
+                  {creating
+                    ? "Adding..."
+                    : newTableShape === "stool"
+                      ? "+ Add Stool"
+                      : "+ Add Table"}
                 </button>
               </div>
             </div>
@@ -1136,7 +1183,7 @@ export default function FloorPlanPage() {
           <div className="bg-green-50 border border-green-200 rounded-2xl p-4 mt-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div>
               <p className="text-xs font-bold tracking-wider text-green-700">
-                SELECTED TABLE
+                {selectedTable.shape === "stool" ? "SELECTED STOOL" : "SELECTED TABLE"}
               </p>
               <p className="font-bold mt-1">{selectedTable.name}</p>
             </div>
@@ -1145,19 +1192,30 @@ export default function FloorPlanPage() {
               <ToolButton onClick={() => renameTable(selectedTable)}>
                 Rename
               </ToolButton>
-              <ToolButton
-                onClick={() => void changeShape(selectedTable)}
-              >
-                {selectedTable.shape === "round"
-                  ? "Rectangle"
-                  : "Round"}
-              </ToolButton>
-              <ToolButton onClick={() => void removeSeat(selectedTable)}>
-                − Seat
-              </ToolButton>
-              <ToolButton onClick={() => void addSeat(selectedTable)}>
-                + Seat
-              </ToolButton>
+              {selectedTable.shape !== "stool" && (
+                <>
+                  <ToolButton
+                    onClick={() => void changeShape(selectedTable)}
+                  >
+                    {selectedTable.shape === "round"
+                      ? "Rectangle"
+                      : "Round"}
+                  </ToolButton>
+                  {selectedTable.shape === "rectangle" && (
+                    <ToolButton
+                      onClick={() => void rotateTable(selectedTable)}
+                    >
+                      Rotate 90°
+                    </ToolButton>
+                  )}
+                  <ToolButton onClick={() => void removeSeat(selectedTable)}>
+                    − Seat
+                  </ToolButton>
+                  <ToolButton onClick={() => void addSeat(selectedTable)}>
+                    + Seat
+                  </ToolButton>
+                </>
+              )}
               <ToolButton
                 onClick={() => void resizeTable(selectedTable, -0.1)}
               >
@@ -1327,13 +1385,15 @@ export default function FloorPlanPage() {
                         transform: `rotate(${-marker.rotation}deg)`,
                       }}
                     >
-                      <div
-                        style={{
-                          fontSize: `${Math.max(12, 17 * displayScale)}px`,
-                        }}
-                      >
-                        {info.icon}
-                      </div>
+                      {info.icon && (
+                        <div
+                          style={{
+                            fontSize: `${Math.max(12, 17 * displayScale)}px`,
+                          }}
+                        >
+                          {info.icon}
+                        </div>
+                      )}
                       {marker.scale >= 0.75 && (
                         <div className="mt-0.5">{marker.label}</div>
                       )}
@@ -1345,8 +1405,7 @@ export default function FloorPlanPage() {
 
             {tables.map((table) => {
               const displayScale = table.scale * floorZoom;
-              const baseWidth = table.shape === "round" ? 175 : 210;
-              const baseHeight = table.shape === "round" ? 175 : 165;
+              const box = tableSize(table.shape, table.seats.length, displayScale, table.rotation);
               const selected = selectedTableId === table.id;
 
               return (
@@ -1376,92 +1435,25 @@ export default function FloorPlanPage() {
                   style={{
                     left: `${table.xPct}%`,
                     top: `${table.yPct}%`,
-                    width: `${baseWidth * displayScale}px`,
-                    height: `${baseHeight * displayScale}px`,
+                    width: `${box.width}px`,
+                    height: `${box.height}px`,
                     transform: "translate(-50%, -50%)",
                     zIndex: draggingTable === table.id ? 70 : 20,
                   }}
                 >
                   {mode === "layout" && selected && (
-                    <div className="absolute -inset-2 rounded-3xl border-2 border-green-400 bg-green-50/30 pointer-events-none" />
+                    <div className={`absolute -inset-2 border-2 border-green-400 bg-green-50/30 pointer-events-none ${table.shape === "rectangle" ? "rounded-3xl" : "rounded-full"}`} />
                   )}
 
-                  <div
-                    className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#101811] text-white flex items-center justify-center text-center shadow-md ${
-                      table.shape === "round"
-                        ? "rounded-full"
-                        : "rounded-2xl"
-                    }`}
-                    style={{
-                      width:
-                        table.shape === "round"
-                          ? `${88 * displayScale}px`
-                          : `${125 * displayScale}px`,
-                      height:
-                        table.shape === "round"
-                          ? `${88 * displayScale}px`
-                          : `${76 * displayScale}px`,
-                      fontSize: `${Math.max(9, 13 * displayScale)}px`,
-                      padding: `${6 * displayScale}px`,
-                    }}
-                  >
-                    <div>
-                      <div className="font-bold">{table.name}</div>
-                      <div className="text-white/50 font-semibold mt-1">
-                        {table.seats.length} seats
-                      </div>
-                    </div>
-                  </div>
-
-                  {table.seats.map((seat, index) => {
-                    const angle =
-                      -Math.PI / 2 +
-                      (index / Math.max(table.seats.length, 1)) *
-                        Math.PI *
-                        2;
-
-                    const radiusX = table.shape === "round" ? 43 : 45;
-                    const radiusY = table.shape === "round" ? 43 : 42;
-                    const left = 50 + Math.cos(angle) * radiusX;
-                    const top = 50 + Math.sin(angle) * radiusY;
-                    const seatSize = clamp(30 * displayScale, 22, 45);
-
-                    return (
-                      <button
-                        key={seat.id}
-                        disabled={mode === "layout"}
-                        onPointerDown={(event) => event.stopPropagation()}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          void toggleSeat(table.id, seat.id);
-                        }}
-                        title={
-                          seat.status === "available"
-                            ? "Available"
-                            : "Occupied"
-                        }
-                        className={`absolute rounded-full text-white font-bold border-2 border-white shadow-sm ${
-                          seat.status === "available"
-                            ? "bg-green-500"
-                            : "bg-red-500"
-                        } ${
-                          mode === "occupancy"
-                            ? "hover:scale-110 transition-transform"
-                            : "opacity-90"
-                        }`}
-                        style={{
-                          left: `${left}%`,
-                          top: `${top}%`,
-                          width: `${seatSize}px`,
-                          height: `${seatSize}px`,
-                          transform: "translate(-50%, -50%)",
-                          fontSize: `${Math.max(8, 10 * displayScale)}px`,
-                        }}
-                      >
-                        {seat.id}
-                      </button>
-                    );
-                  })}
+                  <TableWithSeats
+                    name={table.name}
+                    shape={table.shape}
+                    seats={table.seats}
+                    scale={displayScale}
+                    rotation={table.rotation}
+                    onSeatClick={(seatId) => void toggleSeat(table.id, seatId)}
+                    seatsDisabled={mode === "layout"}
+                  />
                 </div>
               );
             })}
