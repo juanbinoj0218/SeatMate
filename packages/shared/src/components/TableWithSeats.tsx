@@ -1,10 +1,11 @@
 // A table drawn from above with its seats tucked right up against its
 // edge: in a ring around round tables and in rows along the long sides of
-// rectangular ones. A bar stool is a "table" with a single seat. Used by
+// rectangular ones. A bar stool or barber chair is a "table" with a single
+// seat. Used by
 // the floor-plan editor, the staff screen, the customer place page and the
 // admin review.
 
-export type TableShape = "round" | "rectangle" | "stool";
+export type TableShape = "round" | "rectangle" | "stool" | "barberChair";
 export type TableRotation = 0 | 90;
 
 export type TableSeat = {
@@ -14,7 +15,13 @@ export type TableSeat = {
 
 // Read a shape/rotation saved in Firestore, falling back to the defaults.
 export const parseTableShape = (value: unknown): TableShape =>
-  value === "round" || value === "stool" ? value : "rectangle";
+  value === "round" || value === "stool" || value === "barberChair"
+    ? value
+    : "rectangle";
+
+// Stools and barber chairs are one seat each, with no table around them.
+export const isSingleSeat = (shape: TableShape) =>
+  shape === "stool" || shape === "barberChair";
 
 export const parseTableRotation = (value: unknown): TableRotation =>
   value === 90 ? 90 : 0;
@@ -46,6 +53,20 @@ function geometry(
   if (shape === "stool") {
     const size = seatSize + 8 * scale;
     return { width: size, height: size, tableWidth: size, tableHeight: size, seatSize, spots: [{ x: 0, y: 0 }] };
+  }
+
+  if (shape === "barberChair") {
+    // Seat in the middle of a chair frame with a headrest above it.
+    const chairWidth = seatSize + 14 * scale;
+    const chairHeight = seatSize + 24 * scale;
+    return {
+      width: chairWidth,
+      height: chairHeight,
+      tableWidth: chairWidth,
+      tableHeight: chairHeight,
+      seatSize,
+      spots: [{ x: 0, y: 3 * scale }],
+    };
   }
 
   const spots: { x: number; y: number }[] = [];
@@ -117,7 +138,7 @@ export function tableSize(
   return { width, height };
 }
 
-// "Stool 3" → "3", so a stool shows its number.
+// "Stool 3" → "3", so a stool or chair shows its number.
 const stoolNumber = (name: string) => name.match(/(\d+)\s*$/)?.[1] ?? "";
 
 export default function TableWithSeats({
@@ -139,7 +160,7 @@ export default function TableWithSeats({
   seatsDisabled?: boolean;
   className?: string;
 }) {
-  const stool = shape === "stool";
+  const stool = isSingleSeat(shape);
   const shown = stool ? seats.slice(0, 1) : seats;
   const { width, height, tableWidth, tableHeight, seatSize, spots } = geometry(
     shape,
@@ -160,7 +181,9 @@ export default function TableWithSeats({
     >
       <div
         className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center text-center shadow-md ${
-          stool
+          shape === "barberChair"
+            ? "rounded-t-[40%] rounded-b-xl bg-[#2b2f36] border-t-[5px] border-[#8b1e2d]"
+            : stool
             ? "rounded-full bg-[#3b2a1c]"
             : `bg-[#101811] text-white ${shape === "round" ? "rounded-full" : "rounded-2xl"}`
         }`}

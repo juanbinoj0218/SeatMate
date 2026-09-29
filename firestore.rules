@@ -174,9 +174,23 @@ service cloud.firestore {
 
         // Business owner/admin can create,
         // move, resize, rotate, or delete markers.
-        allow create, update, delete:
+        allow create, delete:
           if isOwner(businessId)
           || isAdmin();
+
+        // Staff can only mark a pool table / darts
+        // board as open or in use.
+        allow update:
+          if isOwner(businessId)
+          || isAdmin()
+          || (
+            isStaff(businessId)
+            && request.resource.data
+              .diff(resource.data)
+              .affectedKeys()
+              .hasOnly(["status", "statusUpdatedAt"])
+            && request.resource.data.status in ["available", "occupied"]
+          );
       }
     }
 

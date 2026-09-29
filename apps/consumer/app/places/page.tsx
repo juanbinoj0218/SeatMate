@@ -8,7 +8,7 @@ import { listCitiesServer } from "@/lib/places-server";
 export const metadata: Metadata = {
   title: "Cities – SeatMate",
   description:
-    "Find cafés, restaurants and bars with live seating on SeatMate, city by city.",
+    "Find cafés, restaurants, bars and barbershops with live seating on SeatMate, city by city.",
 };
 
 export default async function CitiesPage() {

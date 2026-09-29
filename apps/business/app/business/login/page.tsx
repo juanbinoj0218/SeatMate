@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 
 import {
   GoogleAuthProvider,
+  type MultiFactorResolver,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -18,9 +19,10 @@ import {
 } from "firebase/firestore";
 
 import { auth, db } from "@seatmate/shared/firebase";
-import BackButton from "@seatmate/shared/components/BackButton";
-import { resetSentMessage, sendResetLink } from "@seatmate/shared/password-reset";
-import { adminUrl } from "@seatmate/shared/site-urls";
+import ResetPassword from "@seatmate/shared/components/ResetPassword";
+import TwoFactorPrompt from "@seatmate/shared/components/TwoFactorPrompt";
+import { twoFactorResolver } from "@seatmate/shared/two-factor";
+import { adminUrl, consumerUrl } from "@seatmate/shared/site-urls";
 
 import {
   ClockIcon,
@@ -96,6 +98,13 @@ export default function BusinessLoginPage() {
 
   const [mode, setMode] =
     useState<Mode>("signin");
+
+  // The card shows the sign-in form, the password reset screen, or the
+  // two-factor code step.
+  const [panel, setPanel] =
+    useState<"form" | "reset">("form");
+  const [twoFactor, setTwoFactor] =
+    useState<MultiFactorResolver | null>(null);
 
   const [firstName, setFirstName] =
     useState("");
@@ -338,6 +347,17 @@ export default function BusinessLoginPage() {
   // EMAIL SIGN IN
   // --------------------------------
 
+  const goAfterSignIn = async (uid: string) => {
+    const destination =
+      await getPostLoginDestination(uid);
+
+    if (destination.startsWith("http")) {
+      window.location.assign(destination);
+    } else {
+      router.push(destination);
+    }
+  };
+
   const handleSignIn = async (
     event: React.FormEvent
   ) => {
@@ -366,17 +386,15 @@ export default function BusinessLoginPage() {
           password
         );
 
-      const destination =
-        await getPostLoginDestination(
-          credential.user.uid
-        );
-
-      if (destination.startsWith("http")) {
-        window.location.assign(destination);
-      } else {
-        router.push(destination);
-      }
+      await goAfterSignIn(credential.user.uid);
     } catch (err) {
+      const resolver = twoFactorResolver(err);
+
+      if (resolver) {
+        setTwoFactor(resolver);
+        return;
+      }
+
       console.error(
         "Sign in error:",
         err
@@ -511,17 +529,15 @@ export default function BusinessLoginPage() {
             provider
           );
 
-        const destination =
-          await getPostLoginDestination(
-            result.user.uid
-          );
-
-        if (destination.startsWith("http")) {
-        window.location.assign(destination);
-      } else {
-        router.push(destination);
-      }
+        await goAfterSignIn(result.user.uid);
       } catch (err) {
+        const resolver = twoFactorResolver(err);
+
+        if (resolver) {
+          setTwoFactor(resolver);
+          return;
+        }
+
         console.error(
           "Google sign-in error:",
           err
@@ -539,38 +555,11 @@ export default function BusinessLoginPage() {
   // PASSWORD RESET
   // --------------------------------
 
-  const handleForgotPassword =
-    async () => {
-      setError("");
-      setMessage("");
-
-      if (!email.trim()) {
-        setError(
-          "Enter your email first, then press Forgot password."
-        );
-        return;
-      }
-
-      try {
-        await sendResetLink(
-          email.trim(),
-          `${window.location.origin}/business/login`
-        );
-
-        setMessage(
-          resetSentMessage(email.trim())
-        );
-      } catch (err) {
-        console.error(
-          "Password reset error:",
-          err
-        );
-
-        setError(
-          getFriendlyError(err)
-        );
-      }
-    };
+  const handleForgotPassword = () => {
+    setError("");
+    setMessage("");
+    setPanel("reset");
+  };
 
   return (
     <main className="min-h-screen bg-[#f7f8f5]">
@@ -580,29 +569,23 @@ export default function BusinessLoginPage() {
       <header className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
 
-          <BackButton fallback="/" />
-
           <div className="flex items-center gap-3">
-
             <div className="w-10 h-10 flex items-center justify-center text-[#101811]">
               <SeatMateMark className="h-[85%] w-[85%]" />
             </div>
 
             <div>
-
-              <p className="font-bold">
-                SeatMate
-              </p>
-
-              <p className="text-xs text-gray-400">
-                Business Portal
-              </p>
-
+              <p className="font-bold">SeatMate</p>
+              <p className="text-xs text-gray-400">Business Portal</p>
             </div>
-
           </div>
 
-          <div className="w-16" />
+          <a
+            href={consumerUrl("/")}
+            className="text-sm font-semibold text-gray-500 hover:text-[#101811] transition"
+          >
+            Customer site →
+          </a>
 
         </div>
       </header>
@@ -677,6 +660,21 @@ export default function BusinessLoginPage() {
           {/* AUTH CARD */}
 
           <div className="bg-white border border-gray-200 rounded-[30px] p-7 md:p-9 shadow-sm">
+
+            {twoFactor ? (
+              <TwoFactorPrompt
+                resolver={twoFactor}
+                onSignedIn={(credential) => goAfterSignIn(credential.user.uid)}
+                onCancel={() => setTwoFactor(null)}
+              />
+            ) : panel === "reset" ? (
+              <ResetPassword
+                initialEmail={email}
+                continueUrl={`${window.location.origin}/business/login`}
+                onBack={() => setPanel("form")}
+              />
+            ) : (
+            <>
 
             {/* MODE SWITCH */}
 
@@ -1000,6 +998,8 @@ export default function BusinessLoginPage() {
 
               </p>
 
+            )}
+            </>
             )}
 
           </div>

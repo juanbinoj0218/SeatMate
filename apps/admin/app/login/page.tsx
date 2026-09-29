@@ -4,13 +4,16 @@ import { FormEvent, Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   GoogleAuthProvider,
+  type MultiFactorResolver,
   signInWithEmailAndPassword,
   signInWithPopup,
 } from "firebase/auth";
 
 import SeatMateMark from "@seatmate/shared/components/SeatMateMark";
 import { auth } from "@seatmate/shared/firebase";
-import { resetSentMessage, sendResetLink } from "@seatmate/shared/password-reset";
+import ResetPassword from "@seatmate/shared/components/ResetPassword";
+import TwoFactorPrompt from "@seatmate/shared/components/TwoFactorPrompt";
+import { twoFactorResolver } from "@seatmate/shared/two-factor";
 
 import { AdminSessionProvider, useAdminSession } from "@/lib/admin-session";
 
@@ -47,6 +50,8 @@ function Login() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [twoFactor, setTwoFactor] = useState<MultiFactorResolver | null>(null);
 
   useEffect(() => {
     if (session.state === "admin" || session.state === "denied") {
@@ -62,8 +67,13 @@ function Login() {
     try {
       await signInWithEmailAndPassword(auth, email.trim(), password);
     } catch (caught) {
-      setError(message(caught));
       setBusy(false);
+      const resolver = twoFactorResolver(caught);
+      if (resolver) {
+        setTwoFactor(resolver);
+        return;
+      }
+      setError(message(caught));
     }
   };
 
@@ -72,23 +82,16 @@ function Login() {
     try {
       await signInWithPopup(auth, new GoogleAuthProvider());
     } catch (caught) {
+      const resolver = twoFactorResolver(caught);
+      if (resolver) {
+        setTwoFactor(resolver);
+        return;
+      }
       setError(message(caught));
     }
   };
 
-  const reset = async () => {
-    setError("");
-    if (!email.trim()) {
-      setError("Enter your email first.");
-      return;
-    }
-    try {
-      await sendResetLink(email.trim(), `${window.location.origin}/login`);
-      setNotice(resetSentMessage(email.trim()));
-    } catch (caught) {
-      setError(message(caught));
-    }
-  };
+
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#101811] p-6">
@@ -101,6 +104,20 @@ function Login() {
           </div>
         </div>
 
+        {twoFactor ? (
+          <div className="mt-8">
+            <TwoFactorPrompt resolver={twoFactor} onSignedIn={() => undefined} onCancel={() => setTwoFactor(null)} />
+          </div>
+        ) : resetting ? (
+          <div className="mt-8">
+            <ResetPassword
+              initialEmail={email}
+              continueUrl={`${window.location.origin}/login`}
+              onBack={() => setResetting(false)}
+            />
+          </div>
+        ) : (
+        <>
         <h1 className="mt-8 text-2xl font-bold">Sign in</h1>
         <p className="mt-1 text-sm text-gray-500">For SeatMate administrators only.</p>
 
@@ -112,7 +129,7 @@ function Login() {
           <div>
             <div className="mb-1.5 flex items-center justify-between">
               <label htmlFor="admin-password" className="block text-sm font-semibold">Password</label>
-              <button type="button" onClick={reset} className="text-sm font-semibold text-gray-500 hover:text-[#101811]">Forgot?</button>
+              <button type="button" onClick={() => { setError(""); setNotice(""); setResetting(true); }} className="text-sm font-semibold text-gray-500 hover:text-[#101811]">Forgot password?</button>
             </div>
             <input id="admin-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" className="w-full" />
           </div>
@@ -128,6 +145,8 @@ function Login() {
         <button type="button" onClick={google} className="mt-3 h-12 w-full rounded-xl border border-gray-200 font-semibold hover:bg-gray-50">
           Continue with Google
         </button>
+        </>
+        )}
       </div>
     </main>
   );

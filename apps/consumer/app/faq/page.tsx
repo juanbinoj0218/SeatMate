@@ -59,7 +59,7 @@ const SECTIONS: { title: string; items: { q: string; a: React.ReactNode }[] }[] 
       },
       {
         q: "Which kinds of places can join?",
-        a: "Cafés, coffee shops, restaurants, bakeries, food halls and bars. Bars also get pool table and darts markers on their floor plan.",
+        a: "Cafés, coffee shops, restaurants, bakeries, food halls, bars and barbershops. Bars also get pool table and darts markers that staff can mark as in use, and barbershops get barber chairs, a wash station and a waiting area.",
       },
     ],
   },

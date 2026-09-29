@@ -334,7 +334,7 @@ export default function BusinessHoursPage() {
 
           </div>
 
-          <BackButton fallback="/business" />
+          <BackButton href="/business" label="Dashboard" />
 
         </div>
 

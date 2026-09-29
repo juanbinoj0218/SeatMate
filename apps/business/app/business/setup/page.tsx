@@ -1,5 +1,6 @@
 "use client";
 
+import { BUSINESS_TYPES, businessTypeLabel } from "@seatmate/shared/floor-plan";
 import SeatMateMark from "@seatmate/shared/components/SeatMateMark";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -324,33 +325,11 @@ export default function BusinessSetupPage() {
                 }
                 className="w-full border border-gray-200 rounded-xl px-4 py-3 bg-white outline-none focus:ring-2 focus:ring-green-500"
               >
-                <option value="Cafe">
-                  Café
-                </option>
-
-                <option value="Restaurant">
-                  Restaurant
-                </option>
-
-                <option value="Coffee Shop">
-                  Coffee Shop
-                </option>
-
-                <option value="Bakery">
-                  Bakery
-                </option>
-
-                <option value="Bar">
-                  Bar
-                </option>
-
-                <option value="Food Hall">
-                  Food Hall
-                </option>
-
-                <option value="Other">
-                  Other
-                </option>
+                {BUSINESS_TYPES.map((option) => (
+                  <option key={option} value={option}>
+                    {businessTypeLabel(option)}
+                  </option>
+                ))}
               </select>
             </div>
 

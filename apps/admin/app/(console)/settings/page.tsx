@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import TwoFactorSetup from "@seatmate/shared/components/TwoFactorSetup";
 import { FEATURE_INFO, FEATURE_KEYS, type FeatureKey, type Features } from "@seatmate/shared/features";
 
 import { PageHeader } from "@/components/admin-shell";
@@ -13,6 +14,38 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState<FeatureKey | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [twoFactor, setTwoFactor] = useState<{ enabled: boolean; problem?: string } | null>(null);
+  const [savingTwoFactor, setSavingTwoFactor] = useState(false);
+
+  useEffect(() => {
+    adminFetch<{ enabled: boolean; problem?: string }>(user, "/api/admin/two-factor")
+      .then(setTwoFactor)
+      .catch((caught: Error) => setTwoFactor({ enabled: false, problem: caught.message }));
+  }, [user]);
+
+  const toggleTwoFactor = async () => {
+    if (!twoFactor) return;
+    const next = !twoFactor.enabled;
+    setSavingTwoFactor(true);
+    setError("");
+    setNotice("");
+    try {
+      const result = await adminFetch<{ enabled: boolean }>(user, "/api/admin/two-factor", {
+        method: "PUT",
+        body: JSON.stringify({ enabled: next }),
+      });
+      setTwoFactor({ enabled: result.enabled });
+      setNotice(
+        result.enabled
+          ? "Two-factor sign-in is available. Anyone can now turn it on for their own account."
+          : "Two-factor sign-in is switched off for everyone."
+      );
+    } catch (caught) {
+      setError((caught as Error).message);
+    } finally {
+      setSavingTwoFactor(false);
+    }
+  };
 
   useEffect(() => {
     adminFetch<{ features: Features }>(user, "/api/admin/settings")
@@ -73,6 +106,37 @@ export default function SettingsPage() {
       </ul>
 
       <p className="mt-4 text-xs text-gray-400">Every change is recorded in Activity.</p>
+
+      <h2 className="mt-12 text-lg font-bold">Sign-in security</h2>
+      <div className="mt-4 rounded-2xl border border-gray-200 bg-white px-5 py-4">
+        <div className="flex items-center justify-between gap-6">
+          <div>
+            <p className="font-semibold">Two-factor sign-in for everyone</p>
+            <p className="mt-0.5 text-sm text-gray-500">
+              Lets customers, businesses, staff and admins add an authenticator-app code to their
+              sign-in. Each person turns it on for their own account.
+            </p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={twoFactor?.enabled ?? false}
+            aria-label="Two-factor sign-in for everyone"
+            disabled={!twoFactor || savingTwoFactor}
+            onClick={toggleTwoFactor}
+            className={`relative h-7 w-12 shrink-0 rounded-full transition disabled:opacity-50 ${twoFactor?.enabled ? "bg-emerald-500" : "bg-gray-300"}`}
+          >
+            <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all ${twoFactor?.enabled ? "left-6" : "left-1"}`} />
+          </button>
+        </div>
+        {twoFactor?.problem && (
+          <p className="mt-3 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900">{twoFactor.problem}</p>
+        )}
+      </div>
+
+      <div className="mt-4">
+        <TwoFactorSetup key={user.uid} user={user} />
+      </div>
     </div>
   );
 }

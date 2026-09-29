@@ -2,6 +2,7 @@
 
 import SeatMateMark from "@seatmate/shared/components/SeatMateMark";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import {
@@ -14,6 +15,8 @@ import {
   doc,
   getDoc,
   onSnapshot,
+  serverTimestamp,
+  updateDoc,
 } from "firebase/firestore";
 
 import { auth, db } from "@seatmate/shared/firebase";
@@ -24,6 +27,14 @@ import TableWithSeats, {
   type TableRotation,
   type TableShape,
 } from "@seatmate/shared/components/TableWithSeats";
+
+import GameStatus from "@seatmate/shared/components/GameStatus";
+import {
+  isGameMarker,
+  MARKERS,
+  markerStatus,
+  type MarkerType,
+} from "@seatmate/shared/floor-plan";
 
 import UpdateReminder from "@/components/update-reminder";
 import { toggleSeat as toggleSeatStatus } from "@/lib/seat-updates";
@@ -43,6 +54,14 @@ type Table = {
   rotation: TableRotation;
 };
 
+// A pool table or darts board staff can mark as in use.
+type Game = {
+  id: string;
+  type: MarkerType;
+  label: string;
+  status: "available" | "occupied";
+};
+
 type StaffAccount = {
   businessId: string;
   businessName: string;
@@ -60,6 +79,9 @@ export default function StaffConsolePage() {
   const [tables, setTables] =
     useState<Table[]>([]);
 
+  const [games, setGames] =
+    useState<Game[]>([]);
+
   const [loading, setLoading] =
     useState(true);
 
@@ -67,6 +89,7 @@ export default function StaffConsolePage() {
     useState("");
 
   useEffect(() => {
+    let stopGames: (() => void) | undefined;
     let stopTables:
       | (() => void)
       | undefined;
@@ -113,6 +136,34 @@ export default function StaffConsolePage() {
             "businesses",
             account.businessId,
             "tables"
+          );
+
+          stopGames = onSnapshot(
+            collection(db, "businesses", account.businessId, "floorMarkers"),
+            (snapshot) => {
+              setGames(
+                snapshot.docs
+                  .map((markerDoc) => {
+                    const data = markerDoc.data();
+                    const type = (
+                      data.type in MARKERS ? data.type : "outlet"
+                    ) as MarkerType;
+
+                    return {
+                      id: markerDoc.id,
+                      type,
+                      label:
+                        typeof data.label === "string"
+                          ? data.label
+                          : MARKERS[type].label,
+                      status: markerStatus(data.status),
+                    };
+                  })
+                  .filter((game) => isGameMarker(game.type))
+                  .sort((a, b) => a.label.localeCompare(b.label))
+              );
+            },
+            (snapshotError) => console.error(snapshotError)
           );
 
           stopTables = onSnapshot(
@@ -191,6 +242,7 @@ export default function StaffConsolePage() {
     return () => {
       stopAuth();
       stopTables?.();
+      stopGames?.();
     };
   }, [router]);
 
@@ -214,6 +266,28 @@ export default function StaffConsolePage() {
 
       setError(
         "Could not update this seat."
+      );
+    }
+  };
+
+  const toggleGame = async (game: Game) => {
+    if (!staffAccount) return;
+
+    try {
+      setError("");
+
+      await updateDoc(
+        doc(db, "businesses", staffAccount.businessId, "floorMarkers", game.id),
+        {
+          status: game.status === "occupied" ? "available" : "occupied",
+          statusUpdatedAt: serverTimestamp(),
+        }
+      );
+    } catch (err) {
+      console.error(err);
+
+      setError(
+        "Could not update this game."
       );
     }
   };
@@ -314,12 +388,21 @@ export default function StaffConsolePage() {
 
           </div>
 
-          <button
-            onClick={handleLogout}
-            className="border border-gray-200 bg-white hover:bg-gray-50 px-4 py-2.5 rounded-xl text-sm font-semibold transition"
-          >
-            Log Out
-          </button>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/business/security"
+              className="px-3 py-2.5 rounded-xl text-sm font-semibold text-gray-500 hover:text-[#101811] transition"
+            >
+              Security
+            </Link>
+
+            <button
+              onClick={handleLogout}
+              className="border border-gray-200 bg-white hover:bg-gray-50 px-4 py-2.5 rounded-xl text-sm font-semibold transition"
+            >
+              Log Out
+            </button>
+          </div>
 
         </div>
 
@@ -439,6 +522,34 @@ export default function StaffConsolePage() {
           </div>
 
         </div>
+
+        {/* POOL TABLES / DARTS */}
+
+        {games.length > 0 && (
+          <div className="mt-6 flex flex-wrap gap-3">
+            {games.map((game) => (
+              <button
+                key={game.id}
+                type="button"
+                onClick={() => void toggleGame(game)}
+                aria-label={`${game.label}: ${game.status === "occupied" ? "in use" : "open"}`}
+                className={`flex items-center gap-3 rounded-2xl border bg-white px-4 py-3 text-left shadow-sm transition active:scale-95 ${
+                  game.status === "occupied" ? "border-red-200" : "border-green-200"
+                }`}
+              >
+                <span className="text-2xl" aria-hidden>
+                  {MARKERS[game.type].icon}
+                </span>
+                <span>
+                  <span className="block text-sm font-bold text-[#101811]">
+                    {game.label}
+                  </span>
+                  <GameStatus status={game.status} size={11} />
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* EXACT FLOOR GRID */}
 

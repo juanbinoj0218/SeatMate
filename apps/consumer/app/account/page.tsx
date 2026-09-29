@@ -10,6 +10,8 @@ import {
   useAccount,
 } from "@/components/account-provider";
 import { Avatar, HeartIcon } from "@/components/account-menu";
+import TwoFactorSetup from "@seatmate/shared/components/TwoFactorSetup";
+
 import DeleteAccount from "@/components/delete-account";
 import SaveButton from "@/components/save-button";
 import {
@@ -204,6 +206,10 @@ export default function AccountPage() {
               initial={profile}
             />
           )}
+
+          <div className="mt-6">
+            <TwoFactorSetup key={user.uid} user={user} />
+          </div>
 
           <DeleteAccount user={user} onDeleting={setDeleting} />
         </aside>

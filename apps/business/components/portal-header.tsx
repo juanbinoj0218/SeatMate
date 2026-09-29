@@ -17,7 +17,7 @@ export default function PortalHeader({ section }: { section: string }) {
           </div>
         </div>
 
-        <BackButton fallback="/business" />
+        <BackButton href="/business" label="Dashboard" />
       </div>
     </header>
   );

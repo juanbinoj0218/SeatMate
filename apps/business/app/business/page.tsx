@@ -3,7 +3,6 @@
 import SeatMateMark from "@seatmate/shared/components/SeatMateMark";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import BackButton from "@seatmate/shared/components/BackButton";
 
 import {
   onAuthStateChanged,
@@ -27,6 +26,7 @@ import {
   ClockIcon,
   FloorPlanIcon,
   QrIcon,
+  ShieldIcon,
   StaffIcon,
   StorefrontIcon,
 } from "@/components/portal-icons";
@@ -173,8 +173,6 @@ export default function BusinessDashboard() {
       <header className="bg-white border-b border-gray-200">
         <div className="max-w-3xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-5">
-            <BackButton fallback="/" />
-
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 flex items-center justify-center text-[#101811]">
                 <SeatMateMark className="h-[85%] w-[85%]" />
@@ -341,6 +339,14 @@ export default function BusinessDashboard() {
               }
             />
           )}
+
+          <DashboardLink
+            title="Security"
+            Icon={ShieldIcon}
+            tile="bg-emerald-100 text-emerald-700"
+            description="Turn on two-factor sign-in to protect your account."
+            onClick={() => router.push("/business/security")}
+          />
         </ul>
       </div>
     </main>
