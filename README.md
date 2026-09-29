@@ -8,6 +8,7 @@ three Next.js sites that share one Firebase project:
 | `apps/consumer` | Customer site (seatmate360.com) | `/`, `/about`, `/search`, `/place/[slug]`, `/places`, `/places/[city]`, `/suggest`, `/contact`, `/faq`, `/privacy`, `/terms`, `/account`, `/login`, `/auth/action`, `/api/place-details` |
 | `apps/business` | Business portal (seatmate360.net) | `/business/*`, `/staff/*`, `/api/seat-alerts` |
 | `apps/admin` | Admin site (seatmate360.info) | `/` overview, `/businesses`, `/inbox`, `/customers`, `/admins`, `/login`, `/api/admin/*` |
+| `mobile/business` | Business app for iOS and Android (Expo) | Same features as the business portal; see [`mobile/business/README.md`](mobile/business/README.md) |
 | `packages/shared` | Shared code | Firebase setup, `BackButton`, `SeatMateMark` logo, floor-plan marker config, global styles, cross-site URLs |
 
 ## Local development
