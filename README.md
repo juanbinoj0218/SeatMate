@@ -8,6 +8,7 @@ three Next.js sites that share one Firebase project:
 | `apps/consumer` | Customer site (seatmate360.com) | `/`, `/about`, `/search`, `/place/[slug]`, `/places`, `/places/[city]`, `/suggest`, `/contact`, `/faq`, `/privacy`, `/terms`, `/account`, `/login`, `/auth/action`, `/api/place-details` |
 | `apps/business` | Business portal (seatmate360.net) | `/business/*`, `/staff/*`, `/api/seat-alerts` |
 | `apps/admin` | Admin site (seatmate360.info) | `/` overview, `/businesses`, `/inbox`, `/customers`, `/admins`, `/login`, `/api/admin/*` |
+| `mobile/consumer` | Customer app for iOS and Android (Expo) | Search, live seats and floor plans, saved places, seat-open push notifications; see [`mobile/consumer/README.md`](mobile/consumer/README.md) |
 | `mobile/business` | Business app for iOS and Android (Expo) | Same features as the business portal; see [`mobile/business/README.md`](mobile/business/README.md) |
 | `packages/shared` | Shared code | Firebase setup, `BackButton`, `SeatMateMark` logo, floor-plan marker config, global styles, cross-site URLs |
 
@@ -21,6 +22,10 @@ npm run dev:admin        # http://localhost:3002
 ```
 
 `npm run build` and `npm run lint` run for all apps.
+
+The two Expo apps in `mobile/` each have their own `npm install` (Expo pins
+its own React version, so they stay out of the npm workspaces). Run them
+with `npx expo start` from their folder.
 
 ## Environment variables
 

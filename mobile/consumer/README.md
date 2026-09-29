@@ -3,12 +3,15 @@
 Live seat availability for cafés and restaurants. Customers search places,
 see how many seats are free right now, and view each place's live floor plan.
 
-Uses the same Firebase project as the SeatMate websites
-(`juanbinoj0218/SeatMate`), so accounts and saved places are shared.
+Uses the same Firebase project as the SeatMate websites in this repo, so
+accounts and saved places are shared. Floor plans are drawn with the shared
+table layout and marker list in `packages/shared`, so they look the same as
+on the website and in the business app (`mobile/business`).
 
 ## Run it
 
 ```bash
+cd mobile/consumer
 npm install
 npx expo start
 ```
@@ -45,7 +48,7 @@ One-time setup:
    `npx eas-cli@latest init`
 2. Switch Firebase to the Blaze (pay-as-you-go) plan. At SeatMate's size this
    stays within the free allowance.
-3. Deploy the function (use the project ID from `.env.local`):
+3. Deploy the function from `mobile/consumer` (use the project ID from `.env.local`):
    `npx firebase-tools@latest deploy --only functions --project YOUR_PROJECT_ID`
 
 Notifications work in Expo Go on iPhone. Android needs a development build.

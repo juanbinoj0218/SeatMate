@@ -22,6 +22,16 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { collection, doc, getDoc, onSnapshot } from "firebase/firestore";
 
+import { MARKERS, type FloorMarker, type MarkerType } from "@seatmate/shared/floor-plan";
+import {
+  parseTableRotation,
+  parseTableShape,
+  stoolNumber,
+  tableGeometry,
+  type TableRotation,
+  type TableShape,
+} from "@seatmate/shared/table-geometry";
+
 import { bumpPlaceStat, useAccount } from "../../lib/account";
 import { db } from "../../lib/firebase";
 
@@ -85,29 +95,10 @@ type Table = {
   seats: Seat[];
   xPct: number;
   yPct: number;
-  shape: "rectangle" | "round";
+  shape: TableShape;
+  rotation: TableRotation;
   scale: number;
   occupancyUpdatedAt: TimestampLike | null;
-};
-
-type MarkerType =
-  | "outlet"
-  | "window"
-  | "register"
-  | "counter"
-  | "door"
-  | "entrance"
-  | "restroom"
-  | "wall";
-
-type FloorMarker = {
-  id: string;
-  type: MarkerType;
-  label: string;
-  xPct: number;
-  yPct: number;
-  scale: number;
-  rotation: number;
 };
 
 type PublicBusiness = {
@@ -129,9 +120,9 @@ type Bounds = {
 // CONSTANTS
 // -------------------------
 
-// The business website places things on a 900 x 620 canvas
-const FLOOR_WIDTH = 900;
-const FLOOR_HEIGHT = 620;
+// The business website places things on a 1000 x 700 canvas
+const FLOOR_WIDTH = 1000;
+const FLOOR_HEIGHT = 700;
 
 // Page side padding
 const PAGE_PADDING = 16;
@@ -153,20 +144,6 @@ const ZOOM_LEVELS = [1, 1.6, 2.4];
 // Show a warning if seats haven't been updated in this many minutes
 const STALE_MINUTES = 15;
 
-const MARKERS: Record<
-  MarkerType,
-  { label: string; icon: string; width: number; height: number }
-> = {
-  outlet: { label: "Outlet", icon: "⚡", width: 54, height: 54 },
-  window: { label: "Window", icon: "", width: 120, height: 36 },
-  register: { label: "Register", icon: "▣", width: 92, height: 66 },
-  counter: { label: "Counter", icon: "", width: 135, height: 54 },
-  door: { label: "Door", icon: "↪", width: 82, height: 42 },
-  entrance: { label: "Entrance", icon: "⇥", width: 110, height: 44 },
-  restroom: { label: "Restroom", icon: "WC", width: 90, height: 62 },
-  wall: { label: "Wall", icon: "", width: 150, height: 26 },
-};
-
 const MARKER_LOOK: Record<
   MarkerType,
   { bg: string; border: string; ink: string }
@@ -179,6 +156,9 @@ const MARKER_LOOK: Record<
   register: { bg: "#F3F3F0", border: "#E6E6E2", ink: "#A2A6A3" },
   counter: { bg: "#F3F3F0", border: "#E6E6E2", ink: "#A2A6A3" },
   restroom: { bg: "#F3F3F0", border: "#E6E6E2", ink: "#A2A6A3" },
+  barCounter: { bg: "#EFE4D6", border: "#E0CDB5", ink: "#8A6440" },
+  poolTable: { bg: "#E3F0E8", border: "#C9DFD1", ink: "#3D7A57" },
+  darts: { bg: "#FBEDEF", border: "#F2D3D8", ink: "#B0596A" },
 };
 
 // -------------------------
@@ -237,14 +217,11 @@ function getAvailability(available: number, total: number) {
   };
 }
 
-// Table size on the canvas (before zoom)
-function getTableBox(table: Table) {
-  const isRound = table.shape === "round";
-
-  return {
-    width: (isRound ? 175 : 210) * table.scale,
-    height: (isRound ? 175 : 165) * table.scale,
-  };
+// Table and seat layout on the canvas (before zoom), the same as the
+// business website and app. A bar stool is a "table" with one seat.
+function getTableGeometry(table: Table) {
+  const count = table.shape === "stool" ? Math.min(1, table.seats.length) : table.seats.length;
+  return tableGeometry(table.shape, count, table.scale, table.rotation);
 }
 
 // The part of the canvas that actually has furniture on it
@@ -262,7 +239,7 @@ function getFloorBounds(tables: Table[], markers: FloorMarker[]): Bounds {
   }
 
   tables.forEach((table) => {
-    const box = getTableBox(table);
+    const box = getTableGeometry(table);
 
     include(
       (table.xPct / 100) * FLOOR_WIDTH,
@@ -470,7 +447,8 @@ export default function PlaceScreen() {
                   typeof table.yPct === "number"
                     ? clamp(table.yPct, 0, 100)
                     : 15 + Math.floor(index / 3) * 30,
-                shape: table.shape === "round" ? "round" : "rectangle",
+                shape: parseTableShape(table.shape),
+                rotation: parseTableRotation(table.rotation),
                 scale:
                   typeof table.scale === "number"
                     ? clamp(table.scale, 0.65, 1.8)
@@ -1380,56 +1358,6 @@ function PressableScale({
 }
 
 // -------------------------
-// SEAT POSITION
-// -------------------------
-
-// Seats go clockwise from the top (same order as the business website),
-// placed just outside the table edge so they never overlap the table.
-function getSeatPosition(
-  index: number,
-  count: number,
-  isRound: boolean,
-  tableWidth: number,
-  tableHeight: number,
-  seatSize: number,
-  zoom: number,
-) {
-  const angle = -Math.PI / 2 + (index / Math.max(count, 1)) * Math.PI * 2;
-
-  const dx = Math.cos(angle);
-  const dy = Math.sin(angle);
-
-  const gap = clamp(5 * zoom, 2, 6);
-  const push = gap + seatSize / 2;
-
-  if (isRound) {
-    const radius = tableWidth / 2 + push;
-    return { x: dx * radius, y: dy * radius };
-  }
-
-  const halfW = tableWidth / 2;
-  const halfH = tableHeight / 2;
-
-  // Where a line from the center at this angle meets the table edge
-  const toSide = Math.abs(dx) > 0.0001 ? halfW / Math.abs(dx) : Infinity;
-  const toTopBottom = Math.abs(dy) > 0.0001 ? halfH / Math.abs(dy) : Infinity;
-
-  if (toSide <= toTopBottom) {
-    // Left or right side
-    return {
-      x: Math.sign(dx) * (halfW + push),
-      y: clamp(dy * toSide, -halfH, halfH),
-    };
-  }
-
-  // Top or bottom side
-  return {
-    x: clamp(dx * toTopBottom, -halfW, halfW),
-    y: Math.sign(dy) * (halfH + push),
-  };
-}
-
-// -------------------------
 // TABLE
 // -------------------------
 
@@ -1449,22 +1377,24 @@ function TableView({
   onPress: () => void;
 }) {
   const isRound = table.shape === "round";
+  const isStool = table.shape === "stool";
+  const seats = isStool ? table.seats.slice(0, 1) : table.seats;
 
-  const box = getTableBox(table);
+  const geometry = getTableGeometry(table);
 
-  const containerWidth = box.width * zoom;
-  const containerHeight = box.height * zoom;
+  const containerWidth = geometry.width * zoom;
+  const containerHeight = geometry.height * zoom;
 
-  const tableWidth = (isRound ? 88 : 125) * table.scale * zoom;
-  const tableHeight = (isRound ? 88 : 76) * table.scale * zoom;
+  const tableWidth = geometry.tableWidth * zoom;
+  const tableHeight = geometry.tableHeight * zoom;
 
   const centerX = ((table.xPct / 100) * FLOOR_WIDTH - bounds.minX) * zoom;
   const centerY = ((table.yPct / 100) * FLOOR_HEIGHT - bounds.minY) * zoom;
 
   // Everything scales with the layout so nothing overlaps
-  const seatSize = clamp(24 * table.scale * zoom, 8, 30);
+  const seatSize = geometry.seatSize * zoom;
   const nameFont = clamp(13 * table.scale * zoom, 9, 14);
-  const showName = tableWidth >= 46 && tableHeight >= 20;
+  const showName = !isStool && tableWidth >= 46 && tableHeight >= 20;
   const showSeatNumbers = seatSize >= 22;
 
   return (
@@ -1491,7 +1421,7 @@ function TableView({
             height: tableHeight,
             left: containerWidth / 2 - tableWidth / 2,
             top: containerHeight / 2 - tableHeight / 2,
-            borderRadius: isRound ? tableWidth / 2 : clamp(10 * zoom, 4, 12),
+            borderRadius: isRound || isStool ? tableWidth / 2 : clamp(10 * zoom, 4, 12),
           },
         ]}
       >
@@ -1511,19 +1441,11 @@ function TableView({
         )}
       </View>
 
-      {table.seats.map((seat, index) => {
-        const { x, y } = getSeatPosition(
-          index,
-          table.seats.length,
-          isRound,
-          tableWidth,
-          tableHeight,
-          seatSize,
-          zoom,
-        );
+      {seats.map((seat, index) => {
+        const spot = geometry.spots[index];
 
-        const left = containerWidth / 2 + x;
-        const top = containerHeight / 2 + y;
+        const left = containerWidth / 2 + spot.x * zoom;
+        const top = containerHeight / 2 + spot.y * zoom;
 
         const isFree = seat.status === "available";
 
@@ -1550,7 +1472,7 @@ function TableView({
                   { fontSize: clamp(seatSize * 0.4, 9, 12) },
                 ]}
               >
-                {seat.id}
+                {isStool ? stoolNumber(table.name) : seat.id}
               </Text>
             )}
           </View>
