@@ -24,7 +24,13 @@ import {
   type Hours,
   toMinutes,
 } from "@seatmate/shared/business-hours";
-import TableWithSeats, { tableSize } from "@seatmate/shared/components/TableWithSeats";
+import TableWithSeats, {
+  parseTableRotation,
+  parseTableShape,
+  tableSize,
+  type TableRotation,
+  type TableShape,
+} from "@seatmate/shared/components/TableWithSeats";
 import { db } from "@seatmate/shared/firebase";
 import {
   clamp,
@@ -55,7 +61,8 @@ type Table = {
   seats: Seat[];
   xPct: number;
   yPct: number;
-  shape: "rectangle" | "round";
+  shape: TableShape;
+  rotation: TableRotation;
   scale: number;
   occupancyUpdatedAt?: Timestamp | null;
 };
@@ -218,10 +225,8 @@ const [business, setBusiness] =
       : 10 +
         Math.floor(index / 3) * 30,
 
-  shape:
-    table.shape === "round"
-      ? "round"
-      : "rectangle",
+  shape: parseTableShape(table.shape),
+  rotation: parseTableRotation(table.rotation),
 
   scale:
     typeof table.scale === "number"
@@ -992,17 +997,19 @@ return (
                         transform: `rotate(${-marker.rotation}deg)`,
                       }}
                     >
-                      <div
-                        style={{
-                          fontSize: `${Math.max(
-                            12,
-                            17 *
-                              displayScale
-                          )}px`,
-                        }}
-                      >
-                        {info.icon}
-                      </div>
+                      {info.icon && (
+                        <div
+                          style={{
+                            fontSize: `${Math.max(
+                              12,
+                              17 *
+                                displayScale
+                            )}px`,
+                          }}
+                        >
+                          {info.icon}
+                        </div>
+                      )}
 
                       {marker.scale >=
                         0.75 && (
@@ -1023,7 +1030,7 @@ return (
               const displayScale =
                 table.scale;
 
-              const box = tableSize(table.shape, table.seats.length, displayScale);
+              const box = tableSize(table.shape, table.seats.length, displayScale, table.rotation);
 
               return (
                 <div
@@ -1044,8 +1051,8 @@ return (
                     name={table.name}
                     shape={table.shape}
                     seats={table.seats}
-                    width={box.width}
-                    height={box.height}
+                    scale={displayScale}
+                    rotation={table.rotation}
                   />
 
                 </div>

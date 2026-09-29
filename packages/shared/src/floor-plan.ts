@@ -6,6 +6,7 @@ export type MarkerType =
   | "window"
   | "register"
   | "counter"
+  | "barCounter"
   | "door"
   | "entrance"
   | "restroom"
@@ -57,6 +58,12 @@ export const MARKERS: Record<
     width: 135,
     height: 54,
   },
+  barCounter: {
+    label: "Bar Counter",
+    icon: "🍸",
+    width: 240,
+    height: 50,
+  },
   door: {
     label: "Door",
     icon: "↪",
@@ -71,7 +78,7 @@ export const MARKERS: Record<
   },
   restroom: {
     label: "Restroom",
-    icon: "WC",
+    icon: "",
     width: 90,
     height: 62,
   },
@@ -111,6 +118,8 @@ export const markerClassName = (type: MarkerType) => {
       return "bg-sky-50 border-sky-300 text-sky-800";
     case "outlet":
       return "bg-amber-50 border-amber-300 text-amber-800 rounded-xl";
+    case "barCounter":
+      return "bg-amber-800 border-amber-950 text-amber-50 rounded-xl shadow-sm";
     case "poolTable":
       return "bg-emerald-700 border-[6px] border-amber-900 text-white rounded-lg shadow-sm";
     case "darts":

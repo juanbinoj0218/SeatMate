@@ -27,7 +27,12 @@ import { consumerUrl } from "@seatmate/shared/site-urls";
 
 import Link from "next/link";
 
-import TableWithSeats, { tableSize } from "@seatmate/shared/components/TableWithSeats";
+import TableWithSeats, {
+  parseTableRotation,
+  parseTableShape,
+  type TableRotation,
+  type TableShape,
+} from "@seatmate/shared/components/TableWithSeats";
 
 import { logAction, useAdmin } from "@/lib/admin-session";
 
@@ -65,7 +70,8 @@ type ReviewTable = {
   seats: ReviewSeat[];
   xPct: number;
   yPct: number;
-  shape: "rectangle" | "round";
+  shape: TableShape;
+  rotation: TableRotation;
   scale: number;
 };
 
@@ -112,6 +118,12 @@ const MARKER_STYLE: Record<
     width: 110,
     height: 42,
   },
+  barCounter: {
+    label: "Bar Counter",
+    icon: "🍸",
+    width: 190,
+    height: 40,
+  },
   door: {
     label: "Door",
     icon: "↪",
@@ -126,7 +138,7 @@ const MARKER_STYLE: Record<
   },
   restroom: {
     label: "Restroom",
-    icon: "WC",
+    icon: "",
     width: 72,
     height: 50,
   },
@@ -385,10 +397,8 @@ export default function AdminPage() {
               typeof table.yPct === "number"
                 ? clamp(table.yPct, 0, 100)
                 : 15 + Math.floor(index / 3) * 28,
-            shape:
-              table.shape === "round"
-                ? "round"
-                : "rectangle",
+            shape: parseTableShape(table.shape),
+            rotation: parseTableRotation(table.rotation),
             scale:
               typeof table.scale === "number"
                 ? clamp(table.scale, 0.65, 1.8)
@@ -1326,11 +1336,11 @@ export default function AdminPage() {
                                   transform: `rotate(${-marker.rotation}deg)`,
                                 }}
                               >
-                                <div className="text-sm leading-none">
-                                  {
-                                    info.icon
-                                  }
-                                </div>
+                                {info.icon && (
+                                  <div className="text-sm leading-none">
+                                    {info.icon}
+                                  </div>
+                                )}
 
                                 {marker.scale >=
                                   0.75 &&
@@ -1349,8 +1359,6 @@ export default function AdminPage() {
                       )}
 
                       {reviewTables.map((table) => {
-                        const box = tableSize(table.shape, table.seats.length, table.scale * 0.8);
-
                         return (
                           <div
                             key={table.id}
@@ -1366,8 +1374,8 @@ export default function AdminPage() {
                               name={table.name}
                               shape={table.shape}
                               seats={table.seats}
-                              width={box.width}
-                              height={box.height}
+                              scale={table.scale * 0.8}
+                              rotation={table.rotation}
                             />
                           </div>
                         );

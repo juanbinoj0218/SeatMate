@@ -18,7 +18,12 @@ import {
 
 import { auth, db } from "@seatmate/shared/firebase";
 
-import TableWithSeats, { tableSize } from "@seatmate/shared/components/TableWithSeats";
+import TableWithSeats, {
+  parseTableRotation,
+  parseTableShape,
+  type TableRotation,
+  type TableShape,
+} from "@seatmate/shared/components/TableWithSeats";
 
 import UpdateReminder from "@/components/update-reminder";
 import { toggleSeat as toggleSeatStatus } from "@/lib/seat-updates";
@@ -34,7 +39,8 @@ type Table = {
   seats: Seat[];
   xPct: number;
   yPct: number;
-  shape: "rectangle" | "round";
+  shape: TableShape;
+  rotation: TableRotation;
 };
 
 type StaffAccount = {
@@ -146,11 +152,8 @@ export default function StaffConsolePage() {
                             ) *
                               30,
 
-                      shape:
-                        data.shape ===
-                        "round"
-                          ? "round"
-                          : "rectangle",
+                      shape: parseTableShape(data.shape),
+                      rotation: parseTableRotation(data.rotation),
                     };
                   }
                 );
@@ -484,9 +487,6 @@ export default function StaffConsolePage() {
             {/* TABLES */}
 
             {tables.map((table) => {
-              // A bit larger than the owner's view so seats are easy to tap.
-              const box = tableSize(table.shape, table.seats.length, 1.15);
-
               return (
                 <div
                   key={table.id}
@@ -501,8 +501,9 @@ export default function StaffConsolePage() {
                     name={table.name}
                     shape={table.shape}
                     seats={table.seats}
-                    width={box.width}
-                    height={box.height}
+                    // A bit larger than the owner's view so seats are easy to tap.
+                    scale={1.15}
+                    rotation={table.rotation}
                     onSeatClick={(seatId) => toggleSeat(table.id, seatId)}
                   />
                 </div>
