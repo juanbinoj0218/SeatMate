@@ -1,3 +1,5 @@
+"use client";
+
 // A table drawn from above with its seats tucked right up against its
 // edge: in a ring around round tables and in rows along the long sides of
 // rectangular ones. A bar stool or barber chair is a "table" with a single
@@ -5,13 +7,55 @@
 // the floor-plan editor, the staff screen, the customer place page and the
 // admin review.
 
+import { useEffect, useState } from "react";
+
 export type TableShape = "round" | "rectangle" | "stool" | "barberChair";
 export type TableRotation = 0 | 90;
 
 export type TableSeat = {
   id: number;
   status: "available" | "occupied";
+  // When the seat was last marked taken (ms since epoch).
+  occupiedSince?: number;
 };
+
+// "4:07" or "1:02:45" since a barber chair was taken.
+const elapsed = (since: number, now: number) => {
+  const total = Math.max(0, Math.floor((now - since) / 1000));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const seconds = String(total % 60).padStart(2, "0");
+  return hours > 0
+    ? `${hours}:${String(minutes).padStart(2, "0")}:${seconds}`
+    : `${minutes}:${seconds}`;
+};
+
+// Pill under a barber chair: "Open" while free, and a running timer of how
+// long the current customer has been in the chair once it is taken.
+function ChairTimer({ seat, fontSize }: { seat: TableSeat; fontSize: number }) {
+  const occupied = seat.status === "occupied";
+  const since = occupied && typeof seat.occupiedSince === "number" ? seat.occupiedSince : null;
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (since === null) return;
+    setNow(Date.now());
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [since]);
+
+  return (
+    <span
+      className={`absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap rounded-full px-2 py-0.5 font-bold tabular-nums shadow-sm ${
+        occupied ? "bg-red-50 text-red-600 ring-1 ring-red-200" : "bg-green-50 text-green-700 ring-1 ring-green-200"
+      }`}
+      style={{ fontSize }}
+      aria-live="off"
+    >
+      {!occupied ? "Open" : since === null ? "In chair" : `⏱ ${elapsed(since, now)}`}
+    </span>
+  );
+}
 
 // Read a shape/rotation saved in Firestore, falling back to the defaults.
 export const parseTableShape = (value: unknown): TableShape =>
@@ -241,6 +285,10 @@ export default function TableWithSeats({
           </span>
         );
       })}
+
+      {shape === "barberChair" && shown[0] && (
+        <ChairTimer seat={shown[0]} fontSize={Math.max(9, 10 * scale)} />
+      )}
     </div>
   );
 }
