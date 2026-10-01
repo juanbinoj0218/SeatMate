@@ -192,6 +192,45 @@ service cloud.firestore {
             && request.resource.data.status in ["available", "occupied"]
           );
       }
+
+      // -------------------------
+      // BOUNCER MODE (bars)
+      // -------------------------
+
+      // businesses/{id}/live/door: people inside right now and the bar's
+      // usual crowd per hour. Public so customers can see how busy it is.
+      match /live/{docId} {
+
+        allow read: if docId == "door";
+
+        // Only the owner turns bouncer mode on or off.
+        allow create, delete:
+          if docId == "door"
+          && (isOwner(businessId) || isAdmin());
+
+        // Staff on the door can only tap the count up or down by one,
+        // or start it over from 0 or 1.
+        allow update:
+          if docId == "door"
+          && (
+            isOwner(businessId)
+            || isAdmin()
+            || (
+              isStaff(businessId)
+              && request.resource.data
+                .diff(resource.data)
+                .affectedKeys()
+                .hasOnly(["count", "updatedAt", "hours"])
+              && request.resource.data.count is int
+              && request.resource.data.count >= 0
+              && (
+                request.resource.data.count == resource.data.count + 1
+                || request.resource.data.count == resource.data.count - 1
+                || request.resource.data.count <= 1
+              )
+            )
+          );
+      }
     }
 
     // -------------------------

@@ -15,7 +15,8 @@
     "./place-photos": "./src/place-photos.ts",
     "./service-account": "./src/service-account.ts",
     "./features": "./src/features.ts",
-    "./two-factor": "./src/two-factor.ts"
+    "./two-factor": "./src/two-factor.ts",
+    "./door-count": "./src/door-count.ts"
   },
   "peerDependencies": {
     "firebase": "^12.19.0",
