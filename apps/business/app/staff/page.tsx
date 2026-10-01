@@ -36,6 +36,8 @@ import {
   type MarkerType,
 } from "@seatmate/shared/floor-plan";
 
+import { doorRef, readDoorCount } from "@seatmate/shared/door-count";
+
 import UpdateReminder from "@/components/update-reminder";
 import { toggleSeat as toggleSeatStatus } from "@/lib/seat-updates";
 
@@ -85,11 +87,16 @@ export default function StaffConsolePage() {
   const [loading, setLoading] =
     useState(true);
 
+  // People inside, when the owner has bouncer mode on.
+  const [doorCount, setDoorCount] =
+    useState<number | null>(null);
+
   const [error, setError] =
     useState("");
 
   useEffect(() => {
     let stopGames: (() => void) | undefined;
+    let stopDoor: (() => void) | undefined;
     let stopTables:
       | (() => void)
       | undefined;
@@ -136,6 +143,15 @@ export default function StaffConsolePage() {
             "businesses",
             account.businessId,
             "tables"
+          );
+
+          stopDoor = onSnapshot(
+            doorRef(account.businessId),
+            (snapshot) => {
+              const door = readDoorCount(snapshot.data({ serverTimestamps: "estimate" }));
+              setDoorCount(door.enabled ? door.count : null);
+            },
+            (snapshotError) => console.error(snapshotError)
           );
 
           stopGames = onSnapshot(
@@ -243,6 +259,7 @@ export default function StaffConsolePage() {
       stopAuth();
       stopTables?.();
       stopGames?.();
+      stopDoor?.();
     };
   }, [router]);
 
@@ -440,6 +457,21 @@ export default function StaffConsolePage() {
           </p>
 
         </div>
+
+        {doorCount !== null && (
+          <Link
+            href="/business/door"
+            className="mt-8 flex items-center justify-between gap-4 rounded-2xl bg-[#101811] px-5 py-4 text-white"
+          >
+            <span>
+              <span className="block font-bold">Door counter</span>
+              <span className="block text-sm text-white/60">
+                {doorCount} inside · tap people in and out
+              </span>
+            </span>
+            <span className="font-semibold">Open →</span>
+          </Link>
+        )}
 
         {/* STATS */}
 

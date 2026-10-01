@@ -17,8 +17,10 @@ import {
 } from "firebase/firestore";
 
 import { auth, db } from "@seatmate/shared/firebase";
+import { isBar } from "@seatmate/shared/floor-plan";
 import { consumerUrl } from "@seatmate/shared/site-urls";
 
+import BouncerCard from "@/components/bouncer-card";
 import UpdateReminder from "@/components/update-reminder";
 import {
   ChartIcon,
@@ -282,6 +284,8 @@ export default function BusinessDashboard() {
             <SeatSummary seats={seats} />
           </>
         )}
+
+        {isBar(business.type) && <BouncerCard businessId={businessId} />}
 
         <ul className="mt-6 bg-white border border-gray-200 rounded-2xl divide-y divide-gray-200 overflow-hidden">
           <DashboardLink

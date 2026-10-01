@@ -39,11 +39,13 @@ import {
   MARKERS,
   markerClassName,
   type MarkerType,
+  isBar,
   isGameMarker,
   markerStatus,
 } from "@seatmate/shared/floor-plan";
 
 import AccountMenu from "@/components/account-menu";
+import CrowdMeter from "@/components/crowd-meter";
 import { useAccount } from "@/components/account-provider";
 import SeatAlertButton from "@/components/seat-alert-button";
 import SaveButton from "@/components/save-button";
@@ -766,6 +768,10 @@ return (
                 </p>
               )}
             </div>
+
+            {isBar(business.type) && openStatus?.open !== false && (
+              <CrowdMeter businessId={business.businessId} now={now} />
+            )}
 
             <div className="mt-auto grid grid-cols-2 gap-3 pt-7">
               <div className="rounded-2xl bg-white/5 p-4">
