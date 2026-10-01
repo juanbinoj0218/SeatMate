@@ -192,8 +192,8 @@ function LoginContent() {
               Save your favorite cafés and restaurants
             </li>
             <li className="flex items-center gap-3">
-              <PinIcon className="h-5 w-5 text-moss" />
-              Set a home ZIP for places near you
+              <BellIcon className="h-5 w-5 text-moss" />
+              Get a heads-up when a seat opens
             </li>
             <li className="flex items-center gap-3">
               <ClockIcon className="h-5 w-5 text-gray-400" />
@@ -379,11 +379,11 @@ function GoogleIcon({ className }: { className?: string }) {
   );
 }
 
-function PinIcon({ className }: { className?: string }) {
+function BellIcon({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" className={className} aria-hidden="true">
-      <path d="M10 18s6-5.2 6-10a6 6 0 1 0-12 0c0 4.8 6 10 6 10Z" />
-      <circle cx="10" cy="8" r="2.2" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="M6 9a6 6 0 1 1 12 0c0 5 2 6.5 2 6.5H4S6 14 6 9" />
+      <path d="M10 19a2 2 0 0 0 4 0" />
     </svg>
   );
 }

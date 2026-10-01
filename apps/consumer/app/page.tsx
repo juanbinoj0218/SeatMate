@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  FormEvent,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { businessUrl } from "@seatmate/shared/site-urls";
@@ -30,122 +25,22 @@ import { useNow } from "@/lib/use-now";
 
 type NearbyBusiness = PlaceWithSeats;
 
-type LocationState =
-  | "checking"
-  | "ready"
-  | "denied"
-  | "unavailable";
+// Shortcuts from the hero into the full list, pre-filtered by type.
+const BROWSE_TYPES = [
+  { label: "Cafés", type: "cafe" },
+  { label: "Restaurants", type: "restaurant" },
+  { label: "Bars", type: "bar" },
+  { label: "Barbershops", type: "barbershop" },
+];
 
 export default function HomePage() {
   const features = useFeatures();
   const router = useRouter();
-  const { profile, favorites } = useAccount();
+  const { favorites } = useAccount();
 
-  const [search, setSearch] = useState("");
-  const [zipcode, setZipcode] = useState("");
-  const [message, setMessage] = useState("");
-
-  // Nearby restaurant data
   const [businesses, setBusinesses] = useState<NearbyBusiness[]>([]);
   const [businessesLoading, setBusinessesLoading] = useState(true);
-  const [detectedZip, setDetectedZip] = useState("");
-  const [locationState, setLocationState] =
-    useState<LocationState>("checking");
   const now = useNow();
-
-  const findBusiness = (event: FormEvent) => {
-    event.preventDefault();
-
-    const query = search.trim();
-    const zip = zipcode.trim();
-
-    if (!query && !zip) {
-      setMessage("Enter a café, restaurant, or ZIP code.");
-      return;
-    }
-
-    if (zip && !/^\d{5}$/.test(zip)) {
-      setMessage("Enter a valid 5-digit ZIP code.");
-      return;
-    }
-
-    const params = new URLSearchParams();
-
-    if (query) {
-      params.set("q", query);
-    }
-
-    if (zip) {
-      params.set("zip", zip);
-    }
-
-    router.push(`/search?${params.toString()}`);
-  };
-
-  // Tries to detect the user's ZIP code from browser location.
-  // This does not use a Google Maps API key.
-  // Starts a lookup; the status is updated from the callbacks, so this is
-  // safe to call on mount (the initial status is already "checking").
-  const requestLocation = () => {
-    if (!navigator.geolocation) {
-      window.setTimeout(() => setLocationState("unavailable"), 0);
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        try {
-          const { latitude, longitude } = position.coords;
-
-          const response = await fetch(
-            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
-          );
-
-          if (!response.ok) {
-            throw new Error("Could not detect ZIP code.");
-          }
-
-          const data = await response.json();
-
-          const postalCode = String(
-            data.postcode ||
-              data.postalCode ||
-              ""
-          ).match(/\b\d{5}\b/)?.[0];
-
-          if (!postalCode) {
-            setLocationState("unavailable");
-            return;
-          }
-
-          setDetectedZip(postalCode);
-          setLocationState("ready");
-        } catch (error) {
-          console.error(
-            "Could not determine visitor ZIP:",
-            error
-          );
-          setLocationState("unavailable");
-        }
-      },
-      (error) => {
-        console.log(
-          "Location permission unavailable:",
-          error
-        );
-        setLocationState("denied");
-      },
-      {
-        enableHighAccuracy: false,
-        timeout: 8000,
-        maximumAge: 10 * 60 * 1000,
-      }
-    );
-  };
-
-  useEffect(() => {
-    requestLocation();
-  }, []);
 
   // Load approved/public SeatMate locations and their live seat counts.
   useEffect(() => {
@@ -175,38 +70,27 @@ export default function HomePage() {
     loadBusinesses();
   }, []);
 
-  // If the user types a ZIP, that takes priority over location detection.
-  // Then the signed-in customer's home ZIP, then the detected one.
-  const activeZip =
-    /^\d{5}$/.test(zipcode)
-      ? zipcode
-      : profile.homeZip || detectedZip;
+  // SeatMate only serves the Sacramento area, so every place is "nearby":
+  // show the six with the most open seats.
+  const nearbyBusinesses = useMemo(
+    () =>
+      [...businesses]
+        .sort((a, b) => {
+          const aPercent =
+            a.totalSeats > 0
+              ? a.availableSeats / a.totalSeats
+              : -1;
 
-  const nearbyBusinesses = useMemo(() => {
-    const sorted = [...businesses].sort((a, b) => {
-      const aPercent =
-        a.totalSeats > 0
-          ? a.availableSeats / a.totalSeats
-          : -1;
+          const bPercent =
+            b.totalSeats > 0
+              ? b.availableSeats / b.totalSeats
+              : -1;
 
-      const bPercent =
-        b.totalSeats > 0
-          ? b.availableSeats / b.totalSeats
-          : -1;
-
-      return bPercent - aPercent;
-    });
-
-    if (activeZip) {
-      return sorted
-        .filter(
-          (business) => business.zipcode === activeZip
-        )
-        .slice(0, 6);
-    }
-
-    return sorted.slice(0, 6);
-  }, [businesses, activeZip]);
+          return bPercent - aPercent;
+        })
+        .slice(0, 6),
+    [businesses]
+  );
 
   return (
     <main className="min-h-screen bg-paper text-ink">
@@ -232,74 +116,28 @@ export default function HomePage() {
             before you arrive.
           </p>
 
-          <form onSubmit={findBusiness} className="mt-9 max-w-xl">
-            <div className="flex flex-col rounded-2xl border border-line bg-white p-1.5 shadow-[0_1px_2px_rgba(16,24,17,0.04),0_16px_36px_-16px_rgba(16,24,17,0.22)] transition focus-within:border-moss/40 sm:flex-row sm:items-center">
-              <label className="flex flex-1 items-center gap-3 px-4">
-                <SearchIcon className="h-4 w-4 shrink-0 text-gray-400" />
-                <span className="sr-only">Place name</span>
-                <input
-                  value={search}
-                  onChange={(event) => {
-                    setSearch(event.target.value);
-                    setMessage("");
-                  }}
-                  placeholder="Place name"
-                  className="bare-input h-12 w-full min-w-0 text-[15px] text-ink outline-none"
-                />
-              </label>
+          <button
+            type="button"
+            onClick={() => router.push("/search")}
+            className="mt-9 inline-flex h-12 items-center gap-2 rounded-xl bg-ink px-6 text-[15px] font-semibold text-white transition hover:bg-black"
+          >
+            See open seats
+            <ArrowRightIcon className="h-4 w-4" />
+          </button>
 
-              <div className="mx-4 h-px bg-line sm:mx-0 sm:h-7 sm:w-px" />
-
-              <label className="flex items-center gap-3 px-4 sm:w-40">
-                <PinIcon className="h-4 w-4 shrink-0 text-gray-400" />
-                <span className="sr-only">ZIP code</span>
-                <input
-                  value={zipcode}
-                  onChange={(event) => {
-                    setZipcode(
-                      event.target.value
-                        .replace(/\D/g, "")
-                        .slice(0, 5)
-                    );
-
-                    setMessage("");
-                  }}
-                  inputMode="numeric"
-                  autoComplete="postal-code"
-                  placeholder={detectedZip || "ZIP code"}
-                  maxLength={5}
-                  className="bare-input h-12 w-full min-w-0 text-[15px] text-ink outline-none"
-                />
-              </label>
-
+          <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
+            <span className="mr-1 text-gray-500">Or jump to</span>
+            {BROWSE_TYPES.map(({ label, type }) => (
               <button
-                type="submit"
-                className="mt-1.5 h-12 whitespace-nowrap rounded-xl bg-ink px-6 text-[15px] font-semibold text-white transition hover:bg-black sm:mt-0"
+                key={type}
+                type="button"
+                onClick={() => router.push(`/search?type=${type}`)}
+                className="rounded-full border border-line bg-white px-3.5 py-1.5 font-medium transition hover:border-gray-300"
               >
-                Find seats
+                {label}
               </button>
-            </div>
-
-            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-sm text-gray-500">
-              <span>Search by business name, ZIP code, or both.</span>
-
-              {detectedZip && !zipcode && (
-                <span className="inline-flex items-center gap-1.5 font-medium text-moss">
-                  <PinIcon className="h-3.5 w-3.5" />
-                  Near you: {detectedZip}
-                </span>
-              )}
-            </div>
-
-            {message && (
-              <p
-                role="alert"
-                className="mt-3 px-1 text-sm font-medium text-red-600"
-              >
-                {message}
-              </p>
-            )}
-          </form>
+            ))}
+          </div>
 
           <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-600">
             {[
@@ -360,43 +198,18 @@ export default function HomePage() {
         <div className="flex flex-col gap-6 border-t border-line pt-12 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="font-display text-4xl sm:text-5xl">
-              Open seats near you
+              Open seats around Sacramento
             </h2>
 
             <p className="mt-3 max-w-xl text-gray-600">
-              {activeZip
-                ? `SeatMate locations in ZIP ${activeZip}, with the most open seats first.`
-                : "Restaurants and cafés currently using SeatMate."}
+              The places with the most room right now.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {locationState !== "ready" && (
-              <button
-                type="button"
-                onClick={() => {
-                  setLocationState("checking");
-                  requestLocation();
-                }}
-                disabled={locationState === "checking"}
-                className="inline-flex items-center gap-2 rounded-full border border-line bg-white px-4 py-2 text-sm font-medium transition hover:border-gray-300 disabled:opacity-60"
-              >
-                <PinIcon className="h-3.5 w-3.5" />
-                {locationState === "checking"
-                  ? "Finding your area…"
-                  : "Use my location"}
-              </button>
-            )}
-
             <button
               type="button"
-              onClick={() =>
-                router.push(
-                  activeZip
-                    ? `/search?zip=${activeZip}`
-                    : "/search"
-                )
-              }
+              onClick={() => router.push("/search")}
               className="inline-flex items-center gap-1.5 rounded-full bg-ink px-4 py-2 text-sm font-medium text-white transition hover:bg-black"
             >
               View all
@@ -426,25 +239,13 @@ export default function HomePage() {
             <EmptyTableIcon className="h-14 w-14 text-gray-300" />
 
             <h3 className="mt-5 text-lg font-semibold">
-              No SeatMate locations nearby yet
+              No SeatMate locations yet
             </h3>
 
             <p className="mt-2 max-w-md text-gray-600">
-              {activeZip
-                ? `There are no approved SeatMate businesses in ZIP ${activeZip} yet.`
-                : "Try entering your ZIP code above to find SeatMate locations near you."}
+              The first places are on their way.
             </p>
 
-            {activeZip && (
-              <button
-                type="button"
-                onClick={() => router.push("/search")}
-                className="mt-5 inline-flex items-center gap-1.5 font-medium text-moss hover:text-green-800"
-              >
-                Browse all locations
-                <ArrowRightIcon className="h-4 w-4" />
-              </button>
-            )}
           </div>
         ) : (
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -461,14 +262,6 @@ export default function HomePage() {
           </div>
         )}
 
-        {(locationState === "denied" ||
-          locationState === "unavailable") &&
-          !zipcode && (
-            <p className="mt-5 text-sm text-gray-500">
-              Location access is unavailable. Enter your ZIP code above to see
-              SeatMate restaurants near you.
-            </p>
-          )}
       </section>
 
       {/* HOW IT WORKS */}
@@ -485,9 +278,9 @@ export default function HomePage() {
           <ol className="divide-y divide-line">
             {[
               {
-                title: "Find a location",
+                title: "Pick a place",
                 description:
-                  "Search for the café or restaurant you want to visit.",
+                  "Browse cafés, restaurants, bars and barbershops around Sacramento.",
               },
               {
                 title: "Check the floor",
@@ -1030,24 +823,6 @@ function LiveDot() {
       <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-seat-open opacity-60 motion-reduce:hidden" />
       <span className="relative inline-flex h-2 w-2 rounded-full bg-seat-open" />
     </span>
-  );
-}
-
-function SearchIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className={className} aria-hidden="true">
-      <circle cx="9" cy="9" r="6" />
-      <path d="m13.5 13.5 3.5 3.5" />
-    </svg>
-  );
-}
-
-function PinIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" className={className} aria-hidden="true">
-      <path d="M10 18s6-5.2 6-10a6 6 0 1 0-12 0c0 4.8 6 10 6 10Z" />
-      <circle cx="10" cy="8" r="2.2" />
-    </svg>
   );
 }
 
