@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <ProsePage eyebrow="Legal" title="Privacy Policy" updated="September 28, 2026">
+    <ProsePage eyebrow="Legal" title="Privacy Policy" updated="October 1, 2026">
       <p>
         SeatMate shows live seating at cafés, restaurants, bars and barbershops. This policy explains what we
         collect when you use seatmate360.com, the SeatMate business portal (seatmate360.net) and the
@@ -27,7 +27,7 @@ export default function PrivacyPage() {
             if you sign in with Google, your Google profile photo.
           </li>
           <li>
-            <strong>Things you save</strong>: saved places, your home ZIP code and the last few places
+            <strong>Things you save</strong>: saved places and the last few places
             you viewed, so your account can show them back to you.
           </li>
           <li>
@@ -47,15 +47,6 @@ export default function PrivacyPage() {
             updates, and staff names and emails.
           </li>
         </ul>
-      </section>
-
-      <section>
-        <h2>Your location</h2>
-        <p>
-          If you allow it, your browser shares your approximate location so we can show places near
-          you. It&apos;s turned into a ZIP code using BigDataCloud&apos;s reverse-geocoding service. We
-          don&apos;t store your location.
-        </p>
       </section>
 
       <section>
@@ -80,7 +71,7 @@ export default function PrivacyPage() {
       <section>
         <h2>Your choices</h2>
         <ul>
-          <li>Edit your name and home ZIP, remove saved places or clear your history from your account page.</li>
+          <li>Edit your name, remove saved places or clear your history from your account page.</li>
           <li>Cancel a seat alert from the place page.</li>
           <li>
             Delete your account and its data any time from your account page (&ldquo;Delete

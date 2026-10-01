@@ -330,29 +330,21 @@ function ProfileForm({ initial }: { initial: Profile }) {
   const { saveProfile } = useAccount();
 
   const [displayName, setDisplayName] = useState(initial.displayName);
-  const [homeZip, setHomeZip] = useState(initial.homeZip);
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">(
     "idle"
   );
   const [error, setError] = useState("");
 
-  const changed =
-    displayName.trim() !== initial.displayName ||
-    homeZip !== initial.homeZip;
+  const changed = displayName.trim() !== initial.displayName;
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setError("");
 
-    if (homeZip && !/^\d{5}$/.test(homeZip)) {
-      setError("Enter a 5-digit ZIP code, or leave it blank.");
-      return;
-    }
-
     setStatus("saving");
 
     try {
-      await saveProfile({ displayName: displayName.trim(), homeZip });
+      await saveProfile({ displayName: displayName.trim() });
       setStatus("saved");
     } catch (caught) {
       console.error("Could not save profile:", caught);
@@ -381,25 +373,6 @@ function ProfileForm({ initial }: { initial: Profile }) {
           placeholder="Your name"
           className="w-full"
         />
-      </label>
-
-      <label className="mt-4 block">
-        <span className="mb-1.5 block text-sm font-medium">Home ZIP code</span>
-        <input
-          type="text"
-          value={homeZip}
-          onChange={(event) => {
-            setHomeZip(event.target.value.replace(/\D/g, "").slice(0, 5));
-            setStatus("idle");
-          }}
-          inputMode="numeric"
-          autoComplete="postal-code"
-          placeholder="e.g. 94110"
-          className="w-full"
-        />
-        <span className="mt-1.5 block text-sm text-gray-500">
-          Used for &ldquo;Open seats near you&rdquo; when location is off.
-        </span>
       </label>
 
       {error && (

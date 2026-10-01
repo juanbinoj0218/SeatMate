@@ -5,8 +5,8 @@
 @source "../../../packages/shared/src";
 
 @theme {
-  --font-display: var(--font-bricolage), var(--font-body), system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-display: var(--font-headline), Georgia, serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
   --color-ink: #101811;
   --color-paper: #f7f8f5;
   --color-line: #e3e7e2;
@@ -16,22 +16,10 @@
 }
 
 /* Headline face. Class selectors outrank the shared stylesheet's bold,
-   tracked heading rules, so this sets the weight and spacing that suit
-   Bricolage at large sizes. */
+   tracked heading rules, so this keeps Young Serif at its only weight
+   (no faux bold) with light tracking for large sizes. */
 .font-display {
-  font-weight: 600;
-  letter-spacing: -0.035em;
-  font-optical-sizing: auto;
+  font-weight: 400;
+  letter-spacing: -0.015em;
   text-wrap: balance;
-}
-
-/* Inputs that sit inside a larger field (e.g. the home search bar) and should
-   not draw their own box. */
-.bare-input,
-.bare-input:hover,
-.bare-input:focus {
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
 }

@@ -25,41 +25,28 @@ function SearchPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const initialQuery = searchParams.get("q") || "";
-  const initialZip = searchParams.get("zip") || "";
+  const initialType = searchParams.get("type") || "";
 
-  const [search, setSearch] = useState(initialQuery);
-  const [zipcode, setZipcode] = useState(initialZip);
-  const [message, setMessage] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(true);
   const now = useNow();
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] = useState(
+    FILTERS.some((option) => option.value === initialType) ? initialType : "all"
+  );
   const [sort, setSort] = useState("availability");
 
+  // SeatMate only serves the Sacramento area, so list every place and let
+  // the type filters narrow it down.
   useEffect(() => {
     const loadResults = async () => {
       try {
-        setLoading(true);
+        const places = (await fetchPublicPlaces()).map((place) => ({
+          ...place,
+          imageUrl:
+            place.imageUrl || fallbackImageFor(place.name || place.slug),
+        }));
 
-        const term = initialQuery.trim().toLowerCase();
-        const zipTerm = initialZip.trim();
-
-        const matches = (await fetchPublicPlaces())
-          .map((place) => ({
-            ...place,
-            imageUrl:
-              place.imageUrl || fallbackImageFor(place.name || place.slug),
-          }))
-          .filter((place) => {
-            const searchableText = `${place.name} ${place.address} ${place.type}`.toLowerCase();
-            const matchesQuery = !term || searchableText.includes(term);
-            const matchesZip = !zipTerm || place.zipcode === zipTerm;
-            return matchesQuery && matchesZip;
-          });
-
-        // Only matching places need their tables read.
-        setResults(await withSeatSummaries(matches));
+        setResults(await withSeatSummaries(places));
       } catch (error) {
         console.error(error);
       } finally {
@@ -68,32 +55,7 @@ function SearchPageContent() {
     };
 
     loadResults();
-  }, [initialQuery, initialZip]);
-
-  const submitSearch = (event: React.FormEvent) => {
-    event.preventDefault();
-
-    const query = search.trim();
-    const zip = zipcode.trim();
-
-    setMessage("");
-
-    if (!query && !zip) {
-      setMessage("Enter a business name or ZIP code.");
-      return;
-    }
-
-    if (zip && !/^\d{5}$/.test(zip)) {
-      setMessage("Enter a valid 5-digit ZIP code.");
-      return;
-    }
-
-    const params = new URLSearchParams();
-    if (query) params.set("q", query);
-    if (zip) params.set("zip", zip);
-
-    router.push(`/search?${params.toString()}`);
-  };
+  }, []);
 
   const displayedResults = useMemo(() => {
     let filtered = [...results];
@@ -201,12 +163,11 @@ function SearchPageContent() {
                 Live SeatMate locations
               </p>
               <h1 className="mt-2 text-4xl font-black tracking-tight sm:text-5xl">
-                Find your next spot.
+                Every SeatMate spot.
               </h1>
               <p className="mt-3 max-w-xl text-gray-500">
-                {initialZip
-                  ? `Showing SeatMate locations in ZIP ${initialZip}.`
-                  : "Search cafés, restaurants, bars and barbershops and see live seating before you go."}
+                Cafés, restaurants, bars and barbershops around Sacramento,
+                with live seating before you go.
               </p>
             </div>
 
@@ -217,66 +178,21 @@ function SearchPageContent() {
               </div>
             )}
           </div>
-
-          <form onSubmit={submitSearch} className="mt-8 max-w-4xl">
-            <div className="rounded-[22px] border border-gray-200 bg-[#fafbf9] p-2 shadow-sm">
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <div className="flex min-w-0 flex-1 items-center gap-3 px-3">
-                  <span className="text-lg text-gray-400">⌕</span>
-                  <input
-                    value={search}
-                    onChange={(event) => {
-                      setSearch(event.target.value);
-                      setMessage("");
-                    }}
-                    placeholder="Restaurant, café, bar, or name"
-                    className="h-12 min-w-0 flex-1 bg-transparent text-black outline-none placeholder:text-gray-400"
-                  />
-                </div>
-
-                <div className="hidden w-px bg-gray-200 sm:block" />
-
-                <input
-                  value={zipcode}
-                  onChange={(event) => {
-                    setZipcode(
-                      event.target.value.replace(/\D/g, "").slice(0, 5)
-                    );
-                    setMessage("");
-                  }}
-                  inputMode="numeric"
-                  autoComplete="postal-code"
-                  placeholder="ZIP code"
-                  maxLength={5}
-                  className="h-12 border-t border-gray-100 bg-transparent px-4 text-black outline-none sm:w-36 sm:border-t-0"
-                />
-
-                <button
-                  type="submit"
-                  className="h-12 rounded-[14px] bg-green-600 px-6 font-bold text-white transition hover:bg-green-700"
-                >
-                  Search
-                </button>
-              </div>
-            </div>
-
-            {message && (
-              <p className="mt-3 text-sm font-medium text-red-500">{message}</p>
-            )}
-          </form>
         </div>
       </section>
 
       <div className="mx-auto max-w-7xl px-5 py-8 sm:px-6 md:py-10">
         <div className="flex flex-col gap-4 border-b border-gray-200 pb-7 md:flex-row md:items-center md:justify-between">
           <div className="flex flex-wrap gap-2">
-            <FilterButton active={filter === "all"} onClick={() => setFilter("all")}>All</FilterButton>
-            <FilterButton active={filter === "available"} onClick={() => setFilter("available")}>Available now</FilterButton>
-            <FilterButton active={filter === "plenty"} onClick={() => setFilter("plenty")}>Plenty of seats</FilterButton>
-            <FilterButton active={filter === "cafe"} onClick={() => setFilter("cafe")}>Café</FilterButton>
-            <FilterButton active={filter === "restaurant"} onClick={() => setFilter("restaurant")}>Restaurant</FilterButton>
-            <FilterButton active={filter === "bar"} onClick={() => setFilter("bar")}>Bar</FilterButton>
-            <FilterButton active={filter === "barbershop"} onClick={() => setFilter("barbershop")}>Barbershop</FilterButton>
+            {FILTERS.map((option) => (
+              <FilterButton
+                key={option.value}
+                active={filter === option.value}
+                onClick={() => setFilter(option.value)}
+              >
+                {option.label}
+              </FilterButton>
+            ))}
           </div>
 
           <select
@@ -298,20 +214,14 @@ function SearchPageContent() {
               <div className="text-4xl">🪑</div>
               <h2 className="mt-4 text-2xl font-black">No locations found</h2>
               <p className="mt-2 text-gray-500">
-                {initialZip
-                  ? `No approved SeatMate locations were found in ZIP ${initialZip}.`
-                  : "Try another business name or ZIP code."}
+                {results.length > 0
+                  ? "Nothing matches that filter right now. Try another one."
+                  : "The first places are on their way."}
               </p>
               {features.suggestPlace && (
               <button
                 type="button"
-                onClick={() =>
-                  router.push(
-                    `/suggest?${new URLSearchParams(
-                      initialZip ? { location: initialZip } : { name: initialQuery }
-                    ).toString()}`
-                  )
-                }
+                onClick={() => router.push("/suggest")}
                 className="mt-6 inline-flex items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-black"
               >
                 Ask for it on SeatMate →
@@ -478,6 +388,16 @@ function SearchPageContent() {
     </main>
   );
 }
+
+const FILTERS = [
+  { value: "all", label: "All" },
+  { value: "available", label: "Available now" },
+  { value: "plenty", label: "Plenty of seats" },
+  { value: "cafe", label: "Café" },
+  { value: "restaurant", label: "Restaurant" },
+  { value: "bar", label: "Bar" },
+  { value: "barbershop", label: "Barbershop" },
+];
 
 function FilterButton({
   active,
