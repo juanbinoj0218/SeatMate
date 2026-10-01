@@ -91,7 +91,7 @@ export default function FloorPlanPage() {
   const [creating, setCreating] = useState(false);
   const [creatingMarker, setCreatingMarker] = useState(false);
 
-  // Bars also get pool table and darts markers.
+  // Bars get pool table and darts markers; bowling alleys also get lanes.
   const [businessType, setBusinessType] = useState("");
   const [message, setMessage] = useState("");
 
@@ -656,7 +656,7 @@ export default function FloorPlanPage() {
     );
   };
 
-  // Pool tables and darts: tap in occupancy mode to flip open / in use.
+  // Pool tables, darts and lanes: tap in occupancy mode to flip open / in use.
   const toggleGame = async (marker: FloorMarker) => {
     if (!user) return;
 
@@ -1310,7 +1310,7 @@ export default function FloorPlanPage() {
         <p className="text-sm text-gray-500 mt-4">
           {mode === "occupancy"
             ? markers.some((marker) => isGameMarker(marker.type))
-              ? "Tap a seat when somebody sits down or leaves. Tap a pool table or darts board to mark it in use."
+              ? "Tap a seat when somebody sits down or leaves. Tap a pool table, darts board or bowling lane to mark it in use."
               : "Tap a seat when somebody sits down or leaves."
             : "This is your top-down restaurant map. Drag objects to match the real room."}
         </p>

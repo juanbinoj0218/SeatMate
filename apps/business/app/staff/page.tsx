@@ -56,7 +56,7 @@ type Table = {
   rotation: TableRotation;
 };
 
-// A pool table or darts board staff can mark as in use.
+// A pool table, darts board or bowling lane staff can mark as in use.
 type Game = {
   id: string;
   type: MarkerType;
