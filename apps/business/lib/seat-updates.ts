@@ -8,7 +8,7 @@ type SeatStatus = "available" | "occupied";
 
 type SeatTable = {
   id: string;
-  seats: { id: number; status: SeatStatus }[];
+  seats: { id: number; status: SeatStatus; occupiedSince?: number }[];
 };
 
 // Flips one seat between open and taken (used by the owner's floor plan and
@@ -37,8 +37,17 @@ export async function toggleSeat(
         return seat;
       }
 
-      changedTo = seat.status === "available" ? "occupied" : "available";
-      return { ...seat, status: changedTo };
+      // Remember when the seat was taken so barber chairs can show how long
+      // the current cut has been going; clear it again when the seat opens.
+      if (seat.status === "available") {
+        changedTo = "occupied";
+        return { ...seat, status: changedTo, occupiedSince: Date.now() };
+      }
+
+      changedTo = "available";
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { occupiedSince, ...rest } = seat;
+      return { ...rest, status: changedTo };
     });
 
     transaction.update(tableRef, {
