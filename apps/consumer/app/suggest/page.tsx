@@ -140,7 +140,7 @@ function SuggestForm() {
       </FormField>
 
       <FormField id="suggest-location" label="Where is it?" hint="Street, neighborhood or city is enough.">
-        <input id="suggest-location" type="text" value={location} onChange={(e) => setLocation(e.target.value)} maxLength={160} placeholder="e.g. Valencia St, San Francisco" className="w-full" />
+        <input id="suggest-location" type="text" value={location} onChange={(e) => setLocation(e.target.value)} maxLength={160} placeholder="e.g. J St, Midtown" className="w-full" />
       </FormField>
 
       <FormField id="suggest-type" label="Type">

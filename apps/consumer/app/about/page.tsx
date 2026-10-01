@@ -33,17 +33,17 @@ const PRINCIPLES = [
   {
     word: "Live",
     description:
-      "Availability updates as businesses manage their floor.",
+      "Seats update as people come and go.",
   },
   {
     word: "Simple",
     description:
-      "Businesses can update occupancy with only a few taps.",
+      "Staff update seats in a couple of taps.",
   },
   {
     word: "Local",
     description:
-      "SeatMate is designed to launch community by community.",
+      "We're starting right here in the Sacramento area.",
   },
 ];
 
@@ -70,13 +70,13 @@ export default function AboutPage() {
 
           <div className="max-w-2xl space-y-5 text-lg">
             <p className="text-gray-800">
-              SeatMate helps people see live seating availability at
-              restaurants and cafés before they arrive.
+              SeatMate shows you open seats at cafés, restaurants, bars and
+              barbershops around Sacramento before you get there.
             </p>
 
             <p className="text-gray-600">
-              Finding a restaurant or café is easy. Knowing whether there
-              is actually somewhere to sit when you arrive is not.
+              Finding a place is easy. Knowing if there&apos;s a seat when
+              you get there is not.
             </p>
           </div>
         </div>
@@ -126,10 +126,8 @@ export default function AboutPage() {
           </h2>
 
           <p className="mt-5 text-lg text-gray-600">
-            SeatMate connects businesses and customers through live
-            floor-plan data, giving customers a clearer picture of seating
-            availability while helping businesses manage occupancy with a
-            simple interface.
+            Staff tap a seat when someone sits down or leaves. You see the
+            same map on your phone before you head out.
           </p>
         </div>
 
@@ -147,11 +145,8 @@ export default function AboutPage() {
             </h2>
 
             <p className="text-lg text-white/65">
-              SeatMate is built around a simple idea: live information
-              should make everyday decisions easier. Whether you are
-              looking for a place to study, grab coffee, eat with friends,
-              or simply find an open seat, SeatMate gives you more
-              information before you leave.
+              Studying, grabbing coffee or eating with friends, you should
+              know there&apos;s room before you leave the house.
             </p>
           </div>
 
@@ -180,14 +175,12 @@ export default function AboutPage() {
         <p className="text-sm font-medium text-moss">Our story</p>
 
         <blockquote className="font-display mt-6 text-balance text-3xl leading-[1.15] sm:text-5xl">
-          &ldquo;Why can we see almost everything about a restaurant online
-          except whether there is actually somewhere to sit?&rdquo;
+          &ldquo;Why can&apos;t I see if there&apos;s a seat before I
+          go?&rdquo;
         </blockquote>
 
         <p className="mx-auto mt-8 max-w-xl text-lg text-gray-600">
-          That question is where SeatMate started. We&apos;re building it
-          to close the gap by connecting real-time information from
-          businesses directly to the people deciding where to go.
+          That&apos;s the question that started SeatMate.
         </p>
       </section>
 
@@ -203,8 +196,8 @@ export default function AboutPage() {
 
           <PathCard
             dark
-            eyebrow="Run a café or restaurant"
-            title="Put your floor plan on SeatMate."
+            eyebrow="Run a café, restaurant, bar or barbershop"
+            title="Put your seats on SeatMate."
             cta="SeatMate for Business"
             onClick={() =>
               window.location.assign(businessUrl("/business/login"))
@@ -310,8 +303,8 @@ function SyncDiagram() {
         <p className="mt-6 text-sm font-semibold">For businesses</p>
 
         <p className="mt-1.5 text-white/65">
-          Businesses create a digital floor plan and update seat
-          occupancy as customers arrive and leave.
+          Staff set up a map of their tables and tap seats as people come
+          and go.
         </p>
       </div>
 
@@ -345,8 +338,8 @@ function SyncDiagram() {
         <p className="mt-6 text-sm font-semibold">For customers</p>
 
         <p className="mt-1.5 text-gray-600">
-          Customers see the same floor plan and live seating information
-          before deciding where to go.
+          You see the same map, with the open seats, before you pick where
+          to go.
         </p>
       </div>
     </div>
