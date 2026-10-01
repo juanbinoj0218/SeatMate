@@ -12,7 +12,8 @@ export type MarkerType =
   | "restroom"
   | "wall"
   | "poolTable"
-  | "darts";
+  | "darts"
+  | "bowlingLane";
 
 export type FloorMarker = {
   id: string;
@@ -22,7 +23,7 @@ export type FloorMarker = {
   yPct: number;
   scale: number;
   rotation: number;
-  // Pool tables and darts can be marked as in use, like a seat.
+  // Pool tables, darts and bowling lanes can be marked as in use, like a seat.
   status?: "available" | "occupied";
 };
 
@@ -102,13 +103,16 @@ export const MARKERS: Record<
     width: 92,
     height: 70,
   },
+  bowlingLane: {
+    label: "Bowling Lane",
+    icon: "🎳",
+    width: 72,
+    height: 190,
+  },
 };
 
-// Markers only offered in the editor for bars.
-export const BAR_ONLY_MARKERS: MarkerType[] = ["poolTable", "darts"];
-
 // Markers that staff can mark as open or in use.
-export const GAME_MARKERS: MarkerType[] = ["poolTable", "darts"];
+export const GAME_MARKERS: MarkerType[] = ["poolTable", "darts", "bowlingLane"];
 export const isGameMarker = (type: MarkerType) => GAME_MARKERS.includes(type);
 
 export const markerStatus = (value: unknown): "available" | "occupied" =>
@@ -123,9 +127,23 @@ export const isBar = (businessType: unknown) => typeIs(businessType, "bar");
 export const isBarbershop = (businessType: unknown) =>
   typeIs(businessType, "barbershop", "barber shop", "barber");
 
+export const isBowlingAlley = (businessType: unknown) =>
+  typeIs(businessType, "bowling alley", "bowling");
+
 // Whether the editor offers a marker type to this kind of business.
-export const markerAllowed = (type: MarkerType, businessType: unknown) =>
-  !BAR_ONLY_MARKERS.includes(type) || isBar(businessType);
+// Pool tables and darts are for bars and bowling alleys; lanes are for
+// bowling alleys. Everything else is offered to every business.
+export const markerAllowed = (type: MarkerType, businessType: unknown) => {
+  switch (type) {
+    case "poolTable":
+    case "darts":
+      return isBar(businessType) || isBowlingAlley(businessType);
+    case "bowlingLane":
+      return isBowlingAlley(businessType);
+    default:
+      return true;
+  }
+};
 
 // Every business type a place can pick, in the order shown.
 export const BUSINESS_TYPES = [
@@ -135,6 +153,7 @@ export const BUSINESS_TYPES = [
   "Bakery",
   "Bar",
   "Barbershop",
+  "Bowling Alley",
   "Food Hall",
   "Other",
 ];
@@ -157,6 +176,8 @@ export const markerClassName = (type: MarkerType) => {
       return "bg-emerald-700 border-[6px] border-amber-900 text-white rounded-lg shadow-sm";
     case "darts":
       return "bg-rose-50 border-rose-300 text-rose-800 rounded-full";
+    case "bowlingLane":
+      return "bg-amber-100 border-amber-300 text-amber-900 rounded-md shadow-sm";
     default:
       return "bg-white border-gray-300 text-[#101811] rounded-xl shadow-sm";
   }

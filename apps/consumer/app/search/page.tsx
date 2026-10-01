@@ -4,7 +4,7 @@ import Link from "next/link";
 import SeatMateMark from "@seatmate/shared/components/SeatMateMark";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { isBar, isBarbershop } from "@seatmate/shared/floor-plan";
+import { isBar, isBarbershop, isBowlingAlley } from "@seatmate/shared/floor-plan";
 
 import AccountMenu from "@/components/account-menu";
 import SaveButton from "@/components/save-button";
@@ -126,6 +126,10 @@ function SearchPageContent() {
 
     if (filter === "barbershop") {
       filtered = filtered.filter((business) => isBarbershop(business.type));
+    }
+
+    if (filter === "bowling") {
+      filtered = filtered.filter((business) => isBowlingAlley(business.type));
     }
 
     if (filter === "restaurant") {
@@ -277,6 +281,7 @@ function SearchPageContent() {
             <FilterButton active={filter === "restaurant"} onClick={() => setFilter("restaurant")}>Restaurant</FilterButton>
             <FilterButton active={filter === "bar"} onClick={() => setFilter("bar")}>Bar</FilterButton>
             <FilterButton active={filter === "barbershop"} onClick={() => setFilter("barbershop")}>Barbershop</FilterButton>
+            <FilterButton active={filter === "bowling"} onClick={() => setFilter("bowling")}>Bowling</FilterButton>
           </div>
 
           <select

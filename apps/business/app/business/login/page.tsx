@@ -2,6 +2,7 @@
 
 import SeatMateMark from "@seatmate/shared/components/SeatMateMark";
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import {
@@ -23,6 +24,8 @@ import ResetPassword from "@seatmate/shared/components/ResetPassword";
 import TwoFactorPrompt from "@seatmate/shared/components/TwoFactorPrompt";
 import { twoFactorResolver } from "@seatmate/shared/two-factor";
 import { adminUrl, consumerUrl } from "@seatmate/shared/site-urls";
+
+import { SiteFooter } from "@/components/site-chrome";
 
 import {
   ClockIcon,
@@ -580,12 +583,20 @@ export default function BusinessLoginPage() {
             </div>
           </div>
 
-          <a
-            href={consumerUrl("/")}
-            className="text-sm font-semibold text-gray-500 hover:text-[#101811] transition"
-          >
-            Customer site →
-          </a>
+          <nav className="flex items-center gap-5 text-sm font-semibold text-gray-500">
+            <Link
+              href="/about"
+              className="hover:text-[#101811] transition"
+            >
+              How it works
+            </Link>
+            <a
+              href={consumerUrl("/")}
+              className="hidden sm:inline hover:text-[#101811] transition"
+            >
+              Customer site →
+            </a>
+          </nav>
 
         </div>
       </header>
@@ -994,7 +1005,11 @@ export default function BusinessLoginPage() {
                 After creating your account,
                 you&apos;ll add your business
                 details and build your live
-                floor plan.
+                floor plan. By signing up you
+                agree to our{" "}
+                <Link href="/terms" className="underline">Terms</Link>
+                {" "}and{" "}
+                <Link href="/privacy" className="underline">Privacy Policy</Link>.
 
               </p>
 
@@ -1007,6 +1022,8 @@ export default function BusinessLoginPage() {
         </div>
 
       </div>
+
+      <SiteFooter />
 
     </main>
   );

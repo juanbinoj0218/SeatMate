@@ -1,4 +1,4 @@
-// "Open" / "In use" pill shown on pool table and darts markers.
+// "Open" / "In use" pill shown on pool table, darts and bowling lane markers.
 export default function GameStatus({
   status,
   size = 10,
