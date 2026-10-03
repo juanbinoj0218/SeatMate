@@ -23,6 +23,7 @@ export default function TableWithSeats({
   rotation = 0,
   onSeatPress,
   selected = false,
+  preview = false,
 }: {
   name: string;
   shape: TableShape;
@@ -31,6 +32,8 @@ export default function TableWithSeats({
   rotation?: TableRotation;
   onSeatPress?: (seatId: number) => void;
   selected?: boolean;
+  // A small picture in the "Add" panel: no name, no chair timer.
+  preview?: boolean;
 }) {
   const stool = isSingleSeat(shape);
   const chair = shape === "barberChair";
@@ -70,7 +73,7 @@ export default function TableWithSeats({
           selected && styles.selected,
         ]}
       >
-        {!stool && (
+        {!stool && !preview && (
           <>
             <Text numberOfLines={2} style={[styles.name, { fontSize }]}>
               {name}
@@ -121,7 +124,7 @@ export default function TableWithSeats({
         );
       })}
 
-      {chair && shown[0] ? (
+      {chair && shown[0] && !preview ? (
         <View pointerEvents="none" style={styles.timerRow}>
           <ChairTimer seat={shown[0]} fontSize={Math.max(9, 10 * scale)} />
         </View>

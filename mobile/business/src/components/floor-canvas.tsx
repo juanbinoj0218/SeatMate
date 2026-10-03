@@ -38,6 +38,7 @@ export default function FloorCanvas({
   onSelect,
   onMoveTable,
   onMoveMarker,
+  fill = false,
 }: {
   tables: Table[];
   markers: FloorMarker[];
@@ -49,18 +50,21 @@ export default function FloorCanvas({
   onSelect?: (selection: Selection) => void;
   onMoveTable?: (tableId: string, xPct: number, yPct: number) => void;
   onMoveMarker?: (markerId: string, xPct: number, yPct: number) => void;
+  // Sit centred in a parent of fixed size (the iPad layout).
+  fill?: boolean;
 }) {
   const [dragging, setDragging] = useState(false);
   const layout = mode === "layout";
 
   return (
-    <ScrollView horizontal scrollEnabled={!dragging} style={styles.frame} contentContainerStyle={{ flexGrow: 1 }}>
-      <ScrollView scrollEnabled={!dragging} nestedScrollEnabled>
-        <Pressable
-          disabled={!layout}
-          onPress={() => onSelect?.(null)}
-          style={{ width: CANVAS_WIDTH * scale, height: CANVAS_HEIGHT * scale, overflow: "hidden" }}
-        >
+    <ScrollView
+      horizontal
+      scrollEnabled={!dragging}
+      style={[styles.frame, fill && styles.fill]}
+      contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}
+    >
+      <ScrollView scrollEnabled={!dragging} nestedScrollEnabled contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}>
+        <View style={{ width: CANVAS_WIDTH * scale, height: CANVAS_HEIGHT * scale, overflow: "hidden" }}>
           <View
             style={[
               styles.canvas,
@@ -69,6 +73,16 @@ export default function FloorCanvas({
           >
             <Grid />
             <Text style={styles.floorLabel}>MAIN FLOOR</Text>
+            {/* Tapping the empty floor clears the selection. A sibling behind
+                the tables, not their parent, so a tap on a table never
+                reaches it. */}
+            {layout && (
+              <Pressable
+                accessibilityLabel="Clear selection"
+                onPress={() => onSelect?.(null)}
+                style={StyleSheet.absoluteFill}
+              />
+            )}
 
             {tables.length === 0 && markers.length === 0 && (
               <View style={styles.empty}>
@@ -101,6 +115,7 @@ export default function FloorCanvas({
                   onTap={() => onSelect?.({ kind: "marker", id: marker.id })}
                   onDrop={(x, y) => onMoveMarker?.(marker.id, x, y)}
                   zIndex={5}
+                  selected={selected}
                 >
                   <Pressable
                     disabled={layout || !game || !onGamePress}
@@ -162,6 +177,7 @@ export default function FloorCanvas({
                   onTap={() => onSelect?.({ kind: "table", id: table.id })}
                   onDrop={(x, y) => onMoveTable?.(table.id, x, y)}
                   zIndex={10}
+                  selected={selected}
                 >
                   <TableWithSeats
                     name={table.name}
@@ -176,7 +192,7 @@ export default function FloorCanvas({
               );
             })}
           </View>
-        </Pressable>
+        </View>
       </ScrollView>
     </ScrollView>
   );
@@ -196,6 +212,7 @@ function Draggable({
   onTap,
   onDrop,
   zIndex,
+  selected = false,
   children,
 }: {
   xPct: number;
@@ -209,6 +226,7 @@ function Draggable({
   onTap: () => void;
   onDrop: (xPct: number, yPct: number) => void;
   zIndex: number;
+  selected?: boolean;
   children: ReactNode;
 }) {
   const [offset, setOffset] = useState<{ x: number; y: number } | null>(null);
@@ -280,9 +298,10 @@ function Draggable({
         height,
         alignItems: "center",
         justifyContent: "center",
-        zIndex: offset ? 60 : zIndex,
+        zIndex: offset ? 60 : selected ? zIndex + 20 : zIndex,
       }}
     >
+      {selected && <View pointerEvents="none" style={styles.ring} />}
       {children}
     </View>
   );
@@ -314,6 +333,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 20,
   },
+  // iPad: the map keeps its own size, centred, and scrolls once zoomed in.
+  fill: { flexGrow: 0, alignSelf: "center", maxWidth: "100%", maxHeight: "100%" },
   canvas: { width: CANVAS_WIDTH, height: CANVAS_HEIGHT, backgroundColor: "#fff" },
   gridLine: { position: "absolute", backgroundColor: "#e5e7eb", opacity: 0.5 },
   floorLabel: {
@@ -330,6 +351,18 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 18, color: colors.faint, marginTop: 8 },
   marker: { alignItems: "center", justifyContent: "center" },
   selected: { borderWidth: 3, borderColor: "#93c5fd" },
+  ring: {
+    position: "absolute",
+    top: -10,
+    left: -10,
+    right: -10,
+    bottom: -10,
+    borderWidth: 2,
+    borderStyle: "dashed",
+    borderColor: "#22c55e",
+    borderRadius: 18,
+    backgroundColor: "rgba(34,197,94,0.06)",
+  },
   game: {
     marginTop: 3,
     overflow: "hidden",

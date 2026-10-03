@@ -13,6 +13,7 @@ import { auth } from "@/lib/firebase";
 import { watchDoor } from "@/lib/door";
 import { toggleGame, watchMarkers, watchTables, type Table } from "@/lib/floor";
 import { toggleSeat } from "@/lib/seat-updates";
+import { useWide } from "@/lib/layout";
 import { useSession } from "@/lib/session";
 
 export default function StaffConsoleScreen() {
@@ -25,6 +26,7 @@ export default function StaffConsoleScreen() {
   const [error, setError] = useState("");
   // People inside, when the owner has bouncer mode on.
   const [doorCount, setDoorCount] = useState<number | null>(null);
+  const wide = useWide();
 
   useEffect(() => {
     if (!businessId) return;
@@ -78,41 +80,58 @@ export default function StaffConsoleScreen() {
     }
   };
 
-  return (
-    <Screen>
+  const doorCard =
+    doorCount !== null ? (
+      <Card style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: wide ? 0 : 16 }}>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontWeight: "800", color: colors.ink, fontSize: 16 }}>On the door?</Text>
+          <Muted>{doorCount} inside right now</Muted>
+        </View>
+        <Button title="Door counter" onPress={() => router.push("/door")} />
+      </Card>
+    ) : null;
+
+  const title = (
+    <View style={{ marginBottom: wide ? 0 : 16 }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
         <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: "#22c55e" }} />
         <Text style={{ color: colors.greenText, fontWeight: "800", fontSize: 12, letterSpacing: 1 }}>LIVE STAFF MODE</Text>
       </View>
       <Title>{staff.businessName}</Title>
-      <Muted style={{ marginTop: 4, marginBottom: 16 }}>Changes update the customer view automatically.</Muted>
+      <Muted style={{ marginTop: 4 }}>Changes update the customer view automatically.</Muted>
+    </View>
+  );
 
-      {doorCount !== null && (
-        <Card style={{ marginBottom: 16, flexDirection: "row", alignItems: "center", gap: 12 }}>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontWeight: "800", color: colors.ink, fontSize: 16 }}>On the door?</Text>
-            <Muted>{doorCount} inside right now</Muted>
-          </View>
-          <Button title="Door counter" onPress={() => router.push("/door")} />
-        </Card>
-      )}
+  const live = (
+    <LiveSeats
+      tables={tables}
+      markers={markers}
+      onSeatPress={onSeatPress}
+      onGamePress={(marker) =>
+        void toggleGame(staff.businessId, marker).catch((err) => {
+          console.error(err);
+          setError("Could not update this game.");
+        })
+      }
+      aside={
+        <>
+          {wide && title}
+          {doorCard}
+          <UpdateReminder businessId={staff.businessId} tables={tables} />
+          {error ? <Banner tone="error">{error}</Banner> : null}
+          {wide && <Button title="Log out" variant="secondary" onPress={() => void signOut(auth)} />}
+        </>
+      }
+    />
+  );
 
-      <UpdateReminder businessId={staff.businessId} tables={tables} />
-
-      {error ? <Banner tone="error">{error}</Banner> : null}
-
-      <LiveSeats
-        tables={tables}
-        markers={markers}
-        onSeatPress={onSeatPress}
-        onGamePress={(marker) =>
-          void toggleGame(staff.businessId, marker).catch((err) => {
-            console.error(err);
-            setError("Could not update this game.");
-          })
-        }
-      />
-
+  // Staff only tap seats and games; the layout is the owner's to change.
+  return wide ? (
+    <Screen scroll={false}>{live}</Screen>
+  ) : (
+    <Screen>
+      {title}
+      {live}
       <Button title="Log out" variant="secondary" onPress={() => void signOut(auth)} style={{ marginTop: 28 }} />
     </Screen>
   );
