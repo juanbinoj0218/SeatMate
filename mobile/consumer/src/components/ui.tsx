@@ -196,7 +196,7 @@ export function Chip({
   label: string;
   active: boolean;
   onPress: () => void;
-  icon?: string;
+  icon?: ReactNode;
 }) {
   return (
     <Pressable
@@ -208,10 +208,8 @@ export function Chip({
       }}
       style={({ pressed }) => [styles.chip, active && styles.chipActive, pressed && { opacity: 0.8 }]}
     >
-      <Text style={[styles.chipText, active && { color: "#fff" }]}>
-        {icon ? `${icon}  ` : ""}
-        {label}
-      </Text>
+      {icon}
+      <Text style={[styles.chipText, active && { color: "#fff" }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -272,13 +270,13 @@ export function StatTile({
 
 // Big friendly empty state with an optional action.
 export function EmptyState({
-  emoji,
+  icon,
   title,
   text,
   action,
   onAction,
 }: {
-  emoji: string;
+  icon: ReactNode;
   title: string;
   text: string;
   action?: string;
@@ -286,7 +284,7 @@ export function EmptyState({
 }) {
   return (
     <View style={styles.empty}>
-      <Text style={{ fontSize: 44 }}>{emoji}</Text>
+      <View style={styles.emptyIcon}>{icon}</View>
       <Text style={styles.emptyTitle}>{title}</Text>
       <Text style={[styles.muted, { textAlign: "center", marginTop: 6 }]}>{text}</Text>
       {action && onAction ? <Button title={action} onPress={onAction} style={{ marginTop: 18, alignSelf: "stretch" }} /> : null}
@@ -340,6 +338,9 @@ export const styles = StyleSheet.create({
   buttonText: { fontSize: 16, fontWeight: "800" },
   banner: { borderWidth: 1, borderRadius: 14, padding: 14, marginTop: 14 },
   chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
     paddingHorizontal: 15,
     paddingVertical: 9,
     borderRadius: 999,
@@ -374,5 +375,13 @@ export const styles = StyleSheet.create({
   statLabel: { fontSize: 11, fontWeight: "800", color: colors.faint, textTransform: "uppercase", letterSpacing: 0.8 },
   statValue: { fontSize: 26, fontWeight: "900", marginTop: 6 },
   empty: { alignItems: "center", paddingVertical: 36, paddingHorizontal: 24 },
+  emptyIcon: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    backgroundColor: "#eceee9",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   emptyTitle: { fontSize: 20, fontWeight: "900", color: colors.ink, marginTop: 12, textAlign: "center" },
 });

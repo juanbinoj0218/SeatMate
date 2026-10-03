@@ -1,3 +1,4 @@
+import { ArrowRight } from "lucide-react";
 import type { ReactNode } from "react";
 import Link from "next/link";
 
@@ -49,7 +50,7 @@ export function SiteFooter() {
           <Link href="/terms" className="hover:text-[#101811]">Terms</Link>
           <Link href="/privacy" className="hover:text-[#101811]">Privacy</Link>
           <a href={`mailto:${CONTACT_EMAIL}`} className="hover:text-[#101811]">Contact</a>
-          <a href={consumerUrl("/")} className="hover:text-[#101811]">Customer site →</a>
+          <a href={consumerUrl("/")} className="hover:text-[#101811]">Customer site<ArrowRight aria-hidden className="ml-1 inline h-4 w-4 align-[-3px]" /></a>
         </nav>
       </div>
     </footer>

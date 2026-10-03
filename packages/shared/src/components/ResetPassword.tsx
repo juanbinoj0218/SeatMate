@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowLeft } from "lucide-react";
 import { FormEvent, useState } from "react";
 
 import { resetSentMessage, sendResetLink } from "../password-reset";
@@ -97,9 +98,10 @@ export default function ResetPassword({
       <button
         type="button"
         onClick={onBack}
-        className="w-full text-sm font-semibold text-gray-500 hover:text-[#101811]"
+        className="inline-flex w-full items-center justify-center gap-1.5 text-sm font-semibold text-gray-500 hover:text-[#101811]"
       >
-        ← Back to sign in
+        <ArrowLeft aria-hidden className="h-4 w-4" />
+        Back to sign in
       </button>
     </form>
   );

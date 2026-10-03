@@ -1,5 +1,7 @@
 "use client";
 
+import { ArrowRight } from "lucide-react";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { onSnapshot } from "firebase/firestore";
@@ -84,7 +86,8 @@ export default function BouncerCard({ businessId }: { businessId: string }) {
             href="/business/door"
             className="shrink-0 bg-[#101811] text-white px-5 py-3 rounded-xl font-semibold text-center"
           >
-            Open door counter →
+            Open door counter
+            <ArrowRight aria-hidden className="ml-1 inline h-4 w-4 align-[-3px]" />
           </Link>
         </div>
       )}

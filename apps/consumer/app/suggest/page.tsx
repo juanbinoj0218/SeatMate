@@ -4,6 +4,7 @@ import { FormEvent, Suspense, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { ArrowRight } from "lucide-react";
 
 import { db } from "@seatmate/shared/firebase";
 import { businessUrl } from "@seatmate/shared/site-urls";
@@ -37,9 +38,10 @@ export default function SuggestPage() {
             </p>
             <a
               href={businessUrl("/business/login")}
-              className="mt-3 inline-block text-sm font-semibold text-moss hover:underline"
+              className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-moss hover:underline"
             >
-              Create a business account →
+              Create a business account
+              <ArrowRight aria-hidden className="h-4 w-4" />
             </a>
           </div>
         </div>

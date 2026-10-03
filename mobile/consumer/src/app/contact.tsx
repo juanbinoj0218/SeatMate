@@ -3,6 +3,7 @@ import { KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet, Text, 
 import { router } from "expo-router";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 
+import { MailCheckIcon } from "@/components/icons";
 import { Banner, Button, Chip, colors, Field, Muted } from "@/components/ui";
 import { useAccount } from "@/lib/account";
 import { useFeatures } from "@/lib/features";
@@ -32,7 +33,9 @@ export default function ContactScreen() {
     return (
       <View style={[styles.screen, { justifyContent: "center" }]}>
         <View style={[styles.content, { alignItems: "center" }]}>
-          <Text style={{ fontSize: 52 }}>📬</Text>
+          <View style={styles.doneIcon}>
+            <MailCheckIcon color={colors.green} />
+          </View>
           <Text style={styles.doneTitle}>Message sent</Text>
           <Muted style={{ textAlign: "center", marginTop: 8 }}>We&apos;ll reply to {replyTo} as soon as we can.</Muted>
           <Button title="Done" onPress={() => router.back()} style={{ marginTop: 24, alignSelf: "stretch" }} />
@@ -138,5 +141,13 @@ const styles = StyleSheet.create({
   },
   alt: { textAlign: "center", marginTop: 18, color: colors.muted, fontSize: 14 },
   altLink: { color: colors.ink, fontWeight: "800" },
+  doneIcon: {
+    width: 92,
+    height: 92,
+    borderRadius: 46,
+    backgroundColor: colors.greenSoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   doneTitle: { fontSize: 26, fontWeight: "900", color: colors.ink, marginTop: 12 },
 });

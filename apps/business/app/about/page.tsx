@@ -1,3 +1,4 @@
+import { ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -120,7 +121,8 @@ export default function AboutPage() {
               href="/business/login"
               className="rounded-xl bg-[#101811] px-6 py-3.5 font-bold text-white hover:bg-black transition"
             >
-              List your business free →
+              List your business free
+              <ArrowRight aria-hidden className="ml-1 inline h-4 w-4 align-[-3px]" />
             </Link>
           </div>
         </div>
@@ -171,7 +173,8 @@ export default function AboutPage() {
             href="/business/login"
             className="shrink-0 self-start md:self-auto rounded-xl bg-white px-6 py-3.5 font-bold text-[#101811] hover:bg-gray-100 transition"
           >
-            Get started →
+            Get started
+            <ArrowRight aria-hidden className="ml-1 inline h-4 w-4 align-[-3px]" />
           </Link>
         </div>
       </section>

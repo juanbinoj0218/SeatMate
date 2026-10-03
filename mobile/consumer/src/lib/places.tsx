@@ -93,14 +93,14 @@ export const sortByAvailability = (places: PlaceWithSeats[], now = Date.now()) =
 // Categories, matching the website's search filters.
 export type Category = "all" | "available" | "cafe" | "restaurant" | "bar" | "barbershop" | "bowling";
 
-export const CATEGORIES: { value: Category; label: string; icon: string }[] = [
-  { value: "all", label: "All", icon: "✨" },
-  { value: "available", label: "Open seats", icon: "🟢" },
-  { value: "cafe", label: "Cafés", icon: "☕" },
-  { value: "restaurant", label: "Restaurants", icon: "🍽️" },
-  { value: "bar", label: "Bars", icon: "🍸" },
-  { value: "barbershop", label: "Barbershops", icon: "💈" },
-  { value: "bowling", label: "Bowling", icon: "🎳" },
+export const CATEGORIES: { value: Category; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "available", label: "Open seats" },
+  { value: "cafe", label: "Cafés" },
+  { value: "restaurant", label: "Restaurants" },
+  { value: "bar", label: "Bars" },
+  { value: "barbershop", label: "Barbershops" },
+  { value: "bowling", label: "Bowling" },
 ];
 
 export function inCategory(place: PlaceWithSeats, category: Category) {
@@ -124,14 +124,6 @@ export function inCategory(place: PlaceWithSeats, category: Category) {
   }
 }
 
-export const typeEmoji = (type: string) => {
-  const lower = type.toLowerCase();
-  if (isBarbershop(type)) return "💈";
-  if (isBowlingAlley(type)) return "🎳";
-  if (isBar(type)) return "🍸";
-  if (lower.includes("cafe") || lower.includes("café") || lower.includes("coffee")) return "☕";
-  return "🍽️";
-};
 
 type PlacesValue = {
   places: PlaceWithSeats[];

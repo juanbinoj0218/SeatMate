@@ -1,5 +1,7 @@
 "use client";
 
+import { ArrowUpRight } from "lucide-react";
+
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
@@ -86,8 +88,8 @@ export default function AdminShell({ children }: { children: ReactNode }) {
         <div className="hidden border-t border-white/10 p-4 text-sm lg:block">
           <p className="truncate text-white/60">{session.user.email}</p>
           <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-white/60">
-            <a href={consumerUrl("/")} className="hover:text-white">Customer site ↗</a>
-            <a href={businessUrl("/business")} className="hover:text-white">Business site ↗</a>
+            <a href={consumerUrl("/")} className="hover:text-white">Customer site<ArrowUpRight aria-hidden className="ml-0.5 inline h-4 w-4 align-[-3px]" /></a>
+            <a href={businessUrl("/business")} className="hover:text-white">Business site<ArrowUpRight aria-hidden className="ml-0.5 inline h-4 w-4 align-[-3px]" /></a>
           </div>
           <button type="button" onClick={() => signOutAdmin()} className="mt-4 w-full rounded-xl border border-white/20 py-2 font-semibold hover:bg-white/10">
             Sign out

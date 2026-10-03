@@ -11,7 +11,7 @@ import { elapsed } from "@seatmate/shared/table-geometry";
 
 import CrowdMeter from "@/components/crowd-meter";
 import FloorView from "@/components/floor-view";
-import { BackIcon, ClockIcon, DirectionsIcon, FloorPlanIcon, HeartIcon, PinIcon, ShareIcon } from "@/components/icons";
+import { BackIcon, BigIcons, ClockIcon, DirectionsIcon, FloorPlanIcon, HeartIcon, PinIcon, PlaceTypeIcon, ScissorsIcon, ShareIcon } from "@/components/icons";
 import LiveDot from "@/components/live-dot";
 import SeatAlertButton from "@/components/seat-alert-button";
 import { Button, colors, EmptyState, Loading, shadow } from "@/components/ui";
@@ -30,7 +30,7 @@ import {
   TONE_COLORS,
 } from "@/lib/format";
 import { tap } from "@/lib/haptics";
-import { fallbackImageFor, placeImage, typeEmoji, usePlace } from "@/lib/places";
+import { fallbackImageFor, placeImage, usePlace } from "@/lib/places";
 import { consumerUrl } from "@/lib/site-urls";
 import { useNow } from "@/lib/use-now";
 
@@ -111,7 +111,7 @@ export default function PlaceScreen() {
     return (
       <View style={[styles.screen, { paddingTop: insets.top + 60 }]}>
         <EmptyState
-          emoji="🪑"
+          icon={<BigIcons.chair color={colors.muted} />}
           title={error ? "Couldn't load this place" : "Location not found"}
           text={error || "This SeatMate location doesn't exist or isn't listed right now."}
           action="Back to Explore"
@@ -183,9 +183,8 @@ export default function PlaceScreen() {
                 <Text style={styles.liveBadgeText}>LIVE</Text>
               </View>
               <View style={styles.typeBadge}>
-                <Text style={styles.typeBadgeText}>
-                  {typeEmoji(place.type)} {place.type || "Restaurant"}
-                </Text>
+                <PlaceTypeIcon type={place.type} size={13} color={colors.ink} strokeWidth={2.2} />
+                <Text style={styles.typeBadgeText}>{place.type || "Restaurant"}</Text>
               </View>
             </View>
             <Text style={styles.name}>{place.name}</Text>
@@ -283,7 +282,7 @@ export default function PlaceScreen() {
           </View>
 
           {chairs.length > 0 && (
-            <Section title="Chairs" icon="💈">
+            <Section title="Chairs" icon={<ScissorsIcon />}>
               {chairs.map((chair) => {
                 const seat = chair.seats[0];
                 const taken = seat?.status === "occupied";
@@ -304,7 +303,7 @@ export default function PlaceScreen() {
           )}
 
           {games.length > 0 && (
-            <Section title={isBowlingAlley(place.type) ? "Lanes" : "Games"} icon={isBowlingAlley(place.type) ? "🎳" : "🎱"}>
+            <Section title={isBowlingAlley(place.type) ? "Lanes" : "Games"} icon={isBowlingAlley(place.type) ? <BigIcons.disc /> : <BigIcons.target />}>
               {games.map((game) => (
                 <View key={game.id} style={styles.listItem}>
                   <Text style={styles.listName}>{game.label}</Text>
@@ -444,11 +443,11 @@ function ActionButton({
   );
 }
 
-function Section({ title, icon, children }: { title: string; icon: string; children: React.ReactNode }) {
+function Section({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
     <>
       <View style={styles.sectionHead}>
-        <Text style={{ fontSize: 18 }}>{icon}</Text>
+        {icon}
         <Text style={styles.sectionTitle}>{title}</Text>
       </View>
       <View style={styles.listCard}>{children}</View>
@@ -471,7 +470,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   liveBadgeText: { fontSize: 11, fontWeight: "900", color: "#15803d", letterSpacing: 1 },
-  typeBadge: { backgroundColor: "rgba(255,255,255,0.95)", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
+  typeBadge: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "rgba(255,255,255,0.95)", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
   typeBadgeText: { fontSize: 12, fontWeight: "800", color: colors.ink },
   name: { color: "#fff", fontSize: 34, lineHeight: 38, fontWeight: "900", letterSpacing: -1, marginTop: 12 },
   addressRow: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 8 },

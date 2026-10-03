@@ -3,7 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { SearchIcon, SeatMateMark } from "@/components/icons";
+import { BigIcons, CategoryIcon, SearchIcon, SeatMateMark } from "@/components/icons";
 import LiveDot from "@/components/live-dot";
 import { PlaceCard, PlaceRow, PlaceTile } from "@/components/place-card";
 import { Banner, Button, colors, EmptyState, Loading, SectionHeader, shadow } from "@/components/ui";
@@ -98,7 +98,9 @@ export default function ExploreScreen() {
             }}
             style={({ pressed }) => [styles.category, pressed && { transform: [{ scale: 0.96 }] }]}
           >
-            <Text style={styles.categoryIcon}>{category.icon}</Text>
+            <View style={styles.categoryIcon}>
+              <CategoryIcon category={category.value} size={22} />
+            </View>
             <Text style={styles.categoryLabel}>{category.label}</Text>
           </Pressable>
         ))}
@@ -113,7 +115,7 @@ export default function ExploreScreen() {
           <Banner tone="error">{error}</Banner>
         </View>
       ) : places.length === 0 ? (
-        <EmptyState emoji="🪑" title="No places yet" text="SeatMate spots will show up here as soon as they go live." />
+        <EmptyState icon={<BigIcons.chair color={colors.muted} />} title="No places yet" text="SeatMate spots will show up here as soon as they go live." />
       ) : (
         <>
           <View style={styles.pad}>
@@ -219,7 +221,14 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     alignItems: "center",
   },
-  categoryIcon: { fontSize: 26 },
+  categoryIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.chip,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   categoryLabel: { fontSize: 12, fontWeight: "800", color: colors.ink, marginTop: 6 },
   carousel: { paddingHorizontal: 20, gap: 14, paddingBottom: 8 },
   fullCard: { backgroundColor: colors.ink, borderRadius: 22, padding: 20 },

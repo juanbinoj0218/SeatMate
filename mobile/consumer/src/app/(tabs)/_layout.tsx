@@ -30,14 +30,14 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: "Explore",
-          tabBarIcon: ({ color, focused }) => <CompassIcon color={color as string} filled={focused} size={25} />,
+          tabBarIcon: ({ color, focused }) => <CompassIcon color={color as string} strokeWidth={focused ? 2.5 : 1.9} size={25} />,
         }}
       />
       <Tabs.Screen
         name="search"
         options={{
           title: "Search",
-          tabBarIcon: ({ color }) => <SearchIcon color={color as string} size={24} />,
+          tabBarIcon: ({ color, focused }) => <SearchIcon color={color as string} strokeWidth={focused ? 2.5 : 1.9} size={24} />,
         }}
       />
       <Tabs.Screen
@@ -53,7 +53,7 @@ export default function TabsLayout() {
         name="account"
         options={{
           title: "Account",
-          tabBarIcon: ({ color, focused }) => <UserIcon color={color as string} filled={focused} size={25} />,
+          tabBarIcon: ({ color, focused }) => <UserIcon color={color as string} strokeWidth={focused ? 2.5 : 1.9} size={25} />,
         }}
       />
     </Tabs>

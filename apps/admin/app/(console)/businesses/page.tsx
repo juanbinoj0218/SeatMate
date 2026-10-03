@@ -1,5 +1,9 @@
 "use client";
 
+import { ArrowUpRight } from "lucide-react";
+
+import { MarkerIcon } from "@seatmate/shared/components/Icons";
+
 import SeatMateMark from "@seatmate/shared/components/SeatMateMark";
 import {
   useEffect,
@@ -1058,7 +1062,8 @@ export default function AdminPage() {
                     rel="noopener noreferrer"
                     className="border border-gray-200 bg-white hover:bg-gray-50 px-5 py-3 rounded-xl font-semibold text-center"
                   >
-                    Search on Maps ↗
+                    Search on Maps
+                    <ArrowUpRight aria-hidden className="ml-0.5 inline h-4 w-4 align-[-3px]" />
                   </a>
                 </div>
               </div>
@@ -1270,11 +1275,7 @@ export default function AdminPage() {
                                   transform: `rotate(${-marker.rotation}deg)`,
                                 }}
                               >
-                                {info.icon && (
-                                  <div className="text-sm leading-none">
-                                    {info.icon}
-                                  </div>
-                                )}
+                                <MarkerIcon type={marker.type} className="mx-auto h-3.5 w-3.5" />
 
                                 {marker.scale >=
                                   0.75 &&

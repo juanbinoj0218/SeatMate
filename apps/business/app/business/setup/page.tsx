@@ -1,5 +1,7 @@
 "use client";
 
+import { ArrowRight } from "lucide-react";
+
 import { BUSINESS_TYPES, businessTypeLabel } from "@seatmate/shared/floor-plan";
 import SeatMateMark from "@seatmate/shared/components/SeatMateMark";
 import { useEffect, useState } from "react";
@@ -385,7 +387,8 @@ export default function BusinessSetupPage() {
             >
               {saving
                 ? "Creating business..."
-                : "Continue to Floor Plan →"}
+                : "Continue to Floor Plan"}
+              {!saving && <ArrowRight aria-hidden className="ml-1 inline h-4 w-4 align-[-3px]" />}
             </button>
 
           </form>

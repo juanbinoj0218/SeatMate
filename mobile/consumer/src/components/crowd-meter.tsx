@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 
 import { CROWD_LEVELS, crowdLevel, DOOR_STALE_MS, readDoorCount, usualCrowd, type CrowdLevel } from "@seatmate/shared/door-crowd";
 
+import { CrowdIcon } from "@/components/icons";
 import { watchDoor } from "@/lib/door";
 
 // Colors for each crowd level on the dark availability card (the website
@@ -33,7 +34,7 @@ export default function CrowdMeter({ businessId, now }: { businessId: string; no
 
   return (
     <View style={[styles.box, { backgroundColor: look.background, borderColor: look.border }]}>
-      <Text style={styles.icon}>{info?.icon ?? "🚪"}</Text>
+      <CrowdIcon level={level} color={look.text} />
       <View style={{ flex: 1 }}>
         <Text style={styles.title}>
           {info?.label ?? "Crowd right now"}
@@ -49,7 +50,6 @@ export default function CrowdMeter({ businessId, now }: { businessId: string; no
 
 const styles = StyleSheet.create({
   box: { flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1, borderRadius: 18, padding: 14, marginTop: 16 },
-  icon: { fontSize: 30 },
   title: { color: "#fff", fontWeight: "900", fontSize: 16 },
   count: { color: "rgba(255,255,255,0.6)", fontWeight: "600" },
   detail: { fontSize: 13, marginTop: 3, lineHeight: 18 },

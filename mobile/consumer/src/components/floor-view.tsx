@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { isGameMarker, MARKERS, type FloorMarker, type MarkerType } from "@seatmate/shared/floor-plan";
 import { tableSize } from "@seatmate/shared/table-geometry";
 
+import { MarkerIcon } from "@/components/icons";
 import TableWithSeats from "@/components/table-with-seats";
 import { colors } from "@/components/ui";
 import { tap } from "@/lib/haptics";
@@ -143,7 +144,7 @@ function Marker({ marker }: { marker: FloorMarker }) {
     >
       {marker.type !== "wall" && (
         <View style={{ transform: [{ rotate: `${-marker.rotation}deg` }], alignItems: "center" }}>
-          {info.icon ? <Text style={{ fontSize: Math.max(12, 17 * marker.scale), color: look.text }}>{info.icon}</Text> : null}
+          <MarkerIcon type={marker.type} size={Math.max(12, 17 * marker.scale)} color={look.text} />
           {marker.scale >= 0.75 && (
             <Text numberOfLines={1} style={{ fontSize: Math.max(9, 11 * marker.scale), fontWeight: "700", color: look.text }}>
               {marker.label}

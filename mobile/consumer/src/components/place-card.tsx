@@ -1,9 +1,9 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View, type StyleProp, type TextStyle } from "react-native";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 
-import { HeartIcon } from "@/components/icons";
+import { HeartIcon, PlaceTypeIcon } from "@/components/icons";
 import { colors, shadow } from "@/components/ui";
 import { useAccount } from "@/lib/account";
 import {
@@ -15,7 +15,7 @@ import {
   TONE_COLORS,
 } from "@/lib/format";
 import { tap } from "@/lib/haptics";
-import { fallbackImageFor, placeImage, typeEmoji, type PlaceWithSeats } from "@/lib/places";
+import { fallbackImageFor, placeImage, type PlaceWithSeats } from "@/lib/places";
 
 export const openPlace = (slug: string) => router.push({ pathname: "/place/[slug]", params: { slug } });
 
@@ -85,6 +85,31 @@ function OpenBadge({ place, now }: { place: PlaceWithSeats; now: number }) {
   );
 }
 
+// "☐ Café · 1815 J St" with the place type's icon.
+export function TypeLine({
+  type,
+  address,
+  style,
+  color,
+  size = 14,
+}: {
+  type: string;
+  address?: string;
+  style: StyleProp<TextStyle>;
+  color: string;
+  size?: number;
+}) {
+  return (
+    <View style={styles.typeLine}>
+      <PlaceTypeIcon type={type} size={size} color={color} strokeWidth={2} />
+      <Text style={[style, { marginTop: 0, flexShrink: 1 }]} numberOfLines={1}>
+        {type || "Restaurant"}
+        {address ? `  ·  ${street(address)}` : ""}
+      </Text>
+    </View>
+  );
+}
+
 // Full-width card with a photo, for lists.
 export function PlaceCard({ place, now }: { place: PlaceWithSeats; now: number }) {
   const age = shortAge(place.latestUpdateMs, now);
@@ -122,10 +147,7 @@ export function PlaceCard({ place, now }: { place: PlaceWithSeats; now: number }
             {place.name || "SeatMate location"}
           </Text>
         </View>
-        <Text style={styles.meta} numberOfLines={1}>
-          {typeEmoji(place.type)} {place.type || "Restaurant"}
-          {place.address ? `  ·  ${street(place.address)}` : ""}
-        </Text>
+        <TypeLine type={place.type} address={place.address} style={styles.meta} color={colors.muted} />
         <View style={styles.footer}>
           <Text style={[styles.label, { color: TONE_COLORS[availabilityTone(place)].text }]}>
             {place.seatsLoaded ? availabilityLabel(place) : " "}
@@ -177,9 +199,7 @@ export function PlaceTile({ place, now }: { place: PlaceWithSeats; now: number }
           <Text style={styles.tileName} numberOfLines={1}>
             {place.name || "SeatMate location"}
           </Text>
-          <Text style={styles.tileMeta} numberOfLines={1}>
-            {typeEmoji(place.type)} {place.type || "Restaurant"}
-          </Text>
+          <TypeLine type={place.type} style={styles.tileMeta} color="rgba(255,255,255,0.85)" />
         </View>
       </View>
       <View style={styles.tileFooter}>
@@ -221,10 +241,7 @@ export function PlaceRow({
         <Text style={styles.rowName} numberOfLines={1}>
           {name}
         </Text>
-        <Text style={styles.rowMeta} numberOfLines={1}>
-          {typeEmoji(type)} {type}
-          {address ? ` · ${street(address)}` : ""}
-        </Text>
+        <TypeLine type={type} address={address} style={styles.rowMeta} color={colors.muted} size={13} />
       </View>
       {right}
     </Pressable>
@@ -246,7 +263,8 @@ const styles = StyleSheet.create({
   photoBottom: { position: "absolute", left: 12, bottom: 12 },
   body: { padding: 16, paddingTop: 14 },
   name: { flex: 1, fontSize: 19, fontWeight: "900", color: colors.ink, letterSpacing: -0.3 },
-  meta: { fontSize: 14, color: colors.muted, marginTop: 4 },
+  meta: { fontSize: 14, color: colors.muted },
+  typeLine: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 },
   footer: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 12 },
   label: { fontSize: 14, fontWeight: "800" },
   age: { fontSize: 12, color: colors.faint, fontWeight: "600" },

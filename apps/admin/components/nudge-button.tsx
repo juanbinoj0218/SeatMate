@@ -1,5 +1,7 @@
 "use client";
 
+import { Check } from "lucide-react";
+
 import { useState } from "react";
 
 import { adminFetch, useAdmin } from "@/lib/admin-session";
@@ -50,7 +52,8 @@ export default function NudgeButton({
         disabled={state !== "idle"}
         className={`rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-800 transition hover:bg-orange-100 disabled:opacity-60 ${className}`}
       >
-        {state === "sending" ? "Sending…" : state === "done" ? "Reminder sent ✓" : "Send reminder"}
+        {state === "sending" ? "Sending…" : state === "done" ? "Reminder sent" : "Send reminder"}
+        {state === "done" && <Check aria-hidden className="ml-1 inline h-3.5 w-3.5 align-[-2px]" />}
       </button>
       {error && <span className="mt-1 text-xs text-red-600">{error}</span>}
     </span>

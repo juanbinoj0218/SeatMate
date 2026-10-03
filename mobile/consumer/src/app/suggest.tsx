@@ -3,6 +3,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } fr
 import { router, useLocalSearchParams } from "expo-router";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 
+import { BigIcons } from "@/components/icons";
 import { Banner, Button, Chip, colors, Field, Muted } from "@/components/ui";
 import { useAccount } from "@/lib/account";
 import { useFeatures } from "@/lib/features";
@@ -40,7 +41,9 @@ export default function SuggestScreen() {
     return (
       <View style={[styles.screen, { justifyContent: "center" }]}>
         <View style={[styles.content, { alignItems: "center" }]}>
-          <Text style={{ fontSize: 52 }}>🙌</Text>
+          <View style={styles.doneIcon}>
+            <BigIcons.sent color={colors.green} />
+          </View>
           <Text style={styles.doneTitle}>Thanks for the tip!</Text>
           <Muted style={{ textAlign: "center", marginTop: 8 }}>
             We&apos;ll reach out to {placeName.trim() || "them"} about showing live seats on SeatMate.
@@ -136,6 +139,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     minHeight: 96,
     textAlignVertical: "top",
+  },
+  doneIcon: {
+    width: 92,
+    height: 92,
+    borderRadius: 46,
+    backgroundColor: colors.greenSoft,
+    alignItems: "center",
+    justifyContent: "center",
   },
   doneTitle: { fontSize: 26, fontWeight: "900", color: colors.ink, marginTop: 12 },
 });

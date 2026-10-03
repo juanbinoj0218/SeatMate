@@ -2,7 +2,7 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { HeartIcon } from "@/components/icons";
+import { BigIcons, HeartIcon } from "@/components/icons";
 import { PlaceCard, PlaceRow } from "@/components/place-card";
 import { Banner, Button, colors, EmptyState, Loading } from "@/components/ui";
 import { useAccount } from "@/lib/account";
@@ -57,7 +57,7 @@ export default function SavedScreen() {
         </View>
       ) : favorites.length === 0 ? (
         <EmptyState
-          emoji="🤍"
+          icon={<BigIcons.heart color={colors.red} />}
           title="Nothing saved yet"
           text="Tap the heart on any place to keep it here."
           action="Explore places"

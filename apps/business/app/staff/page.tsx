@@ -1,5 +1,9 @@
 "use client";
 
+import { MarkerIcon } from "@seatmate/shared/components/Icons";
+
+import { ArrowRight } from "lucide-react";
+
 import SeatMateMark from "@seatmate/shared/components/SeatMateMark";
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -469,7 +473,7 @@ export default function StaffConsolePage() {
                 {doorCount} inside · tap people in and out
               </span>
             </span>
-            <span className="font-semibold">Open →</span>
+            <span className="font-semibold">Open<ArrowRight aria-hidden className="ml-1 inline h-4 w-4 align-[-3px]" /></span>
           </Link>
         )}
 
@@ -569,9 +573,7 @@ export default function StaffConsolePage() {
                   game.status === "occupied" ? "border-red-200" : "border-green-200"
                 }`}
               >
-                <span className="text-2xl" aria-hidden>
-                  {MARKERS[game.type].icon}
-                </span>
+                <MarkerIcon type={game.type} className="h-6 w-6 shrink-0 text-[#101811]" />
                 <span>
                   <span className="block text-sm font-bold text-[#101811]">
                     {game.label}

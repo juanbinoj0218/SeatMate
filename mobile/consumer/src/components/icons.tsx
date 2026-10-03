@@ -1,19 +1,64 @@
-import Svg, { Circle, Path, Rect } from "react-native-svg";
+import Svg, { Path } from "react-native-svg";
+import {
+  AppWindow,
+  Armchair,
+  Banknote,
+  Beer,
+  Bell,
+  ChevronLeft,
+  CircleDot,
+  Clock,
+  Coffee,
+  Compass,
+  Disc3,
+  DoorOpen,
+  FileText,
+  Heart,
+  LayoutGrid,
+  LogIn,
+  LogOut,
+  Mail,
+  MailCheck,
+  Map as MapIcon,
+  MapPin,
+  Martini,
+  Navigation,
+  PartyPopper,
+  PlugZap,
+  Plus,
+  RectangleHorizontal,
+  Scissors,
+  Search,
+  Share,
+  ShieldCheck,
+  Smile,
+  Store,
+  Target,
+  Timer,
+  Toilet,
+  User,
+  UtensilsCrossed,
+  X,
+  type LucideIcon,
+} from "lucide-react-native";
 
+import type { CrowdLevel } from "@seatmate/shared/door-crowd";
+import { isBar, isBarbershop, isBowlingAlley, type MarkerType } from "@seatmate/shared/floor-plan";
 import { SEATMATE_MARK_PATH, SEATMATE_MARK_VIEWBOX } from "@seatmate/shared/seatmate-mark";
 
-// Line icons in the website's style, and the SeatMate mark, drawn with
-// react-native-svg.
+// Every icon in the app comes from Lucide (lucide.dev), with the same
+// choices as the websites and the business app, plus the SeatMate mark.
 
-type IconProps = { size?: number; color?: string; filled?: boolean };
+export type IconProps = { size?: number; color?: string; filled?: boolean; strokeWidth?: number };
 
-const line = (color: string, width = 1.8) => ({
-  fill: "none",
-  stroke: color,
-  strokeWidth: width,
-  strokeLinecap: "round" as const,
-  strokeLinejoin: "round" as const,
-});
+// A Lucide icon with the app's defaults; `filled` fills the shape (a saved
+// heart, the active tab).
+function lucide(Icon: LucideIcon, defaultSize = 22) {
+  function AppIcon({ size = defaultSize, color = "#101811", filled = false, strokeWidth = 1.9 }: IconProps) {
+    return <Icon size={size} color={color} strokeWidth={strokeWidth} fill={filled ? color : "none"} />;
+  }
+  return AppIcon;
+}
 
 export function SeatMateMark({ size = 32, color = "#101811" }: IconProps) {
   return (
@@ -23,183 +68,93 @@ export function SeatMateMark({ size = 32, color = "#101811" }: IconProps) {
   );
 }
 
-export function CompassIcon({ size = 24, color = "#101811", filled }: IconProps) {
-  const l = line(color);
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Circle {...l} cx="12" cy="12" r="9" />
-      <Path {...l} d="m15.5 8.5-2 5-5 2 2-5 5-2Z" fill={filled ? color : "none"} />
-    </Svg>
-  );
+export const CompassIcon = lucide(Compass, 24);
+export const SearchIcon = lucide(Search, 24);
+export const HeartIcon = lucide(Heart, 24);
+export const UserIcon = lucide(User, 24);
+export const ShareIcon = lucide(Share, 20);
+export const DirectionsIcon = lucide(Navigation, 20);
+export const PinIcon = lucide(MapPin, 16);
+export const BackIcon = lucide(ChevronLeft, 22);
+export const CloseIcon = lucide(X, 18);
+export const BellIcon = lucide(Bell, 20);
+export const ClockIcon = lucide(Clock, 20);
+export const FloorPlanIcon = lucide(MapIcon, 20);
+export const StorefrontIcon = lucide(Store, 20);
+export const MailIcon = lucide(Mail, 20);
+export const DocIcon = lucide(FileText, 20);
+export const ShieldIcon = lucide(ShieldCheck, 20);
+export const PlusIcon = lucide(Plus, 20);
+export const SignOutIcon = lucide(LogOut, 20);
+export const TimerIcon = lucide(Timer, 14);
+export const ChairIcon = lucide(Armchair, 20);
+export const ScissorsIcon = lucide(Scissors, 20);
+
+// Floor-plan markers, matching the websites (packages/shared Icons.tsx).
+const MARKER_ICONS: Record<MarkerType, LucideIcon | null> = {
+  outlet: PlugZap,
+  window: AppWindow,
+  register: Banknote,
+  counter: RectangleHorizontal,
+  barCounter: Martini,
+  door: DoorOpen,
+  entrance: LogIn,
+  restroom: Toilet,
+  wall: null,
+  poolTable: CircleDot,
+  darts: Target,
+  bowlingLane: Disc3,
+};
+
+export function MarkerIcon({ type, size = 18, color = "#101811" }: { type: MarkerType; size?: number; color?: string }) {
+  const Icon = MARKER_ICONS[type];
+  return Icon ? <Icon size={size} color={color} strokeWidth={1.9} /> : null;
 }
 
-export function SearchIcon({ size = 24, color = "#101811" }: IconProps) {
-  const l = line(color, 2);
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Circle {...l} cx="11" cy="11" r="6.5" />
-      <Path {...l} d="m20 20-4.2-4.2" />
-    </Svg>
-  );
+const CROWD_ICONS: Record<CrowdLevel, LucideIcon> = { quiet: Smile, usual: Beer, busy: PartyPopper };
+
+export function CrowdIcon({ level, size = 28, color = "#fff" }: { level: CrowdLevel | null; size?: number; color?: string }) {
+  const Icon = level ? CROWD_ICONS[level] : DoorOpen;
+  return <Icon size={size} color={color} strokeWidth={1.8} />;
 }
 
-export function HeartIcon({ size = 24, color = "#101811", filled }: IconProps) {
-  const l = line(color);
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Path
-        {...l}
-        fill={filled ? color : "none"}
-        d="M12 20s-7.5-4.4-7.5-10.2A4.3 4.3 0 0 1 12 7.2a4.3 4.3 0 0 1 7.5 2.6C19.5 15.6 12 20 12 20Z"
-      />
-    </Svg>
-  );
+// The category a place's type falls under, for its icon.
+export function placeCategory(type: string): keyof typeof CATEGORY_ICONS {
+  const lower = type.toLowerCase();
+  if (isBarbershop(type)) return "barbershop";
+  if (isBowlingAlley(type)) return "bowling";
+  if (isBar(type)) return "bar";
+  if (lower.includes("cafe") || lower.includes("café") || lower.includes("coffee")) return "cafe";
+  return "restaurant";
 }
 
-export function UserIcon({ size = 24, color = "#101811", filled }: IconProps) {
-  const l = line(color);
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Circle {...l} cx="12" cy="8.5" r="3.8" fill={filled ? color : "none"} />
-      <Path {...l} d="M4.5 20a7.5 7.5 0 0 1 15 0" />
-    </Svg>
-  );
+export function CategoryIcon({ category, ...props }: IconProps & { category: keyof typeof CATEGORY_ICONS }) {
+  const Icon = CATEGORY_ICONS[category];
+  return <Icon {...props} />;
 }
 
-export function ShareIcon({ size = 20, color = "#101811" }: IconProps) {
-  const l = line(color);
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Path {...l} d="M12 15V3.5M7.5 8 12 3.5 16.5 8" />
-      <Path {...l} d="M5 12.5V19a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 19v-6.5" />
-    </Svg>
-  );
+// One icon per kind of place.
+export function PlaceTypeIcon({ type, ...props }: IconProps & { type: string }) {
+  return <CategoryIcon category={placeCategory(type)} {...props} />;
 }
 
-export function DirectionsIcon({ size = 20, color = "#101811" }: IconProps) {
-  const l = line(color);
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Path {...l} d="M3.5 11 20.5 3.5 13 20.5l-2-7.5-7.5-2Z" />
-    </Svg>
-  );
-}
+export const CATEGORY_ICONS = {
+  all: lucide(LayoutGrid),
+  available: lucide(Armchair),
+  cafe: lucide(Coffee),
+  restaurant: lucide(UtensilsCrossed),
+  bar: lucide(Martini),
+  barbershop: lucide(Scissors),
+  bowling: lucide(Disc3),
+};
 
-export function PinIcon({ size = 16, color = "#101811" }: IconProps) {
-  const l = line(color);
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Path {...l} d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z" />
-      <Circle {...l} cx="12" cy="10" r="2.3" />
-    </Svg>
-  );
-}
+export const BigIcons = {
+  chair: lucide(Armchair, 44),
+  noResults: lucide(Search, 44),
+  heart: lucide(Heart, 44),
+  sent: lucide(PartyPopper, 48),
+  target: lucide(Target, 20),
+  disc: lucide(Disc3, 20),
+};
 
-export function BackIcon({ size = 22, color = "#101811" }: IconProps) {
-  const l = line(color, 2.2);
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Path {...l} d="M15 5 8 12l7 7" />
-    </Svg>
-  );
-}
-
-export function CloseIcon({ size = 18, color = "#101811" }: IconProps) {
-  const l = line(color, 2.2);
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Path {...l} d="M6 6l12 12M18 6 6 18" />
-    </Svg>
-  );
-}
-
-export function BellIcon({ size = 20, color = "#101811", filled }: IconProps) {
-  const l = line(color);
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Path {...l} fill={filled ? color : "none"} d="M6 9a6 6 0 1 1 12 0c0 5 2 6.5 2 6.5H4S6 14 6 9" />
-      <Path {...l} d="M10 19a2 2 0 0 0 4 0" />
-    </Svg>
-  );
-}
-
-export function ClockIcon({ size = 20, color = "#101811" }: IconProps) {
-  const l = line(color);
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Circle {...l} cx="12" cy="12" r="8.5" />
-      <Path {...l} d="M12 7.5V12l3 2" />
-    </Svg>
-  );
-}
-
-export function FloorPlanIcon({ size = 20, color = "#101811" }: IconProps) {
-  const l = line(color);
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Rect {...l} x="3.5" y="3.5" width="17" height="17" rx="2.5" />
-      <Rect {...l} x="7" y="7" width="4" height="4" rx="1" />
-      <Circle {...l} cx="16" cy="9" r="2" />
-      <Rect {...l} x="7" y="14" width="10" height="3" rx="1" />
-    </Svg>
-  );
-}
-
-export function StorefrontIcon({ size = 20, color = "#101811" }: IconProps) {
-  const l = line(color);
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Path {...l} d="M4 9.5 5.5 4h13L20 9.5" />
-      <Path {...l} d="M4 9.5a2.7 2.7 0 0 0 5.3 0 2.7 2.7 0 0 0 5.4 0 2.7 2.7 0 0 0 5.3 0" />
-      <Path {...l} d="M5.5 12v8h13v-8M10 20v-4.5h4V20" />
-    </Svg>
-  );
-}
-
-export function MailIcon({ size = 20, color = "#101811" }: IconProps) {
-  const l = line(color);
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Rect {...l} x="3.5" y="5.5" width="17" height="13" rx="2" />
-      <Path {...l} d="m4 7 8 6 8-6" />
-    </Svg>
-  );
-}
-
-export function DocIcon({ size = 20, color = "#101811" }: IconProps) {
-  const l = line(color);
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Path {...l} d="M7 3.5h7l4 4V20a.5.5 0 0 1-.5.5h-10.5A.5.5 0 0 1 6.5 20V4a.5.5 0 0 1 .5-.5Z" />
-      <Path {...l} d="M14 3.5V8h4M9.5 12.5h5M9.5 16h5" />
-    </Svg>
-  );
-}
-
-export function ShieldIcon({ size = 20, color = "#101811" }: IconProps) {
-  const l = line(color);
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Path {...l} d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3Z" />
-      <Path {...l} d="m9 12 2 2 4-4" />
-    </Svg>
-  );
-}
-
-export function PlusIcon({ size = 20, color = "#101811" }: IconProps) {
-  const l = line(color, 2);
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Path {...l} d="M12 5v14M5 12h14" />
-    </Svg>
-  );
-}
-
-export function SignOutIcon({ size = 20, color = "#101811" }: IconProps) {
-  const l = line(color);
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Path {...l} d="M14 4.5H6.5a1 1 0 0 0-1 1v13a1 1 0 0 0 1 1H14M10 12h10M16.5 8.5 20 12l-3.5 3.5" />
-    </Svg>
-  );
-}
+export const MailCheckIcon = lucide(MailCheck, 48);

@@ -3,7 +3,7 @@ import { FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } fr
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { CloseIcon, SearchIcon } from "@/components/icons";
+import { BigIcons, CategoryIcon, CloseIcon, SearchIcon } from "@/components/icons";
 import { PlaceCard } from "@/components/place-card";
 import { Banner, Chip, colors, EmptyState, Loading } from "@/components/ui";
 import { useFeatures } from "@/lib/features";
@@ -98,7 +98,7 @@ export default function SearchScreen() {
           <Chip
             key={option.value}
             label={option.label}
-            icon={option.icon}
+            icon={<CategoryIcon category={option.value} size={16} color={category === option.value ? "#fff" : colors.ink} strokeWidth={2.1} />}
             active={category === option.value}
             onPress={() => setCategory(option.value)}
           />
@@ -166,7 +166,7 @@ export default function SearchScreen() {
           ListEmptyComponent={
             error ? null : (
               <EmptyState
-                emoji="🔍"
+                icon={<BigIcons.noResults color={colors.muted} />}
                 title="Nothing matches yet"
                 text={
                   features.suggestPlace

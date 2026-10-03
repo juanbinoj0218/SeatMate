@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { onSnapshot } from "firebase/firestore";
 
+import { CrowdIcon } from "@seatmate/shared/components/Icons";
+
 import {
   CROWD_LEVELS,
   crowdLevel,
@@ -41,12 +43,11 @@ export default function CrowdMeter({ businessId, now }: { businessId: string; no
   return (
     <div className={`mt-5 rounded-2xl px-4 py-3 ring-1 ${info?.className ?? "bg-white/5 text-white ring-white/10"}`}>
       <div className="flex items-center gap-3">
-        <span
-          className={`text-3xl ${level === "busy" ? "animate-bounce" : ""}`}
-          aria-hidden
-        >
-          {info?.icon ?? "🚪"}
-        </span>
+        <CrowdIcon
+          level={level}
+          className={`h-8 w-8 shrink-0 text-white ${level === "busy" ? "animate-bounce" : ""}`}
+          strokeWidth={1.8}
+        />
         <div>
           <p className="font-black text-white">
             {info?.label ?? "Crowd right now"}

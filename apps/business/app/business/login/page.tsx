@@ -1,5 +1,7 @@
 "use client";
 
+import { ArrowRight } from "lucide-react";
+
 import SeatMateMark from "@seatmate/shared/components/SeatMateMark";
 import { useState } from "react";
 import Link from "next/link";
@@ -594,7 +596,8 @@ export default function BusinessLoginPage() {
               href={consumerUrl("/")}
               className="hidden sm:inline hover:text-[#101811] transition"
             >
-              Customer site →
+              Customer site
+              <ArrowRight aria-hidden className="ml-1 inline h-4 w-4 align-[-3px]" />
             </a>
           </nav>
 
@@ -991,8 +994,9 @@ export default function BusinessLoginPage() {
                 {loading
                   ? "Please wait..."
                   : mode === "signin"
-                    ? "Sign In →"
-                    : "Create Account →"}
+                    ? "Sign In"
+                    : "Create Account"}
+                {!loading && <ArrowRight aria-hidden className="ml-1 inline h-4 w-4 align-[-3px]" />}
 
               </button>
 
