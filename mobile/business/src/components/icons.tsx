@@ -1,6 +1,6 @@
 import Svg, { Circle, Path, Rect } from "react-native-svg";
 
-import { SEATMATE_MARK_PATH, SEATMATE_MARK_VIEWBOX } from "@seatmate/shared/components/SeatMateMark";
+import { SEATMATE_MARK_PATH, SEATMATE_MARK_VIEWBOX } from "@seatmate/shared/seatmate-mark";
 
 // The web portal's line icons (apps/business/components/portal-icons.tsx)
 // and the SeatMate mark, drawn with react-native-svg.

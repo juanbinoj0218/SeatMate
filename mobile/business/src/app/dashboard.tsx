@@ -163,9 +163,9 @@ export default function DashboardScreen() {
       )}
 
       <View style={[styles.row, { marginTop: 12 }]}>
-        <StatTile label={`${kind.seatNoun} open`} value={seats.total > 0 ? seats.open : "–"} color={colors.green} />
         <StatTile label="Views today" value={live ? today.views : "–"} />
-        <StatTile label="Updates today" value={today.updates} />
+        <StatTile label="QR scans" value={live ? today.scans : "–"} />
+        <StatTile label="Updates" value={today.updates} />
       </View>
 
       {kind.bar && <BouncerCard businessId={business.id} />}
