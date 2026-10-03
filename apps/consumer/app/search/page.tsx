@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Armchair, ArrowLeft, ArrowRight } from "lucide-react";
 import SeatMateMark from "@seatmate/shared/components/SeatMateMark";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -156,9 +157,10 @@ function SearchPageContent() {
         <div className="mx-auto max-w-7xl px-5 py-10 sm:px-6 md:py-14">
           <Link
             href="/"
-            className="text-sm font-semibold text-gray-500 transition hover:text-black"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-500 transition hover:text-black"
           >
-            ← Home
+            <ArrowLeft aria-hidden className="h-4 w-4" />
+            Home
           </Link>
 
           <div className="mt-6 flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
@@ -215,7 +217,7 @@ function SearchPageContent() {
             <LoadingGrid />
           ) : displayedResults.length === 0 ? (
             <div className="rounded-[28px] border border-gray-200 bg-white p-12 text-center">
-              <div className="text-4xl">🪑</div>
+              <Armchair aria-hidden className="mx-auto h-10 w-10 text-[#101811]" strokeWidth={1.6} />
               <h2 className="mt-4 text-2xl font-black">No locations found</h2>
               <p className="mt-2 text-gray-500">
                 {results.length > 0
@@ -228,7 +230,8 @@ function SearchPageContent() {
                 onClick={() => router.push("/suggest")}
                 className="mt-6 inline-flex items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-black"
               >
-                Ask for it on SeatMate →
+                Ask for it on SeatMate
+                <ArrowRight aria-hidden className="h-4 w-4" />
               </button>
               )}
             </div>
@@ -340,7 +343,7 @@ function SearchPageContent() {
                             </p>
                           </div>
                           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#f3f5f1] font-black text-gray-700 transition group-hover:bg-green-600 group-hover:text-white">
-                            →
+                            <ArrowRight aria-hidden className="h-5 w-5" />
                           </span>
                         </div>
 

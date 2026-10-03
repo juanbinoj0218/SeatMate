@@ -1,5 +1,7 @@
 "use client";
 
+import { ArrowRight } from "lucide-react";
+
 import SeatMateMark from "@seatmate/shared/components/SeatMateMark";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -228,7 +230,8 @@ export default function BusinessDashboard() {
               }
               className="shrink-0 bg-[#101811] text-white px-5 py-3 rounded-xl font-semibold"
             >
-              Continue Setup →
+              Continue Setup
+              <ArrowRight aria-hidden className="ml-1 inline h-4 w-4 align-[-3px]" />
             </button>
           </div>
         )}
@@ -271,7 +274,8 @@ export default function BusinessDashboard() {
               }
               className="shrink-0 bg-[#101811] text-white px-5 py-3 rounded-xl font-semibold"
             >
-              Update & Resubmit →
+              Update & Resubmit
+              <ArrowRight aria-hidden className="ml-1 inline h-4 w-4 align-[-3px]" />
             </button>
           </div>
         )}

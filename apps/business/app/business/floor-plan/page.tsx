@@ -1,5 +1,9 @@
 "use client";
 
+import { MarkerIcon } from "@seatmate/shared/components/Icons";
+
+import { ArrowRight } from "lucide-react";
+
 import SeatMateMark from "@seatmate/shared/components/SeatMateMark";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -1005,7 +1009,7 @@ export default function FloorPlanPage() {
             onClick={() => router.push("/business")}
             className="border border-gray-200 px-4 py-2.5 rounded-xl font-semibold text-sm bg-white hover:bg-gray-50"
           >
-            Done → Dashboard
+            Done<ArrowRight aria-hidden className="mx-1 inline h-4 w-4 align-[-3px]" />Dashboard
           </button>
         </div>
       </header>
@@ -1184,7 +1188,7 @@ export default function FloorPlanPage() {
                       <option key={type} value={type}>
                         {type === "wall"
                           ? "Wall / Divider"
-                          : `${MARKERS[type].icon} ${MARKERS[type].label}`.trim()}
+                          : MARKERS[type].label}
                       </option>
                     ))}
                 </select>
@@ -1425,15 +1429,14 @@ export default function FloorPlanPage() {
                         transform: `rotate(${-marker.rotation}deg)`,
                       }}
                     >
-                      {info.icon && (
-                        <div
-                          style={{
-                            fontSize: `${Math.max(12, 17 * displayScale)}px`,
-                          }}
-                        >
-                          {info.icon}
-                        </div>
-                      )}
+                      <MarkerIcon
+                        type={marker.type}
+                        className="mx-auto"
+                        style={{
+                          width: Math.max(12, 17 * displayScale),
+                          height: Math.max(12, 17 * displayScale),
+                        }}
+                      />
                       {marker.scale >= 0.75 && (
                         <div className="mt-0.5">{marker.label}</div>
                       )}
@@ -1537,8 +1540,9 @@ export default function FloorPlanPage() {
               {submitting
                 ? "Submitting..."
                 : businessStatus === "rejected"
-                  ? "Resubmit for Approval →"
-                  : "Submit for Approval →"}
+                  ? "Resubmit for Approval"
+                  : "Submit for Approval"}
+              {!submitting && <ArrowRight aria-hidden className="ml-1 inline h-4 w-4 align-[-3px]" />}
             </button>
           </div>
         )}

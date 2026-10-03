@@ -1,5 +1,9 @@
 "use client";
 
+import { ArrowLeft, DoorClosed } from "lucide-react";
+
+import { CrowdIcon } from "@seatmate/shared/components/Icons";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -167,7 +171,8 @@ export default function DoorCounterPage() {
             href={backHref}
             className="rounded-xl border border-white/15 px-4 py-2.5 text-sm font-semibold hover:bg-white/10 transition"
           >
-            ← {access?.isOwner === false ? "Staff console" : "Dashboard"}
+            <ArrowLeft aria-hidden className="mr-1 inline h-4 w-4 align-[-3px]" />
+            {access?.isOwner === false ? "Staff console" : "Dashboard"}
           </Link>
         </div>
       </header>
@@ -175,7 +180,7 @@ export default function DoorCounterPage() {
       {!door?.enabled ? (
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="max-w-md text-center">
-            <p className="text-5xl" aria-hidden>🚪</p>
+            <DoorClosed aria-hidden className="mx-auto h-12 w-12" strokeWidth={1.6} />
             <h1 className="mt-5 text-3xl font-bold">Bouncer mode is off</h1>
             <p className="mt-3 text-white/60">
               {access?.isOwner
@@ -209,7 +214,7 @@ export default function DoorCounterPage() {
             <p className="mt-3 text-sm text-white/55">
               {level ? (
                 <>
-                  <span aria-hidden>{CROWD_LEVELS[level].icon}</span>{" "}
+                  <CrowdIcon level={level} className="mr-1 inline h-4 w-4 align-[-3px]" />
                   Customers see: {CROWD_LEVELS[level].label}
                   {usual !== null && ` (usually about ${Math.round(usual)})`}
                 </>

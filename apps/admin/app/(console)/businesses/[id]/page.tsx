@@ -1,5 +1,7 @@
 "use client";
 
+import { ArrowLeft, ArrowUpRight } from "lucide-react";
+
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { FormEvent, useCallback, useEffect, useState } from "react";
@@ -72,7 +74,7 @@ export default function BusinessDetailPage() {
   if (!data) {
     return (
       <div className="mx-auto max-w-6xl px-5 py-10 sm:px-8">
-        <Link href="/businesses" className="text-sm font-semibold text-gray-500 hover:text-[#101811]">← Businesses</Link>
+        <Link href="/businesses" className="text-sm font-semibold text-gray-500 hover:text-[#101811]"><ArrowLeft aria-hidden className="mr-1 inline h-4 w-4 align-[-3px]" />Businesses</Link>
         {error ? <p role="alert" className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">{error}</p> : <p className="mt-6 text-gray-400">Loading…</p>}
       </div>
     );
@@ -88,7 +90,7 @@ export default function BusinessDetailPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8 lg:py-10">
-      <Link href="/businesses" className="text-sm font-semibold text-gray-500 hover:text-[#101811]">← Businesses</Link>
+      <Link href="/businesses" className="text-sm font-semibold text-gray-500 hover:text-[#101811]"><ArrowLeft aria-hidden className="mr-1 inline h-4 w-4 align-[-3px]" />Businesses</Link>
 
       <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -106,7 +108,8 @@ export default function BusinessDetailPage() {
         </div>
         {data.isPublic && (
           <a href={consumerUrl(`/place/${data.slug}`)} target="_blank" rel="noreferrer" className="self-start rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold hover:bg-gray-50 sm:self-auto">
-            View customer page ↗
+            View customer page
+            <ArrowUpRight aria-hidden className="ml-0.5 inline h-4 w-4 align-[-3px]" />
           </a>
         )}
       </div>

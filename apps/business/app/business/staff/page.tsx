@@ -1,5 +1,7 @@
 "use client";
 
+import { ArrowLeft } from "lucide-react";
+
 import SeatMateMark from "@seatmate/shared/components/SeatMateMark";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -245,7 +247,8 @@ export default function StaffManagementPage() {
             }
             className="border border-gray-200 bg-white hover:bg-gray-50 px-4 py-2.5 rounded-xl text-sm font-semibold"
           >
-            ← Dashboard
+            <ArrowLeft aria-hidden className="mr-1 inline h-4 w-4 align-[-3px]" />
+            Dashboard
           </button>
 
         </div>

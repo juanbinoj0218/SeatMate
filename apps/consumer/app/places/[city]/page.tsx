@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { notFound } from "next/navigation";
 
 import LiveSeats from "@/components/live-seats";
@@ -41,8 +42,9 @@ export default async function CityPage({ params }: PageProps<"/places/[city]">) 
       <SiteHeader />
 
       <section className="mx-auto max-w-6xl px-5 pb-20 pt-12 sm:px-8 md:pt-16">
-        <Link href="/places" className="text-sm font-medium text-gray-500 hover:text-ink">
-          ← All cities
+        <Link href="/places" className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-ink">
+          <ArrowLeft aria-hidden className="h-4 w-4" />
+          All cities
         </Link>
 
         <h1 className="font-display mt-4 text-5xl sm:text-6xl">

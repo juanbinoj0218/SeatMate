@@ -1,3 +1,4 @@
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
 // Goes to a fixed parent page rather than the browser's previous page, so
@@ -15,9 +16,7 @@ export default function BackButton({
       href={href}
       className="inline-flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-[#101811] transition"
     >
-      <span className="text-lg" aria-hidden>
-        ←
-      </span>
+      <ArrowLeft aria-hidden className="h-4 w-4" />
       {label}
     </Link>
   );

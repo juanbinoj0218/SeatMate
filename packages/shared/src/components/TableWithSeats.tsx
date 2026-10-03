@@ -1,5 +1,7 @@
 "use client";
 
+import { Timer } from "lucide-react";
+
 // A table drawn from above with its seats tucked right up against its
 // edge: in a ring around round tables and in rows along the long sides of
 // rectangular ones. A bar stool or barber chair is a "table" with a single
@@ -51,7 +53,16 @@ function ChairTimer({ seat, fontSize }: { seat: TableSeat; fontSize: number }) {
       style={{ fontSize }}
       aria-live="off"
     >
-      {!occupied ? "Open" : since === null ? "In chair" : `⏱ ${elapsed(since, now)}`}
+      {!occupied ? (
+        "Open"
+      ) : since === null ? (
+        "In chair"
+      ) : (
+        <span className="inline-flex items-center gap-1">
+          <Timer aria-hidden style={{ width: fontSize, height: fontSize }} />
+          {elapsed(since, now)}
+        </span>
+      )}
     </span>
   );
 }

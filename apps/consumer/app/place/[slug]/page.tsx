@@ -1,6 +1,8 @@
 "use client";
 
 import SeatMateMark from "@seatmate/shared/components/SeatMateMark";
+import { MarkerIcon } from "@seatmate/shared/components/Icons";
+import { Armchair, ArrowLeft, Navigation } from "lucide-react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -404,9 +406,7 @@ const [business, setBusiness] =
       <main className="min-h-screen bg-[#f7f8f5] flex items-center justify-center p-6">
 
         <div className="text-center">
-          <div className="text-5xl">
-            🪑
-          </div>
+          <Armchair aria-hidden className="mx-auto h-12 w-12 text-[#101811]" strokeWidth={1.6} />
 
           <h1 className="text-3xl font-bold text-[#101811] mt-5">
             Location not found
@@ -588,9 +588,10 @@ return (
               <button
                 type="button"
                 onClick={() => router.push("/search")}
-                className="border border-gray-200 bg-white hover:bg-gray-50 px-4 py-2.5 rounded-xl text-sm font-semibold transition"
+                className="inline-flex items-center gap-1.5 border border-gray-200 bg-white hover:bg-gray-50 px-4 py-2.5 rounded-xl text-sm font-semibold transition"
               >
-                ← Back to Search
+                <ArrowLeft aria-hidden className="h-4 w-4" />
+                Back to Search
               </button>
             )}
 
@@ -601,9 +602,10 @@ return (
                 onClick={() =>
                   window.location.assign(businessUrl("/business"))
                 }
-                className="border border-gray-200 bg-white hover:bg-gray-50 px-4 py-2.5 rounded-xl text-sm font-semibold transition"
+                className="inline-flex items-center gap-1.5 border border-gray-200 bg-white hover:bg-gray-50 px-4 py-2.5 rounded-xl text-sm font-semibold transition"
               >
-                ← Back to Business
+                <ArrowLeft aria-hidden className="h-4 w-4" />
+                Back to Business
               </button>
             )}
 
@@ -802,9 +804,10 @@ return (
             <button
               type="button"
               onClick={openDirections}
-              className="mt-3 w-full rounded-2xl bg-green-500 px-5 py-3.5 font-black text-[#101811] transition hover:bg-green-400"
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-green-500 px-5 py-3.5 font-black text-[#101811] transition hover:bg-green-400"
             >
-              Get directions ↗
+              <Navigation aria-hidden className="h-[18px] w-[18px]" />
+              Get directions
             </button>
           </div>
         </section>
@@ -1008,19 +1011,14 @@ return (
                         transform: `rotate(${-marker.rotation}deg)`,
                       }}
                     >
-                      {info.icon && (
-                        <div
-                          style={{
-                            fontSize: `${Math.max(
-                              12,
-                              17 *
-                                displayScale
-                            )}px`,
-                          }}
-                        >
-                          {info.icon}
-                        </div>
-                      )}
+                      <MarkerIcon
+                        type={marker.type}
+                        className="mx-auto"
+                        style={{
+                          width: Math.max(12, 17 * displayScale),
+                          height: Math.max(12, 17 * displayScale),
+                        }}
+                      />
 
                       {marker.scale >=
                         0.75 && (
