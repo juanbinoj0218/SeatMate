@@ -16,7 +16,10 @@
     "./service-account": "./src/service-account.ts",
     "./features": "./src/features.ts",
     "./two-factor": "./src/two-factor.ts",
-    "./door-count": "./src/door-count.ts"
+    "./door-count": "./src/door-count.ts",
+    "./table-geometry": "./src/table-geometry.ts",
+    "./door-crowd": "./src/door-crowd.ts",
+    "./seatmate-mark": "./src/seatmate-mark.ts"
   },
   "peerDependencies": {
     "firebase": "^12.19.0",
