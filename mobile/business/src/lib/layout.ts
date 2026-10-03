@@ -1,13 +1,21 @@
 import { useCallback, useState } from "react";
-import { useWindowDimensions, type LayoutChangeEvent } from "react-native";
+import { Platform, useWindowDimensions, type LayoutChangeEvent } from "react-native";
 
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from "@/lib/floor";
 
-// iPads (and big phones on their side) get the side-by-side layout: the
-// floor plan fills the screen with the controls in a panel next to it.
+// iPads (and Android tablets) get the side-by-side layout: the floor plan
+// fills the screen with the controls in a panel next to it. Phones keep the
+// stacked layout even on their side. The web preview has no device to ask,
+// so a wide browser window stands in for an iPad there.
+function isTablet(width: number, height: number) {
+  if (Platform.OS === "ios") return Platform.isPad;
+  if (Platform.OS === "android") return Math.min(width, height) >= 600;
+  return true;
+}
+
 export function useWide() {
-  const { width } = useWindowDimensions();
-  return width >= 900;
+  const { width, height } = useWindowDimensions();
+  return isTablet(width, height) && width >= 900;
 }
 
 // The size a view was laid out at, for fitting the floor plan into it.
