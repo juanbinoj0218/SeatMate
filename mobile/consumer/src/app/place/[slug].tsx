@@ -39,7 +39,7 @@ import { useNow } from "@/lib/use-now";
 export default function PlaceScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
+  const { width, height: windowHeight } = useWindowDimensions();
   const now = useNow(15000);
   const features = useFeatures();
   const { place, loading, error } = usePlace(slug);
@@ -130,7 +130,9 @@ export default function PlaceScreen() {
   const chairs = isBarbershop(place.type) ? tables.filter((table) => table.shape === "barberChair") : [];
   const contentWidth = Math.min(width, 760) - space.gutter * 2;
   const pageUrl = consumerUrl(`/place/${place.slug}`);
-  const heroHeight = 360 + insets.top;
+  const heroHeight = 250 + insets.top;
+  // The map may take most of the screen, leaving room for the header and seat count.
+  const floorHeight = Math.max(240, Math.round(windowHeight * 0.6));
 
   const share = async () => {
     tap();
@@ -212,6 +214,51 @@ export default function PlaceScreen() {
             </View>
           )}
 
+          <View style={[styles.sectionHead, { marginTop: 24 }]}>
+            <FloorPlanIcon size={22} />
+            <Text style={styles.sectionTitle}>Find your seat</Text>
+          </View>
+          {floorLoaded && summary.totalSeats > 0 ? (
+            <View style={styles.floorSummary}>
+              <View style={[styles.legendDot, { backgroundColor: TONE_COLORS[tone].dot }]} />
+              <Text style={styles.floorSummaryText}>
+                <Text style={styles.floorSummaryStrong}>
+                  {summary.availableSeats} of {summary.totalSeats} seats open
+                </Text>
+                {" · "}
+                {freshnessLabel(summary.latestUpdateMs, now)}
+              </Text>
+            </View>
+          ) : (
+            <Text style={styles.sectionText}>The live floor plan, straight from the staff. Green seats are open.</Text>
+          )}
+          <View style={{ marginTop: 16 }}>
+            {floorLoaded ? (
+              <FloorView tables={tables} markers={markers} width={contentWidth} maxHeight={floorHeight} />
+            ) : (
+              <View style={{ height: 240 }}>
+                <Loading label="Loading the floor plan…" />
+              </View>
+            )}
+          </View>
+
+          <View style={styles.actions}>
+            <Button
+              title="Get directions"
+              variant="green"
+              icon={<DirectionsIcon size={20} color={colors.ink} />}
+              onPress={directions}
+              style={{ flex: 1 }}
+            />
+            <ActionButton
+              label={saved ? "Remove from saved" : "Save"}
+              active={saved}
+              icon={<HeartIcon size={22} color={saved ? colors.red : colors.ink} filled={saved} />}
+              onPress={() => placeSummary && toggleFavorite(placeSummary)}
+            />
+            {features.shareButton && <ActionButton label="Share" icon={<ShareIcon size={22} />} onPress={share} />}
+          </View>
+
           <View style={styles.liveCard}>
             {!floorLoaded ? (
               <View style={{ height: 200 }}>
@@ -269,23 +316,6 @@ export default function PlaceScreen() {
             )}
           </View>
 
-          <View style={styles.actions}>
-            <Button
-              title="Get directions"
-              variant="green"
-              icon={<DirectionsIcon size={20} color={colors.ink} />}
-              onPress={directions}
-              style={{ flex: 1 }}
-            />
-            <ActionButton
-              label={saved ? "Remove from saved" : "Save"}
-              active={saved}
-              icon={<HeartIcon size={22} color={saved ? colors.red : colors.ink} filled={saved} />}
-              onPress={() => placeSummary && toggleFavorite(placeSummary)}
-            />
-            {features.shareButton && <ActionButton label="Share" icon={<ShareIcon size={22} />} onPress={share} />}
-          </View>
-
           {chairs.length > 0 && (
             <Section title="Chairs" icon={<ScissorsIcon />}>
               {chairs.map((chair) => {
@@ -319,21 +349,6 @@ export default function PlaceScreen() {
               ))}
             </Section>
           )}
-
-          <View style={styles.sectionHead}>
-            <FloorPlanIcon size={22} />
-            <Text style={styles.sectionTitle}>Find your seat</Text>
-          </View>
-          <Text style={styles.sectionText}>The live floor plan, straight from the staff. Green seats are open.</Text>
-          <View style={{ marginTop: 16 }}>
-            {floorLoaded ? (
-              <FloorView tables={tables} markers={markers} width={contentWidth} />
-            ) : (
-              <View style={{ height: 200 }}>
-                <Loading />
-              </View>
-            )}
-          </View>
 
           {place.hours && (
             <>
@@ -477,7 +492,7 @@ const styles = StyleSheet.create({
   liveBadgeText: { fontSize: 12, fontWeight: "900", color: "#15803d", letterSpacing: 1 },
   typeBadge: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "rgba(255,255,255,0.95)", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
   typeBadgeText: { fontSize: 13, fontWeight: "800", color: colors.ink },
-  name: { color: "#fff", fontSize: 36, lineHeight: 41, fontWeight: "900", letterSpacing: -1, marginTop: 16 },
+  name: { color: "#fff", fontSize: 32, lineHeight: 37, fontWeight: "900", letterSpacing: -1, marginTop: 12 },
   addressRow: { flexDirection: "row", alignItems: "center", gap: 7, marginTop: 10 },
   address: { color: "rgba(255,255,255,0.85)", fontSize: 16, flex: 1 },
   body: { paddingHorizontal: space.gutter, width: "100%", maxWidth: 760, alignSelf: "center" },
@@ -486,7 +501,7 @@ const styles = StyleSheet.create({
   openDot: { width: 9, height: 9, borderRadius: 5 },
   openText: { fontSize: 15, fontWeight: "900" },
   todayText: { fontSize: 16, fontWeight: "700", color: colors.muted },
-  liveCard: { backgroundColor: colors.ink, borderRadius: 30, padding: 26, marginTop: 20 },
+  liveCard: { backgroundColor: colors.ink, borderRadius: 30, padding: 26, marginTop: space.section },
   liveTop: { flexDirection: "row", alignItems: "flex-start", gap: 16 },
   liveEyebrow: { color: "#4ade80", fontSize: 13, fontWeight: "900", letterSpacing: 1.6, textTransform: "uppercase" },
   bigRow: { flexDirection: "row", alignItems: "flex-end", gap: 10, marginTop: 12 },
@@ -510,6 +525,9 @@ const styles = StyleSheet.create({
   freshText: { fontSize: 15, fontWeight: "700" },
   freshNote: { color: "rgba(254,243,199,0.75)", fontSize: 14, lineHeight: 20, marginTop: 6 },
   actions: { flexDirection: "row", gap: 12, marginTop: 20 },
+  floorSummary: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 10 },
+  floorSummaryText: { flex: 1, fontSize: 16, lineHeight: 22, color: colors.muted },
+  floorSummaryStrong: { color: colors.ink, fontWeight: "800" },
   action: {
     width: 56,
     height: 56,
