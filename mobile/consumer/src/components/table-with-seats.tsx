@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
   },
   selected: { borderWidth: 3, borderColor: "#93c5fd" },
   name: { color: "#fff", fontWeight: "800", textAlign: "center" },
-  count: { color: "rgba(255,255,255,0.55)", fontWeight: "700", marginTop: 1 },
+  count: { color: "rgba(255,255,255,0.72)", fontWeight: "700", marginTop: 1 },
   seat: {
     position: "absolute",
     borderWidth: 2,

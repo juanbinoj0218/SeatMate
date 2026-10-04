@@ -4,6 +4,7 @@ import { PanResponder, Pressable, ScrollView, StyleSheet, Text, View } from "rea
 import { clamp, isGameMarker, MARKERS, type FloorMarker, type MarkerType } from "@seatmate/shared/floor-plan";
 import { tableSize } from "@seatmate/shared/table-geometry";
 
+import { MarkerIcon } from "@/components/icons";
 import TableWithSeats from "@/components/table-with-seats";
 import { colors } from "@/components/ui";
 import { CANVAS_HEIGHT, CANVAS_WIDTH, type Table } from "@/lib/floor";
@@ -140,9 +141,7 @@ export default function FloorCanvas({
                   >
                     {marker.type !== "wall" && (
                       <View style={{ transform: [{ rotate: `${-marker.rotation}deg` }], alignItems: "center" }}>
-                        {info.icon ? (
-                          <Text style={{ fontSize: Math.max(12, 17 * marker.scale), color: look.text }}>{info.icon}</Text>
-                        ) : null}
+                        <MarkerIcon type={marker.type} size={Math.max(14, 19 * marker.scale)} color={look.text} />
                         {marker.scale >= 0.75 && (
                           <Text
                             numberOfLines={1}

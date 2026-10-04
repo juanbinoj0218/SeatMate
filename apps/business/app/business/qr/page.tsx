@@ -7,7 +7,6 @@ import SeatMateMark from "@seatmate/shared/components/SeatMateMark";
 import { consumerUrl } from "@seatmate/shared/site-urls";
 
 import PortalHeader from "@/components/portal-header";
-import { QrIcon } from "@/components/portal-icons";
 import { useOwnedBusiness } from "@/lib/use-business";
 
 const INK = "#101811";
@@ -49,7 +48,7 @@ export default function QrCodePage() {
     return (
       <main className="min-h-screen bg-[#f7f8f5]">
         <PortalHeader section="QR code" />
-        <p className="max-w-4xl mx-auto px-6 py-12 text-gray-500">{error || "Loading…"}</p>
+        <p className="max-w-4xl mx-auto px-5 sm:px-8 py-12 text-gray-500">{error || "Loading…"}</p>
       </main>
     );
   }
@@ -58,13 +57,9 @@ export default function QrCodePage() {
     <main className="min-h-screen bg-[#f7f8f5] print:bg-white">
       <PortalHeader section="QR code" />
 
-      <div className="max-w-4xl mx-auto px-6 py-12 print:p-0">
+      <div className="max-w-4xl mx-auto px-5 sm:px-8 py-12 print:p-0">
         <div className="print:hidden">
-          <p className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600">
-            <QrIcon className="w-4 h-4" />
-            QR code
-          </p>
-          <h1 className="text-4xl font-bold tracking-tight mt-2">Put SeatMate on your door</h1>
+          <h1 className="text-4xl font-bold tracking-tight">Put SeatMate on your door</h1>
           <p className="text-gray-500 mt-2 max-w-xl">
             Print this sign for your window, counter or tables. Customers scan it to see open seats
             and save your place for next time.

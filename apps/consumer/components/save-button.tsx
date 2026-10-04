@@ -26,10 +26,10 @@ export default function SaveButton({
         onClick={() => toggleFavorite(place)}
         aria-pressed={saved}
         aria-label={label}
-        className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold backdrop-blur transition ${
+        className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${
           saved
             ? "bg-white text-ink"
-            : "bg-white/15 text-white ring-1 ring-white/40 hover:bg-white/25"
+            : "bg-white text-ink hover:bg-gray-100"
         } ${className}`}
       >
         <HeartIcon
@@ -48,7 +48,7 @@ export default function SaveButton({
       aria-pressed={saved}
       aria-label={label}
       title={saved ? "Saved" : "Save"}
-      className={`flex h-9 w-9 items-center justify-center rounded-full bg-white/90 shadow-sm backdrop-blur transition hover:scale-105 hover:bg-white ${className}`}
+      className={`flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-sm transition hover:bg-gray-100 ${className}`}
     >
       <HeartIcon
         filled={saved}

@@ -10,7 +10,6 @@ import {
   isBarbershop,
   isBowlingAlley,
   isGameMarker,
-  MARKERS,
   type FloorMarker,
 } from "@seatmate/shared/floor-plan";
 
@@ -22,6 +21,7 @@ import {
   ClockIcon,
   DoorIcon,
   FloorPlanIcon,
+  MarkerIcon,
   QrIcon,
   ShieldIcon,
   StaffIcon,
@@ -185,7 +185,7 @@ export default function DashboardScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={`${chair.name}: ${open ? "open" : "taken"}`}
                 onPress={() => void run(() => toggleSeat(business.id, chair.id, seat.id, tables), "Could not update that chair.")}
-                style={({ pressed }) => [styles.quick, pressed && { opacity: 0.7 }]}
+                style={({ pressed }) => [styles.quick, pressed && styles.pressed]}
               >
                 <Text style={styles.quickName}>{chair.name}</Text>
                 <ChairTimer seat={seat} fontSize={13} />
@@ -213,12 +213,13 @@ export default function DashboardScreen() {
                   style={({ pressed }) => [
                     styles.quick,
                     { backgroundColor: open ? colors.greenSoft : colors.redSoft, borderColor: open ? "#a7f3d0" : "#fecaca" },
-                    pressed && { opacity: 0.7 },
+                    pressed && styles.pressed,
                   ]}
                 >
-                  <Text style={styles.quickName}>
-                    {MARKERS[marker.type].icon} {marker.label}
-                  </Text>
+                  <View style={styles.quickLabel}>
+                    <MarkerIcon type={marker.type} size={16} color={colors.ink} />
+                    <Text style={styles.quickName}>{marker.label}</Text>
+                  </View>
                   <Text style={{ fontWeight: "800", color: open ? colors.greenText : colors.redText }}>
                     {open ? "Open" : "In use"}
                   </Text>
@@ -452,4 +453,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   quickName: { fontWeight: "800", color: colors.ink, fontSize: 15 },
+  quickLabel: { flexDirection: "row", alignItems: "center", gap: 6 },
+  pressed: { transform: [{ scale: 0.98 }] },
 });

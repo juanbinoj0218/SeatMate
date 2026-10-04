@@ -55,7 +55,7 @@ const SECTIONS: { title: string; items: { q: string; a: React.ReactNode }[] }[] 
       },
       {
         q: "What do I get out of it?",
-        a: "Customers who would otherwise skip a busy-looking place can see there's room. You also get analytics — page views, saves, QR scans and your busiest hours — and a printable QR sign for your door.",
+        a: "Customers who would otherwise skip a busy-looking place can see there's room. You also get analytics (page views, saves, QR scans and your busiest hours) and a printable QR sign for your door.",
       },
       {
         q: "Which kinds of places can join?",
@@ -71,8 +71,7 @@ export default function FaqPage() {
       <SiteHeader />
 
       <section className="mx-auto max-w-3xl px-5 pb-24 pt-12 sm:px-8 md:pt-16">
-        <p className="text-sm font-medium text-moss">FAQ</p>
-        <h1 className="font-display mt-3 text-5xl sm:text-6xl">Questions, answered</h1>
+        <h1 className="font-display text-5xl sm:text-6xl">Questions, answered</h1>
 
         {SECTIONS.map((section) => (
           <div key={section.title} className="mt-12">

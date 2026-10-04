@@ -63,7 +63,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
           <SeatMateMark className="h-7 w-7" />
           <div>
             <p className="font-bold leading-tight">SeatMate</p>
-            <p className="text-xs text-white/50">Admin</p>
+            <p className="text-xs text-white/70">Admin</p>
           </div>
         </div>
 

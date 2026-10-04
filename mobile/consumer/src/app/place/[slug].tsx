@@ -456,7 +456,7 @@ function ActionButton({
       accessibilityRole="button"
       accessibilityLabel={label}
       onPress={onPress}
-      style={({ pressed }) => [styles.action, active && { borderColor: "#fecaca", backgroundColor: colors.redSoft }, pressed && { opacity: 0.8 }]}
+      style={({ pressed }) => [styles.action, active && { borderColor: "#fecaca", backgroundColor: colors.redSoft }, pressed && { transform: [{ scale: 0.96 }] }]}
     >
       {icon}
     </Pressable>
@@ -506,10 +506,10 @@ const styles = StyleSheet.create({
   liveEyebrow: { color: "#4ade80", fontSize: 13, fontWeight: "900", letterSpacing: 1.6, textTransform: "uppercase" },
   bigRow: { flexDirection: "row", alignItems: "flex-end", gap: 10, marginTop: 12 },
   big: { color: "#fff", fontSize: 72, lineHeight: 74, fontWeight: "900", letterSpacing: -2.5 },
-  bigOf: { color: "rgba(255,255,255,0.55)", fontSize: 17, fontWeight: "700", paddingBottom: 12 },
+  bigOf: { color: "rgba(255,255,255,0.72)", fontSize: 17, fontWeight: "700", paddingBottom: 12 },
   ring: { width: 96, height: 96, borderRadius: 48, borderWidth: 7, alignItems: "center", justifyContent: "center" },
   ringValue: { color: "#fff", fontSize: 24, fontWeight: "900" },
-  ringLabel: { color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: "900", letterSpacing: 1 },
+  ringLabel: { color: "rgba(255,255,255,0.72)", fontSize: 11, fontWeight: "900", letterSpacing: 1 },
   availability: { color: "#fff", fontSize: 22, lineHeight: 28, fontWeight: "900", marginTop: 20 },
   seatBarWrap: { marginTop: 20 },
   seatBar: { height: 10, borderRadius: 5, backgroundColor: "rgba(255,255,255,0.12)", overflow: "hidden" },

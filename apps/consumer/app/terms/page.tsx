@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <ProsePage eyebrow="Legal" title="Terms of Service" updated="September 28, 2026">
+    <ProsePage title="Terms of Service" updated="September 28, 2026">
       <p>
         These terms cover your use of SeatMate: seatmate360.com, the business portal at
         seatmate360.net and the SeatMate app. By using SeatMate, you agree to them.

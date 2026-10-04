@@ -1,5 +1,24 @@
+import {
+  AppWindow,
+  Banknote,
+  Beer,
+  CircleDot,
+  Disc3,
+  DoorOpen,
+  LogIn,
+  Martini,
+  PartyPopper,
+  PlugZap,
+  RectangleHorizontal,
+  Smile,
+  Target,
+  Toilet,
+  type LucideIcon,
+} from "lucide-react-native";
 import Svg, { Circle, Path, Rect } from "react-native-svg";
 
+import type { CrowdLevel } from "@seatmate/shared/door-crowd";
+import type { MarkerType } from "@seatmate/shared/floor-plan";
 import { SEATMATE_MARK_PATH, SEATMATE_MARK_VIEWBOX } from "@seatmate/shared/seatmate-mark";
 
 // The web portal's line icons (apps/business/components/portal-icons.tsx)
@@ -159,4 +178,34 @@ export function DoorIcon({ size = 22, color = "#101811" }: IconProps) {
       <Circle {...l} cx="14" cy="12.5" r="0.6" />
     </Svg>
   );
+}
+
+// Floor-plan markers, from Lucide (lucide.dev), matching the websites and the
+// consumer app (mobile/consumer/src/components/icons.tsx).
+const MARKER_ICONS: Record<MarkerType, LucideIcon | null> = {
+  outlet: PlugZap,
+  window: AppWindow,
+  register: Banknote,
+  counter: RectangleHorizontal,
+  barCounter: Martini,
+  door: DoorOpen,
+  entrance: LogIn,
+  restroom: Toilet,
+  wall: null,
+  poolTable: CircleDot,
+  darts: Target,
+  bowlingLane: Disc3,
+};
+
+export function MarkerIcon({ type, size = 18, color = "#101811" }: { type: MarkerType; size?: number; color?: string }) {
+  const Icon = MARKER_ICONS[type];
+  return Icon ? <Icon size={size} color={color} strokeWidth={1.9} /> : null;
+}
+
+// How busy the door counter says it is, as customers see it.
+const CROWD_ICONS: Record<CrowdLevel, LucideIcon> = { quiet: Smile, usual: Beer, busy: PartyPopper };
+
+export function CrowdIcon({ level, size = 28, color = "#fff" }: { level: CrowdLevel | null; size?: number; color?: string }) {
+  const Icon = level ? CROWD_ICONS[level] : DoorOpen;
+  return <Icon size={size} color={color} strokeWidth={1.8} />;
 }

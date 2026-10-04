@@ -51,7 +51,7 @@ export default function ExploreScreen() {
             accessibilityRole="button"
             accessibilityLabel={user ? "Your account" : "Sign in"}
             onPress={() => (user ? router.navigate("/account") : router.push("/login"))}
-            style={({ pressed }) => [styles.avatar, pressed && { opacity: 0.8 }]}
+            style={({ pressed }) => [styles.avatar, pressed && { transform: [{ scale: 0.95 }] }]}
           >
             <Text style={styles.avatarText}>{user ? (name[0] || user.email?.[0] || "?").toUpperCase() : "Sign in"}</Text>
           </Pressable>
@@ -70,7 +70,7 @@ export default function ExploreScreen() {
             tap();
             router.navigate({ pathname: "/search", params: { focus: String(Date.now()) } });
           }}
-          style={({ pressed }) => [styles.search, pressed && { opacity: 0.9 }]}
+          style={({ pressed }) => [styles.search, pressed && { borderColor: colors.faint }]}
         >
           <SearchIcon size={22} color={colors.muted} />
           <Text style={styles.searchText}>Cafés, bars, barbershops…</Text>

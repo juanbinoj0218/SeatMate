@@ -56,11 +56,9 @@ export default function AboutPage() {
 
       {/* OPENING */}
       <section className="mx-auto max-w-6xl px-5 pb-16 pt-16 sm:px-8 md:pt-24 lg:pb-24">
-        <p className="text-sm font-medium text-moss">About SeatMate</p>
-
-        <h1 className="font-display mt-6 max-w-5xl text-balance text-[2.75rem] leading-[1.02] sm:text-6xl lg:text-[5.25rem]">
+        <h1 className="font-display max-w-5xl text-balance text-[2.75rem] leading-[1.02] sm:text-6xl lg:text-[5.25rem]">
           We&apos;re building for the moment you walk in and
-          there&apos;s <em className="not-italic text-moss">nowhere to sit.</em>
+          there&apos;s nowhere to sit.
         </h1>
 
         <div className="mt-14 grid gap-6 border-t border-line pt-8 md:grid-cols-[1fr_2fr] md:gap-16">
@@ -119,9 +117,7 @@ export default function AboutPage() {
       {/* HOW IT WORKS */}
       <section className="mx-auto max-w-6xl px-5 py-20 sm:px-8 lg:py-28">
         <div className="max-w-2xl">
-          <p className="text-sm font-medium text-moss">How it works</p>
-
-          <h2 className="font-display mt-3 text-4xl leading-[1.05] sm:text-5xl">
+          <h2 className="font-display text-4xl leading-[1.05] sm:text-5xl">
             One floor plan. Two sides of the experience.
           </h2>
 

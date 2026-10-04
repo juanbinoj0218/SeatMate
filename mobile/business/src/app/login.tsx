@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useRef, useState, type ComponentType } from "react";
+import { useCallback, useRef, useState, type ComponentType } from "react";
 import {
-  Animated,
   KeyboardAvoidingView,
   Linking,
   Platform,
@@ -163,7 +162,6 @@ export default function LoginScreen() {
 
   const hero = (
     <View style={wide ? { flex: 1, paddingRight: 48 } : undefined}>
-      <LiveEyebrow />
       <Text style={[styles.hero, wide && { fontSize: 56, lineHeight: 58 }]}>Manage your space in real time.</Text>
       <Text style={styles.lead}>
         Create your business, build your floor plan, manage staff and keep customers updated on live seating
@@ -317,7 +315,7 @@ export default function LoginScreen() {
           {message ? <Banner tone="success">{message}</Banner> : null}
 
           <Button
-            title={mode === "signin" ? "Sign In →" : "Create Account →"}
+            title={mode === "signin" ? "Sign In" : "Create Account"}
             onPress={mode === "signin" ? signIn : createAccount}
             busy={busy}
             style={{ marginTop: 18 }}
@@ -368,7 +366,7 @@ export default function LoginScreen() {
           </Pressable>
           {wide && (
             <Pressable accessibilityRole="link" onPress={() => void Linking.openURL(consumerUrl("/"))}>
-              <Text style={styles.nav}>Customer site →</Text>
+              <Text style={styles.nav}>Customer site</Text>
             </Pressable>
           )}
         </View>
@@ -384,37 +382,6 @@ export default function LoginScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
-  );
-}
-
-// "● SeatMate for Business" with the portal's pulsing live dot.
-function LiveEyebrow() {
-  const [pulse] = useState(() => new Animated.Value(0));
-
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.timing(pulse, { toValue: 1, duration: 1400, useNativeDriver: Platform.OS !== "web" })
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [pulse]);
-
-  return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-      <View style={{ width: 8, height: 8 }}>
-        <Animated.View
-          style={[
-            styles.dot,
-            {
-              opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.6, 0] }),
-              transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 2.4] }) }],
-            },
-          ]}
-        />
-        <View style={styles.dot} />
-      </View>
-      <Text style={{ color: "#047857", fontWeight: "700", fontSize: 14 }}>SeatMate for Business</Text>
-    </View>
   );
 }
 
@@ -455,7 +422,7 @@ const styles = StyleSheet.create({
   },
   nav: { fontWeight: "700", color: colors.muted, fontSize: 14 },
   content: { padding: 22, paddingTop: 30, paddingBottom: 48 },
-  hero: { fontSize: 42, lineHeight: 45, fontWeight: "800", color: colors.ink, letterSpacing: -1.2, marginTop: 14 },
+  hero: { fontSize: 42, lineHeight: 45, fontWeight: "800", color: colors.ink, letterSpacing: -1.2 },
   lead: { fontSize: 17, lineHeight: 27, color: colors.muted, marginTop: 16 },
   feature: { flexDirection: "row", alignItems: "center", gap: 14 },
   featureTile: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
@@ -479,5 +446,4 @@ const styles = StyleSheet.create({
   or: { fontSize: 12, fontWeight: "700", color: colors.faint, letterSpacing: 1 },
   small: { marginTop: 16, textAlign: "center", fontSize: 13, lineHeight: 19 },
   link: { textDecorationLine: "underline", color: colors.muted },
-  dot: { position: "absolute", width: 8, height: 8, borderRadius: 4, backgroundColor: "#10b981" },
 });

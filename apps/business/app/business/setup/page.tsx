@@ -193,7 +193,7 @@ export default function BusinessSetupPage() {
 
       {/* HEADER */}
       <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 h-20 flex items-center justify-between">
 
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 flex items-center justify-center text-[#101811]">
@@ -223,7 +223,7 @@ export default function BusinessSetupPage() {
       </header>
 
       {/* PAGE */}
-      <div className="max-w-5xl mx-auto px-6 py-14">
+      <div className="max-w-5xl mx-auto px-5 sm:px-8 py-14">
 
         <div className="grid lg:grid-cols-2 gap-12 items-start">
 

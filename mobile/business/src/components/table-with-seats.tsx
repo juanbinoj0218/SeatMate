@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Timer } from "lucide-react-native";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import {
@@ -146,18 +147,17 @@ export function ChairTimer({ seat, fontSize }: { seat: TableSeat; fontSize: numb
     return () => clearInterval(timer);
   }, [since]);
 
+  const look = occupied
+    ? { backgroundColor: colors.redSoft, color: "#dc2626", borderColor: "#fecaca" }
+    : { backgroundColor: colors.greenSoft, color: "#15803d", borderColor: "#bbf7d0" };
+
   return (
-    <Text
-      style={[
-        styles.timer,
-        { fontSize },
-        occupied
-          ? { backgroundColor: colors.redSoft, color: "#dc2626", borderColor: "#fecaca" }
-          : { backgroundColor: colors.greenSoft, color: "#15803d", borderColor: "#bbf7d0" },
-      ]}
-    >
-      {!occupied ? "Open" : since === null ? "In chair" : `⏱ ${elapsed(since, Math.max(now, since))}`}
-    </Text>
+    <View style={[styles.timer, { backgroundColor: look.backgroundColor, borderColor: look.borderColor }]}>
+      {since !== null && <Timer size={fontSize + 1} color={look.color} strokeWidth={2.2} />}
+      <Text style={[styles.timerText, { fontSize, color: look.color }]}>
+        {!occupied ? "Open" : since === null ? "In chair" : elapsed(since, Math.max(now, since))}
+      </Text>
+    </View>
   );
 }
 
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
   },
   selected: { borderWidth: 3, borderColor: "#93c5fd" },
   name: { color: "#fff", fontWeight: "800", textAlign: "center" },
-  count: { color: "rgba(255,255,255,0.55)", fontWeight: "700", marginTop: 1 },
+  count: { color: "rgba(255,255,255,0.72)", fontWeight: "700", marginTop: 1 },
   seat: {
     position: "absolute",
     borderWidth: 2,
@@ -185,12 +185,13 @@ const styles = StyleSheet.create({
   seatText: { color: "#fff", fontWeight: "800" },
   timerRow: { position: "absolute", top: "100%", left: -40, right: -40, alignItems: "center", marginTop: 4 },
   timer: {
-    overflow: "hidden",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
     borderWidth: 1,
     borderRadius: 999,
     paddingHorizontal: 8,
     paddingVertical: 2,
-    fontWeight: "800",
-    fontVariant: ["tabular-nums"],
   },
+  timerText: { fontWeight: "800", fontVariant: ["tabular-nums"] },
 });

@@ -169,8 +169,8 @@ export default function CustomersPage() {
                     </div>
                     {person.businessName && <p className="mt-1 truncate text-xs text-gray-400">{person.businessName}</p>}
                   </td>
-                  <td className="px-3 py-3 whitespace-nowrap">{person.createdMs ? when.format(person.createdMs) : "—"}</td>
-                  <td className="px-3 py-3 whitespace-nowrap">{person.lastSignInMs ? when.format(person.lastSignInMs) : "—"}</td>
+                  <td className="px-3 py-3 whitespace-nowrap">{person.createdMs ? when.format(person.createdMs) : "Unknown"}</td>
+                  <td className="px-3 py-3 whitespace-nowrap">{person.lastSignInMs ? when.format(person.lastSignInMs) : "Never"}</td>
                   <td className="px-3 py-3 text-right tabular-nums">{person.savedCount}</td>
                   <td className="px-5 py-3 text-right whitespace-nowrap">
                     <button

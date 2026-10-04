@@ -230,7 +230,7 @@ export function PlaceRow({
     <Pressable
       accessibilityRole="button"
       onPress={() => openPlace(slug)}
-      style={({ pressed }) => [styles.row, pressed && { opacity: 0.85 }]}
+      style={({ pressed }) => [styles.row, pressed && { backgroundColor: colors.chip }]}
     >
       <Image
         source={{ uri: imageUrl || fallbackImageFor(name || slug) }}
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     ...shadow,
   },
-  pressed: { opacity: 0.92, transform: [{ scale: 0.99 }] },
+  pressed: { transform: [{ scale: 0.985 }] },
   photoWrap: { height: 196, backgroundColor: "#e5e7eb" },
   photoTop: { position: "absolute", top: 14, left: 14, right: 14, flexDirection: "row", alignItems: "center" },
   photoBottom: { position: "absolute", left: 14, bottom: 14 },

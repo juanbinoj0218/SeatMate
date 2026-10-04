@@ -22,8 +22,7 @@ export default function SuggestPage() {
       <SiteHeader />
       <section className="mx-auto grid max-w-6xl gap-12 px-5 py-12 sm:px-8 md:py-20 lg:grid-cols-[1fr_480px] lg:gap-20">
         <div>
-          <p className="text-sm font-medium text-moss">Suggest a place</p>
-          <h1 className="font-display mt-3 text-5xl leading-[1.02] sm:text-6xl">
+          <h1 className="font-display text-5xl leading-[1.02] sm:text-6xl">
             Want live seats at your go-to spot?
           </h1>
           <p className="mt-5 max-w-md text-lg text-gray-600">

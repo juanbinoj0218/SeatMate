@@ -1,4 +1,15 @@
 import { useEffect, useState, type ReactNode } from "react";
+import {
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  ArrowUp,
+  Minus,
+  Plus,
+  RotateCcw,
+  RotateCw,
+  type LucideIcon,
+} from "lucide-react-native";
 import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
 import {
@@ -25,6 +36,7 @@ import { isSingleSeat, type TableShape } from "@seatmate/shared/table-geometry";
 
 import FloorCanvas, { type Selection } from "@/components/floor-canvas";
 import WrongAccount from "@/components/gate";
+import { MarkerIcon } from "@/components/icons";
 import LiveSeats, { ZoomControls } from "@/components/live-seats";
 import TableWithSeats from "@/components/table-with-seats";
 import UpdateReminder from "@/components/update-reminder";
@@ -509,8 +521,8 @@ function MarkerChips({ types, onAdd }: { types: MarkerType[]; onAdd: (type: Mark
           onPress={() => onAdd(type)}
           style={({ pressed }) => [styles.chip, pressed && styles.tilePressed]}
         >
+          <MarkerIcon type={type} size={16} color={colors.ink} />
           <Text style={{ fontWeight: "700", color: colors.ink, fontSize: 15 }}>
-            {MARKERS[type].icon ? `${MARKERS[type].icon} ` : ""}
             {type === "wall" ? "Wall / divider" : MARKERS[type].label}
           </Text>
         </Pressable>
@@ -665,9 +677,9 @@ function MarkerInspector({
       </Row>
       <Row label="Rotate">
         <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-          <StepButton label="↺" accessibilityLabel="Rotate left" onPress={() => rotate(-45)} />
+          <StepButton icon={RotateCcw} accessibilityLabel="Rotate left" onPress={() => rotate(-45)} />
           <Text style={styles.stepValue}>{marker.rotation}°</Text>
-          <StepButton label="↻" accessibilityLabel="Rotate right" onPress={() => rotate(45)} />
+          <StepButton icon={RotateCw} accessibilityLabel="Rotate right" onPress={() => rotate(45)} />
         </View>
       </Row>
     </Inspector>
@@ -733,12 +745,12 @@ function Inspector({
 
       <Row label="Move">
         <View style={styles.pad}>
-          <StepButton label="←" accessibilityLabel="Move left" onPress={() => onNudge(-1, 0)} />
+          <StepButton icon={ArrowLeft} accessibilityLabel="Move left" onPress={() => onNudge(-1, 0)} />
           <View style={{ gap: 6 }}>
-            <StepButton label="↑" accessibilityLabel="Move up" onPress={() => onNudge(0, -1)} />
-            <StepButton label="↓" accessibilityLabel="Move down" onPress={() => onNudge(0, 1)} />
+            <StepButton icon={ArrowUp} accessibilityLabel="Move up" onPress={() => onNudge(0, -1)} />
+            <StepButton icon={ArrowDown} accessibilityLabel="Move down" onPress={() => onNudge(0, 1)} />
           </View>
-          <StepButton label="→" accessibilityLabel="Move right" onPress={() => onNudge(1, 0)} />
+          <StepButton icon={ArrowRight} accessibilityLabel="Move right" onPress={() => onNudge(1, 0)} />
         </View>
       </Row>
 
@@ -779,20 +791,20 @@ function Stepper({
 }) {
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-      <StepButton label="−" accessibilityLabel="Decrease" onPress={() => onChange(value - 1)} disabled={value <= min} />
+      <StepButton icon={Minus} accessibilityLabel="Decrease" onPress={() => onChange(value - 1)} disabled={value <= min} />
       <Text style={styles.stepValue}>{format(value)}</Text>
-      <StepButton label="+" accessibilityLabel="Increase" onPress={() => onChange(value + 1)} disabled={value >= max} />
+      <StepButton icon={Plus} accessibilityLabel="Increase" onPress={() => onChange(value + 1)} disabled={value >= max} />
     </View>
   );
 }
 
 function StepButton({
-  label,
+  icon: Icon,
   accessibilityLabel,
   onPress,
   disabled = false,
 }: {
-  label: string;
+  icon: LucideIcon;
   accessibilityLabel: string;
   onPress: () => void;
   disabled?: boolean;
@@ -805,7 +817,7 @@ function StepButton({
       disabled={disabled}
       style={({ pressed }) => [styles.stepButton, disabled && { opacity: 0.35 }, pressed && styles.tilePressed]}
     >
-      <Text style={{ fontSize: 20, fontWeight: "800", color: colors.ink }}>{label}</Text>
+      <Icon size={20} color={colors.ink} strokeWidth={2.2} />
     </Pressable>
   );
 }
@@ -830,6 +842,9 @@ const styles = StyleSheet.create({
   tileLabel: { fontSize: 12, fontWeight: "700", color: colors.ink, marginTop: 6, textAlign: "center" },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 },
   chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
     borderWidth: 1,
     borderColor: "#e5e7eb",
     borderRadius: 999,

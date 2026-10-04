@@ -264,7 +264,7 @@ export default function StaffManagementPage() {
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto px-6 py-12">
+      <div className="max-w-4xl mx-auto px-5 sm:px-8 py-12">
 
         {error && (
           <div className="bg-red-50 border border-red-100 text-red-600 rounded-xl p-4 mb-6">
@@ -272,11 +272,7 @@ export default function StaffManagementPage() {
           </div>
         )}
 
-        <p className="text-green-600 font-semibold text-sm">
-          {businessName || "SeatMate Business"}
-        </p>
-
-        <h1 className="text-4xl font-bold mt-2">
+        <h1 className="text-4xl font-bold">
           Staff access
         </h1>
 
@@ -362,7 +358,7 @@ export default function StaffManagementPage() {
                           : "text-red-500"
                       }`}
                     >
-                      ●{" "}
+                      <span aria-hidden className="mr-1.5 inline-block h-2 w-2 rounded-full bg-current align-middle" />
                       {member.active
                         ? "Active"
                         : "Disabled"}

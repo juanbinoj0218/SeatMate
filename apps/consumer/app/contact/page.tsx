@@ -69,10 +69,9 @@ export default function ContactPage() {
 
       <section className="mx-auto grid max-w-6xl gap-12 px-5 py-12 sm:px-8 md:py-20 lg:grid-cols-[1fr_480px] lg:gap-20">
         <div>
-          <p className="text-sm font-medium text-moss">Contact</p>
-          <h1 className="font-display mt-3 text-5xl leading-[1.02] sm:text-6xl">Say hello.</h1>
+          <h1 className="font-display text-5xl leading-[1.02] sm:text-6xl">Say hello.</h1>
           <p className="mt-5 max-w-md text-lg text-gray-600">
-            Questions, ideas, a place that should be on SeatMate, or something not working — we read
+            Questions, ideas, a place that should be on SeatMate, or something not working. We read
             everything and usually reply within a day or two.
           </p>
 
@@ -88,7 +87,7 @@ export default function ContactPage() {
             <div>
               <dt className="font-semibold">Quick answers</dt>
               <dd className="mt-1 text-gray-600">
-                Check the <Link href="/faq" className="font-semibold text-ink underline decoration-line underline-offset-4">FAQ</Link> first — it covers most questions.
+                Check the <Link href="/faq" className="font-semibold text-ink underline decoration-line underline-offset-4">FAQ</Link> first. It covers most questions.
               </dd>
             </div>
           </dl>

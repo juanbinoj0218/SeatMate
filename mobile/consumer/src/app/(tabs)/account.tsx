@@ -79,7 +79,7 @@ export default function AccountScreen() {
             </View>
             <View style={styles.statDivider} />
             <View style={styles.stat}>
-              <Text style={styles.statValue}>{profile.homeZip || "—"}</Text>
+              <Text style={styles.statValue}>{profile.homeZip || "None"}</Text>
               <Text style={styles.statLabel}>Home ZIP</Text>
             </View>
           </View>

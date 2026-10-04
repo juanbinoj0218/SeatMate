@@ -99,7 +99,8 @@ export default function SeatAlertButton({
         style={({ pressed }) => [
           styles.button,
           on ? styles.buttonOn : styles.buttonOff,
-          (busy || pressed) && { opacity: 0.75 },
+          busy && { opacity: 0.75 },
+          pressed && { transform: [{ scale: 0.98 }] },
         ]}
       >
         <BellIcon size={20} color={on ? "#fff" : colors.ink} filled={on} />
@@ -133,6 +134,6 @@ const styles = StyleSheet.create({
   buttonOff: { backgroundColor: "#fff" },
   buttonOn: { backgroundColor: "rgba(255,255,255,0.1)", borderWidth: 1, borderColor: "rgba(255,255,255,0.25)" },
   text: { fontSize: 16, fontWeight: "800" },
-  note: { color: "rgba(255,255,255,0.55)", fontSize: 14, textAlign: "center", marginTop: 10 },
+  note: { color: "rgba(255,255,255,0.72)", fontSize: 14, textAlign: "center", marginTop: 10 },
   error: { color: "#fca5a5", fontSize: 14, textAlign: "center", marginTop: 10 },
 });

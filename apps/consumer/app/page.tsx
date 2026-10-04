@@ -100,15 +100,10 @@ export default function HomePage() {
       {/* HERO */}
       <section className="mx-auto grid max-w-6xl items-center gap-14 px-5 pb-20 pt-12 sm:px-8 md:pt-20 lg:grid-cols-[1.05fr_1fr] lg:gap-16 lg:pb-28">
         <div>
-          <p className="flex items-center gap-2 text-sm font-medium text-moss">
-            <LiveDot />
-            Live seating availability
-          </p>
-
-          <h1 className="font-display mt-5 text-[3.5rem] leading-[0.95] sm:text-7xl lg:text-[5.75rem]">
+          <h1 className="font-display text-[3.5rem] leading-[0.95] sm:text-7xl lg:text-[5.75rem]">
             Know before
             <br />
-            you <em className="not-italic text-moss">go.</em>
+            you go.
           </h1>
 
           <p className="mt-6 max-w-md text-lg text-gray-600">
@@ -268,9 +263,7 @@ export default function HomePage() {
       <section className="border-y border-line bg-white">
         <div className="mx-auto grid max-w-6xl gap-12 px-5 py-20 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20 lg:py-28">
           <div>
-            <p className="text-sm font-medium text-moss">How it works</p>
-
-            <h2 className="font-display mt-3 text-4xl leading-[1.05] sm:text-5xl">
+            <h2 className="font-display text-4xl leading-[1.05] sm:text-5xl">
               Finding a seat shouldn&apos;t be a guessing game.
             </h2>
           </div>
@@ -336,11 +329,7 @@ export default function HomePage() {
       <section className="mx-auto max-w-6xl px-5 pb-20 pt-10 sm:px-8 lg:pb-28 lg:pt-12">
         <div className="grid overflow-hidden rounded-3xl bg-ink text-white lg:grid-cols-2">
           <div className="p-8 sm:p-12 lg:p-14">
-            <p className="text-sm font-medium text-green-400">
-              SeatMate for business
-            </p>
-
-            <h2 className="font-display mt-4 text-4xl leading-[1.05] sm:text-5xl">
+            <h2 className="font-display text-4xl leading-[1.05] sm:text-5xl">
               Turn your floor plan into live information.
             </h2>
 
@@ -405,24 +394,24 @@ function RestaurantCard({
   const tone =
     percentage >= 25
       ? {
-          chip: "bg-white/90 text-green-800",
+          chip: "bg-white text-green-800",
           dot: "bg-seat-open",
           bar: "bg-seat-open",
         }
       : percentage > 0
         ? {
-            chip: "bg-white/90 text-amber-800",
+            chip: "bg-white text-amber-800",
             dot: "bg-amber-500",
             bar: "bg-amber-500",
           }
         : business.totalSeats > 0
           ? {
-              chip: "bg-white/90 text-red-700",
+              chip: "bg-white text-red-700",
               dot: "bg-seat-taken",
               bar: "bg-seat-taken",
             }
           : {
-              chip: "bg-white/90 text-gray-600",
+              chip: "bg-white text-gray-600",
               dot: "bg-gray-400",
               bar: "bg-gray-300",
             };
@@ -499,7 +488,7 @@ function RestaurantCard({
           )}
 
           <span
-            className={`absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm backdrop-blur ${tone.chip}`}
+            className={`absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm ${tone.chip}`}
           >
             <span className={`h-1.5 w-1.5 rounded-full ${tone.dot}`} />
             {availabilityLabel}
@@ -780,7 +769,7 @@ function StaffUpdateMock() {
       aria-hidden="true"
       className="mx-auto w-full max-w-sm rounded-2xl bg-white/[0.04] p-5 ring-1 ring-white/10"
     >
-      <div className="flex items-center justify-between text-xs text-white/50">
+      <div className="flex items-center justify-between text-xs text-white/70">
         <span className="font-medium uppercase tracking-[0.14em]">
           Staff view
         </span>
@@ -809,7 +798,7 @@ function StaffUpdateMock() {
         ))}
       </ul>
 
-      <p className="mt-4 flex items-center gap-2 text-xs text-white/50">
+      <p className="mt-4 flex items-center gap-2 text-xs text-white/70">
         <LiveDot />
         Customers see changes instantly
       </p>

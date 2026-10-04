@@ -136,7 +136,7 @@ function seatOpenEmail(to: string, placeName: string, url: string, openSeats: nu
   return {
     to,
     subject: `A seat just opened at ${placeName}`,
-    text: `Good news — ${placeName} has ${seats}.\n\nSee the live floor plan: ${url}\n\nYou asked SeatMate to tell you when a seat opened. This alert is now off.`,
+    text: `Good news: ${placeName} has ${seats}.\n\nSee the live floor plan: ${url}\n\nYou asked SeatMate to tell you when a seat opened. This alert is now off.`,
     html: `
 <div style="font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;color:#101811">
   <p style="margin:0;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#15803d">SeatMate</p>

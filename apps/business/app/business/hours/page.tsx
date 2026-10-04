@@ -97,9 +97,6 @@ export default function BusinessHoursPage() {
   const [user, setUser] =
     useState<User | null>(null);
 
-  const [businessName, setBusinessName] =
-    useState("");
-
   const [slug, setSlug] =
     useState("");
 
@@ -157,11 +154,6 @@ export default function BusinessHoursPage() {
 
             const data =
               businessSnap.data();
-
-            setBusinessName(
-              data.name ||
-                "Your Business"
-            );
 
             setSlug(
               data.slug || ""
@@ -314,7 +306,7 @@ export default function BusinessHoursPage() {
 
       <header className="bg-white border-b border-gray-200">
 
-        <div className="max-w-5xl mx-auto px-6 h-20 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-5 sm:px-8 h-20 flex items-center justify-between">
 
           <div className="flex items-center gap-3">
 
@@ -340,13 +332,9 @@ export default function BusinessHoursPage() {
 
       </header>
 
-      <div className="max-w-4xl mx-auto px-6 py-12">
+      <div className="max-w-4xl mx-auto px-5 sm:px-8 py-12">
 
-        <p className="text-green-600 font-semibold text-sm">
-          {businessName}
-        </p>
-
-        <h1 className="text-4xl font-bold text-[#101811] mt-2">
+        <h1 className="text-4xl font-bold text-[#101811]">
           Business hours
         </h1>
 

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Minus, Plus, type LucideIcon } from "lucide-react-native";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { isGameMarker, type FloorMarker } from "@seatmate/shared/floor-plan";
@@ -134,8 +135,14 @@ export default function LiveSeats({
 function Legend() {
   return (
     <View style={styles.legend}>
-      <Text style={{ color: colors.green, fontWeight: "700" }}>● Open</Text>
-      <Text style={{ color: colors.red, fontWeight: "700" }}>● Taken</Text>
+      <View style={styles.legendItem}>
+        <View style={[styles.legendDot, { backgroundColor: colors.green }]} />
+        <Text style={{ color: colors.green, fontWeight: "700" }}>Open</Text>
+      </View>
+      <View style={styles.legendItem}>
+        <View style={[styles.legendDot, { backgroundColor: colors.red }]} />
+        <Text style={{ color: colors.red, fontWeight: "700" }}>Taken</Text>
+      </View>
     </View>
   );
 }
@@ -145,9 +152,9 @@ export function ZoomControls({ zoom, onZoom }: { zoom: number; onZoom: (zoom: nu
 
   return (
     <View style={styles.zoom}>
-      <ZoomButton label="−" accessibilityLabel="Zoom out" onPress={() => step(-0.5)} disabled={zoom <= 1} />
+      <ZoomButton icon={Minus} accessibilityLabel="Zoom out" onPress={() => step(-0.5)} disabled={zoom <= 1} />
       <Text style={styles.zoomText}>{Math.round(zoom * 100)}%</Text>
-      <ZoomButton label="+" accessibilityLabel="Zoom in" onPress={() => step(0.5)} disabled={zoom >= 3} />
+      <ZoomButton icon={Plus} accessibilityLabel="Zoom in" onPress={() => step(0.5)} disabled={zoom >= 3} />
       {zoom > 1 && <ZoomButton label="Fit" accessibilityLabel="Fit to screen" onPress={() => onZoom(1)} />}
     </View>
   );
@@ -155,11 +162,13 @@ export function ZoomControls({ zoom, onZoom }: { zoom: number; onZoom: (zoom: nu
 
 function ZoomButton({
   label,
+  icon: Icon,
   accessibilityLabel,
   onPress,
   disabled = false,
 }: {
-  label: string;
+  label?: string;
+  icon?: LucideIcon;
   accessibilityLabel: string;
   onPress: () => void;
   disabled?: boolean;
@@ -172,7 +181,7 @@ function ZoomButton({
       disabled={disabled}
       style={[styles.zoomButton, disabled && { opacity: 0.35 }]}
     >
-      <Text style={styles.zoomButtonText}>{label}</Text>
+      {Icon ? <Icon size={18} color={colors.ink} strokeWidth={2.2} /> : <Text style={styles.zoomButtonText}>{label}</Text>}
     </Pressable>
   );
 }
@@ -196,4 +205,6 @@ const styles = StyleSheet.create({
   },
   zoomButtonText: { fontSize: 16, fontWeight: "800", color: colors.ink },
   legend: { flexDirection: "row", gap: 18, justifyContent: "center", marginTop: 14 },
+  legendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
+  legendDot: { width: 8, height: 8, borderRadius: 4 },
 });

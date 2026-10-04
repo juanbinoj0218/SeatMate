@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <ProsePage eyebrow="Legal" title="Privacy Policy" updated="October 1, 2026">
+    <ProsePage title="Privacy Policy" updated="October 1, 2026">
       <p>
         SeatMate shows live seating at cafés, restaurants, bars and barbershops. This policy explains what we
         collect when you use seatmate360.com, the SeatMate business portal (seatmate360.net) and the

@@ -480,7 +480,7 @@ return (
       {/* HEADER */}
 
       <header className="bg-white border-b border-[#e3e7e2]">
-        <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-5 sm:px-8 h-20 flex items-center justify-between">
 
           {/* SEATMATE LOGO = HOME */}
           <button
@@ -541,7 +541,7 @@ return (
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-5 sm:px-6 py-8 md:py-10">
+      <div className="max-w-6xl mx-auto px-5 sm:px-8 py-8 md:py-10">
 
         {/* PHOTO + LOCATION + LIVE AVAILABILITY */}
 
@@ -563,7 +563,7 @@ return (
             <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-black/5" />
 
             <div className="absolute left-5 top-5 flex flex-wrap gap-2">
-              <span className="inline-flex items-center gap-2 rounded-full bg-white/95 px-3 py-1.5 text-xs font-black text-green-700 shadow-sm backdrop-blur">
+              <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-black text-green-700 shadow-sm">
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-50" />
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
@@ -571,13 +571,13 @@ return (
                 LIVE AVAILABILITY
               </span>
 
-              <span className="rounded-full bg-white/95 px-3 py-1.5 text-xs font-black text-[#101811] shadow-sm backdrop-blur">
+              <span className="rounded-full bg-white px-3 py-1.5 text-xs font-black text-[#101811] shadow-sm">
                 {business.type || "Restaurant"}
               </span>
             </div>
 
             <div className="absolute bottom-0 left-0 right-0 p-6 text-white sm:p-8">
-              <h1 className="max-w-3xl text-4xl font-black tracking-tight sm:text-5xl">
+              <h1 className="font-display max-w-3xl text-4xl sm:text-6xl">
                 {business.name}
               </h1>
 
@@ -616,18 +616,19 @@ return (
 
                 {openStatus && (
                   <span
-                    className={`rounded-full px-3 py-1.5 text-sm font-black backdrop-blur ${
+                    className={`rounded-full px-3 py-1.5 text-sm font-black ${
                       openStatus.open
                         ? "bg-green-500 text-white"
                         : "bg-red-500 text-white"
                     }`}
                   >
-                    {openStatus.open ? "● Open now" : "● Closed now"}
+                    <span aria-hidden className="mr-1.5 inline-block h-2 w-2 rounded-full bg-current align-middle" />
+                    {openStatus.open ? "Open now" : "Closed now"}
                   </span>
                 )}
 
                 {todaysHours && (
-                  <span className="rounded-full bg-black/35 px-3 py-1.5 text-sm font-semibold text-white backdrop-blur">
+                  <span className="rounded-full bg-black/70 px-3 py-1.5 text-sm font-semibold text-white">
                     {todaysHours.closed
                       ? "Closed today"
                       : `Today ${formatHour(todaysHours.open)} – ${formatHour(todaysHours.close)}`}
@@ -647,7 +648,7 @@ return (
                   <span className="text-6xl font-black leading-none sm:text-7xl">
                     {availableSeats}
                   </span>
-                  <span className="pb-2 text-sm font-semibold text-white/45">
+                  <span className="pb-2 text-sm font-semibold text-white/70">
                     of {totalSeats} seats
                   </span>
                 </div>
@@ -656,7 +657,7 @@ return (
               <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full border-[7px] border-green-500/20 sm:h-28 sm:w-28">
                 <div className="text-center">
                   <p className="text-2xl font-black">{percentage}%</p>
-                  <p className="text-[10px] font-black uppercase tracking-wider text-white/45">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-white/70">
                     open
                   </p>
                 </div>
@@ -693,7 +694,7 @@ return (
 
             <div className="mt-auto grid grid-cols-2 gap-3 pt-7">
               <div className="rounded-2xl bg-white/5 p-4">
-                <p className="text-xs font-bold uppercase tracking-wider text-white/40">
+                <p className="text-xs font-bold uppercase tracking-wider text-white/70">
                   Available
                 </p>
                 <p className="mt-2 text-2xl font-black text-green-400">
@@ -702,7 +703,7 @@ return (
               </div>
 
               <div className="rounded-2xl bg-white/5 p-4">
-                <p className="text-xs font-bold uppercase tracking-wider text-white/40">
+                <p className="text-xs font-bold uppercase tracking-wider text-white/70">
                   Occupied
                 </p>
                 <p className="mt-2 text-2xl font-black">{occupiedSeats}</p>
@@ -753,9 +754,8 @@ return (
                       : "text-red-500"
                   }`}
                 >
-                  {openStatus.open
-                    ? "● Open now"
-                    : "● Closed now"}
+                  <span aria-hidden className="mr-1.5 inline-block h-2 w-2 rounded-full bg-current align-middle" />
+                  {openStatus.open ? "Open now" : "Closed now"}
                 </span>
               )}
 
@@ -835,11 +835,11 @@ return (
           <div className="flex gap-5 text-xs font-semibold">
 
             <span className="text-green-600">
-              ● Available
+              <span aria-hidden className="mr-1.5 inline-block h-2 w-2 rounded-full bg-current align-middle" />Available
             </span>
 
             <span className="text-red-500">
-              ● Occupied
+              <span aria-hidden className="mr-1.5 inline-block h-2 w-2 rounded-full bg-current align-middle" />Occupied
             </span>
 
           </div>

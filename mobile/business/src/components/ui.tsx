@@ -108,7 +108,7 @@ export function Button({
         styles.button,
         { backgroundColor: look.background, borderColor: look.border },
         (disabled || busy) && { opacity: 0.5 },
-        pressed && { opacity: 0.8 },
+        pressed && { transform: [{ scale: 0.98 }] },
         style,
       ]}
     >

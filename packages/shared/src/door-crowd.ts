@@ -111,25 +111,22 @@ export type CrowdLevel = "quiet" | "usual" | "busy";
 
 export const CROWD_LEVELS: Record<
   CrowdLevel,
-  { icon: string; label: string; detail: string; className: string }
+  { label: string; detail: string; className: string }
 > = {
   quiet: {
-    icon: "😌",
     label: "Quiet",
     detail: "Fewer people than usual. Easy to grab a spot.",
     className: "bg-sky-400/15 text-sky-200 ring-sky-300/30",
   },
   usual: {
-    icon: "🍻",
     label: "The usual crowd",
     detail: "About as busy as it normally is right now.",
     className: "bg-amber-400/15 text-amber-200 ring-amber-300/30",
   },
   busy: {
-    icon: "💃",
     label: "Busy",
     detail: "More people than usual. The place is lively.",
-    className: "bg-fuchsia-400/15 text-fuchsia-200 ring-fuchsia-300/30",
+    className: "bg-orange-400/15 text-orange-200 ring-orange-300/30",
   },
 };
 
