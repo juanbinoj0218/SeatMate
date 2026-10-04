@@ -28,22 +28,18 @@ import {
 } from "@seatmate/shared/business-hours";
 import GameStatus from "@seatmate/shared/components/GameStatus";
 import TableWithSeats, {
-  parseTableRotation,
-  parseTableShape,
   tableSize,
   type TableRotation,
   type TableShape,
 } from "@seatmate/shared/components/TableWithSeats";
 import { db } from "@seatmate/shared/firebase";
+import { readMarker, readTable } from "@seatmate/shared/floor-docs";
 import {
-  clamp,
   type FloorMarker,
   MARKERS,
   markerClassName,
-  type MarkerType,
   isBar,
   isGameMarker,
-  markerStatus,
 } from "@seatmate/shared/floor-plan";
 
 import AccountMenu from "@/components/account-menu";
@@ -166,28 +162,27 @@ const [business, setBusiness] =
 
   const [notFound, setNotFound] =
     useState(false);
+
+  const [loadError, setLoadError] =
+    useState(false);
   
   const now = useNow();
 
   useEffect(() => {
-    let unsubscribeTables:
-      | (() => void)
-      | undefined;
-
-    let unsubscribeMarkers:
-      | (() => void)
-      | undefined;
+    // Set when the page changes place or closes, so a slow first load
+    // never starts listeners (or shows data) for a place no longer open.
+    let cancelled = false;
+    const unsubscribers: (() => void)[] = [];
 
     const loadBusiness = async () => {
       try {
-        const businessRef = doc(
-          db,
-          "publicBusinesses",
-          slug
+        const businessSnap = await getDoc(
+          doc(db, "publicBusinesses", slug)
         );
 
-        const businessSnap =
-          await getDoc(businessRef);
+        if (cancelled) {
+          return;
+        }
 
         if (!businessSnap.exists()) {
           setNotFound(true);
@@ -200,141 +195,60 @@ const [business, setBusiness] =
 
         setBusiness(businessData);
 
-        const tablesRef = collection(
-          db,
-          "businesses",
-          businessData.businessId,
-          "tables"
-        );
-
-        unsubscribeTables = onSnapshot(
-          tablesRef,
-          (snapshot) => {
-            const data: Table[] =
-              snapshot.docs.map(
-                (tableDoc, index) => {
-                  const table =
-                    tableDoc.data();
+        unsubscribers.push(
+          onSnapshot(
+            collection(db, "businesses", businessData.businessId, "tables"),
+            (snapshot) => {
+              setTables(
+                snapshot.docs.map((tableDoc, index) => {
+                  const data = tableDoc.data();
 
                   return {
-  id: tableDoc.id,
-  name: table.name,
-  seats: table.seats || [],
-
-  xPct:
-    typeof table.xPct === "number"
-      ? table.xPct
-      : 8 + (index % 3) * 30,
-
-  yPct:
-    typeof table.yPct === "number"
-      ? table.yPct
-      : 10 +
-        Math.floor(index / 3) * 30,
-
-  shape: parseTableShape(table.shape),
-  rotation: parseTableRotation(table.rotation),
-
-  scale:
-    typeof table.scale === "number"
-      ? clamp(table.scale, 0.65, 1.8)
-      : 1,
-
-  occupancyUpdatedAt:
-    table.occupancyUpdatedAt instanceof Timestamp
-      ? table.occupancyUpdatedAt
-      : null,
-};
-                }
-              );
-
-            setTables(data);
-            setLoading(false);
-          },
-          (error) => {
-            console.error(error);
-            setLoading(false);
-          }
-        );
-
-        const markersRef = collection(
-          db,
-          "businesses",
-          businessData.businessId,
-          "floorMarkers"
-        );
-
-        unsubscribeMarkers = onSnapshot(
-          markersRef,
-          (snapshot) => {
-            const data: FloorMarker[] =
-              snapshot.docs.map(
-                (markerDoc, index) => {
-                  const marker =
-                    markerDoc.data();
-
-                  const type: MarkerType =
-                    marker.type in MARKERS
-                      ? (marker.type as MarkerType)
-                      : "outlet";
-
-                  return {
-                    id: markerDoc.id,
-
-                    type,
-
-                    label:
-                      typeof marker.label === "string"
-                        ? marker.label
-                        : MARKERS[type].label,
-
-                    xPct:
-                      typeof marker.xPct === "number"
-                        ? clamp(marker.xPct, 0, 100)
-                        : 15 + (index % 4) * 20,
-
-                    yPct:
-                      typeof marker.yPct === "number"
-                        ? clamp(marker.yPct, 0, 100)
-                        : 82,
-
-                    scale:
-                      typeof marker.scale === "number"
-                        ? clamp(marker.scale, 0.5, 2.5)
-                        : 1,
-
-                    rotation:
-                      typeof marker.rotation === "number"
-                        ? marker.rotation
-                        : 0,
-
-                    status: markerStatus(marker.status),
+                    ...readTable(tableDoc.id, data, index),
+                    occupancyUpdatedAt:
+                      data.occupancyUpdatedAt instanceof Timestamp
+                        ? data.occupancyUpdatedAt
+                        : null,
                   };
-                }
+                })
               );
-
-            setMarkers(data);
-          },
-          (error) => {
-            console.error(
-              "Could not load floor markers:",
-              error
-            );
-          }
+              setLoading(false);
+            },
+            (error) => {
+              console.error(error);
+              setLoadError(true);
+              setLoading(false);
+            }
+          ),
+          onSnapshot(
+            collection(db, "businesses", businessData.businessId, "floorMarkers"),
+            (snapshot) => {
+              setMarkers(
+                snapshot.docs.map((markerDoc, index) =>
+                  readMarker(markerDoc.id, markerDoc.data(), index)
+                )
+              );
+            },
+            (error) => {
+              console.error("Could not load floor markers:", error);
+            }
+          )
         );
       } catch (error) {
         console.error(error);
-        setLoading(false);
+
+        if (!cancelled) {
+          setLoadError(true);
+          setLoading(false);
+        }
       }
     };
 
     loadBusiness();
 
-    
-
     return () => {
-      unsubscribeTables?.();
-      unsubscribeMarkers?.();
+      cancelled = true;
+      unsubscribers.forEach((unsubscribe) => unsubscribe());
     };
   }, [slug]);
 
@@ -409,11 +323,13 @@ const [business, setBusiness] =
           <Armchair aria-hidden className="mx-auto h-12 w-12 text-[#101811]" strokeWidth={1.6} />
 
           <h1 className="text-3xl font-bold text-[#101811] mt-5">
-            Location not found
+            {loadError ? "Couldn't load this place" : "Location not found"}
           </h1>
 
           <p className="text-gray-500 mt-2">
-            This SeatMate location doesn&apos;t exist.
+            {loadError
+              ? "Check your connection and refresh the page."
+              : "This SeatMate location doesn’t exist."}
           </p>
         </div>
 

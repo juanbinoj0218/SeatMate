@@ -15,6 +15,7 @@ import { auth } from "@seatmate/shared/firebase";
 import SeatMateMark from "@seatmate/shared/components/SeatMateMark";
 import ResetPassword from "@seatmate/shared/components/ResetPassword";
 import TwoFactorPrompt from "@seatmate/shared/components/TwoFactorPrompt";
+import { safeNextPath } from "@seatmate/shared/safe-next";
 import { twoFactorResolver } from "@seatmate/shared/two-factor";
 
 import { useAccount } from "@/components/account-provider";
@@ -23,11 +24,7 @@ import { SiteHeader } from "@/components/site-chrome";
 
 type Mode = "signin" | "signup";
 
-// Only follow ?next= to pages on this site (no "//other-site" redirects).
-const safeNext = (value: string | null) =>
-  value && value.startsWith("/") && !value.startsWith("//")
-    ? value
-    : "/account";
+const safeNext = (value: string | null) => safeNextPath(value, "/account");
 
 const errorMessage = (error: unknown) => {
   const code =

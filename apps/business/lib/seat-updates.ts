@@ -1,7 +1,7 @@
 import { doc, runTransaction, serverTimestamp } from "firebase/firestore";
 
 import { recordOccupancy } from "@seatmate/shared/analytics";
-import { db } from "@seatmate/shared/firebase";
+import { auth, db } from "@seatmate/shared/firebase";
 import { notifySeatAlerts } from "@seatmate/shared/seat-alerts";
 
 type SeatStatus = "available" | "occupied";
@@ -76,6 +76,7 @@ export async function toggleSeat(
   recordOccupancy(businessId, open, total);
 
   if (newStatus === "available") {
-    notifySeatAlerts(businessId);
+    const idToken = await auth.currentUser?.getIdToken().catch(() => "");
+    notifySeatAlerts(businessId, idToken || "");
   }
 }

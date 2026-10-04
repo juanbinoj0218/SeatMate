@@ -251,7 +251,7 @@ function Tile({ label, value, sub }: { label: string; value: string; sub: string
 
 function EditForm({ data, onSaved, onError }: { data: BusinessDetail; onSaved: (message: string) => void; onError: (message: string) => void }) {
   const user = useAdmin();
-  const [form, setForm] = useState({ name: data.name, type: data.type, address: data.address, zipcode: data.zipcode, googlePlaceId: data.googlePlaceId });
+  const [form, setForm] = useState({ name: data.name, type: data.type, address: data.address, zipcode: data.zipcode, googlePlaceId: data.googlePlaceId, slug: data.slug });
   const [busy, setBusy] = useState(false);
 
   const changed = (Object.keys(form) as (keyof typeof form)[]).some((key) => form[key] !== data[key]);
@@ -293,6 +293,7 @@ function EditForm({ data, onSaved, onError }: { data: BusinessDetail; onSaved: (
       {field("address", "Address")}
       {field("zipcode", "ZIP code", { inputMode: "numeric" })}
       {field("googlePlaceId", "Google Place ID (for reviews)", { placeholder: "ChIJ…" })}
+      {data.isPublic ? null : field("slug", "Page address (seatmate360.com/place/…)", { placeholder: "joes-bar" })}
       <button type="submit" disabled={!changed || busy} className="h-11 w-full rounded-xl bg-[#101811] font-semibold text-white hover:bg-black disabled:opacity-40">
         {busy ? "Saving…" : "Save changes"}
       </button>

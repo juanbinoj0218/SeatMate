@@ -42,7 +42,7 @@ const hourLong = (hour: number) =>
 const toNumber = (value: unknown) => (typeof value === "number" && Number.isFinite(value) ? value : 0);
 
 export default function AnalyticsPage() {
-  const { business, loading } = useOwnedBusiness();
+  const { business, loading, error } = useOwnedBusiness();
   const [range, setRange] = useState<Range>(7);
   const [days, setDays] = useState<Day[] | null>(null);
 
@@ -147,7 +147,7 @@ export default function AnalyticsPage() {
     return (
       <main className="min-h-screen bg-[#f7f8f5]">
         <PortalHeader section="Analytics" />
-        <p className="max-w-4xl mx-auto px-6 py-12 text-gray-500">Loading analytics…</p>
+        <p className="max-w-4xl mx-auto px-6 py-12 text-gray-500">{error || "Loading analytics…"}</p>
       </main>
     );
   }

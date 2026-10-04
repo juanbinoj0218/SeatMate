@@ -19,16 +19,26 @@
     "./door-count": "./src/door-count.ts",
     "./table-geometry": "./src/table-geometry.ts",
     "./door-crowd": "./src/door-crowd.ts",
-    "./seatmate-mark": "./src/seatmate-mark.ts"
+    "./seatmate-mark": "./src/seatmate-mark.ts",
+    "./firebase-admin": "./src/firebase-admin.ts",
+    "./email": "./src/email.ts",
+    "./safe-next": "./src/safe-next.ts",
+    "./security-headers": "./src/security-headers.ts",
+    "./slug": "./src/slug.ts",
+    "./floor-docs": "./src/floor-docs.ts",
+    "./day-key": "./src/day-key.ts"
   },
   "peerDependencies": {
     "firebase": "^12.19.0",
-    "next": "16.3.5",
-    "react": "19.2.8"
+    "next": "16.3.8",
+    "react": "19.2.8",
+    "firebase-admin": "^14.5.0",
+    "react-dom": "19.2.8"
   },
   "dependencies": {
     "lucide-react": "^1.51.0",
-    "qrcode": "^1.5.4"
+    "qrcode": "^1.5.4",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@types/qrcode": "^1.5.6"

@@ -13,12 +13,12 @@ import SeatMateMark from "@seatmate/shared/components/SeatMateMark";
 import { auth } from "@seatmate/shared/firebase";
 import ResetPassword from "@seatmate/shared/components/ResetPassword";
 import TwoFactorPrompt from "@seatmate/shared/components/TwoFactorPrompt";
+import { safeNextPath } from "@seatmate/shared/safe-next";
 import { twoFactorResolver } from "@seatmate/shared/two-factor";
 
 import { AdminSessionProvider, useAdminSession } from "@/lib/admin-session";
 
-const safeNext = (value: string | null) =>
-  value && value.startsWith("/") && !value.startsWith("//") ? value : "/";
+const safeNext = (value: string | null) => safeNextPath(value, "/");
 
 const message = (error: unknown) => {
   const code = typeof error === "object" && error && "code" in error ? String((error as { code: unknown }).code) : "";

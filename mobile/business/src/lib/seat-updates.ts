@@ -1,14 +1,14 @@
 import { doc, increment, runTransaction, serverTimestamp, setDoc } from "firebase/firestore";
 
-import { db } from "@/lib/firebase";
+import { dayKey } from "@seatmate/shared/day-key";
+
+import { auth, db } from "@/lib/firebase";
 import type { Table } from "@/lib/floor";
 import { businessUrl } from "@/lib/site-urls";
 
 type SeatStatus = "available" | "occupied";
 
-// YYYY-MM-DD in local time, matching the web sites' daily stats documents.
-export const dayKey = (date = new Date()) =>
-  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+export { dayKey };
 
 // businesses/{id}/stats/{day}: `updates` and, per hour, `occ_{h}` (sum of %
 // seats taken at each update) and `n_{h}` (number of updates).
@@ -30,12 +30,16 @@ function recordOccupancy(businessId: string, openSeats: number, totalSeats: numb
   ).catch(() => {});
 }
 
-// The business site emails customers waiting for a seat. Fire and forget:
-// seat updates never wait on (or fail because of) alert emails.
-function notifySeatAlerts(businessId: string) {
+// The business site emails customers waiting for a seat; it only accepts
+// the owner's or staff's ID token. Fire and forget: seat updates never wait
+// on (or fail because of) alert emails.
+async function notifySeatAlerts(businessId: string) {
+  const idToken = await auth.currentUser?.getIdToken().catch(() => null);
+  if (!idToken) return;
+
   fetch(businessUrl("/api/seat-alerts"), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
     body: JSON.stringify({ businessId }),
   }).catch(() => {});
 }
@@ -94,6 +98,6 @@ export async function toggleSeat(businessId: string, tableId: string, seatId: nu
   recordOccupancy(businessId, open, total);
 
   if (newStatus === "available") {
-    notifySeatAlerts(businessId);
+    void notifySeatAlerts(businessId);
   }
 }

@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 
+import { securityHeadersConfig } from "../../packages/shared/src/security-headers";
 import {
   ADMIN_SITE_URL,
   CONSUMER_SITE_URL,
@@ -19,6 +20,7 @@ const CUSTOMER_PATHS = [
 ];
 
 const nextConfig: NextConfig = {
+  headers: securityHeadersConfig,
   // The business site has no landing page of its own; /business sends
   // signed-out visitors to the login page.
   async redirects() {

@@ -93,7 +93,10 @@ service cloud.firestore {
                 "status",
                 "reviewedAt",
                 "reviewedBy",
-                "ownerId"
+                "ownerId",
+                // The slug is the public page address; only admins
+                // change it, so one business can't take over another's.
+                "slug"
               ])
 
             ||
@@ -212,6 +215,12 @@ service cloud.firestore {
         // or start it over from 0 or 1.
         allow update:
           if docId == "door"
+          // Nobody can push the count below zero (two devices tapping -1
+          // at once would otherwise leave it at -1).
+          && (
+            !("count" in request.resource.data)
+            || (request.resource.data.count is int && request.resource.data.count >= 0)
+          )
           && (
             isOwner(businessId)
             || isAdmin()
@@ -266,6 +275,15 @@ service cloud.firestore {
               "imageUpdatedAt",
               "updatedAt"
             ])
+          // A new cover photo must be the owner's own uploaded photo,
+          // never an outside link.
+          && (
+            !request.resource.data.diff(resource.data).affectedKeys().hasAny(["imageUrl"])
+            || !("imageUrl" in request.resource.data)
+            || request.resource.data.imageUrl.matches(
+              '^/api/place-photo/' + request.auth.uid + '[?]v=[0-9]+$'
+            )
+          )
         );
 
       // -------------------------
@@ -285,6 +303,7 @@ service cloud.firestore {
 
         allow create, update:
           if day.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+          && exists(/databases/$(database)/documents/publicBusinesses/$(slug))
           && (
             bumpsByOne("views")
             || bumpsByOne("saves")
@@ -328,10 +347,22 @@ service cloud.firestore {
       allow list: if signedIn()
         && resource.data.uid == request.auth.uid;
 
+      // Alerts go only to the customer's own sign-in email, for a real
+      // published place, and start their 12-hour clock at server time.
       allow create, update: if signedIn()
+        && request.resource.data.keys().hasOnly(
+          ["uid", "email", "slug", "businessId", "placeName", "active", "createdAt"]
+        )
         && alertId == request.auth.uid + '_' + request.resource.data.slug
         && request.resource.data.uid == request.auth.uid
-        && request.resource.data.active == true;
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.active == true
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.placeName is string
+        && request.resource.data.placeName.size() <= 120
+        && get(
+          /databases/$(database)/documents/publicBusinesses/$(request.resource.data.slug)
+        ).data.businessId == request.resource.data.businessId;
     }
 
     // -------------------------
@@ -428,11 +459,16 @@ service cloud.firestore {
             == request.auth.uid
         )
         || (
+          // Claiming an invite: only in the same write that makes the
+          // caller staff of this business (or when they already are).
           signedIn()
           && resource.data.active == true
           && request.resource.data.active == false
           && request.resource.data.claimedBy
             == request.auth.uid
+          && getAfter(
+            /databases/$(database)/documents/staffUsers/$(request.auth.uid)
+          ).data.businessId == resource.data.businessId
           && request.resource.data
             .diff(resource.data)
             .affectedKeys()
@@ -483,7 +519,15 @@ service cloud.firestore {
         ).data.businessId
           == request.resource.data.businessId
         && request.resource.data.role == "staff"
-        && request.resource.data.active == true;
+        && request.resource.data.active == true
+        // The invite must be used up by this same write, so one link
+        // can't add several people or let removed staff back in.
+        && getAfter(
+          /databases/$(database)/documents/staffInvites/$(request.resource.data.inviteId)
+        ).data.active == false
+        && getAfter(
+          /databases/$(database)/documents/staffInvites/$(request.resource.data.inviteId)
+        ).data.claimedBy == request.auth.uid;
 
       allow update:
         if isAdmin()

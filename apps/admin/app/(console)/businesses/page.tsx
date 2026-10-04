@@ -27,14 +27,13 @@ import {
 } from "firebase/firestore";
 import { auth, db } from "@seatmate/shared/firebase";
 import { clamp, isGameMarker, MARKERS, type MarkerType, markerStatus } from "@seatmate/shared/floor-plan";
+import { readTable } from "@seatmate/shared/floor-docs";
 import GameStatus from "@seatmate/shared/components/GameStatus";
 import { consumerUrl } from "@seatmate/shared/site-urls";
 
 import Link from "next/link";
 
 import TableWithSeats, {
-  parseTableRotation,
-  parseTableShape,
   type TableRotation,
   type TableShape,
 } from "@seatmate/shared/components/TableWithSeats";
@@ -137,6 +136,8 @@ export default function AdminPage() {
     useState("");
 
   useEffect(() => {
+    // Stopped when the account changes or the page closes, even mid-load.
+    let closed = false;
     let unsubscribeBusinesses:
       | (() => void)
       | undefined;
@@ -144,6 +145,9 @@ export default function AdminPage() {
     const unsubscribeAuth = onAuthStateChanged(
       auth,
       async (currentUser) => {
+        unsubscribeBusinesses?.();
+        unsubscribeBusinesses = undefined;
+
         if (!currentUser) {
           router.replace("/login?next=/businesses");
           return;
@@ -157,6 +161,10 @@ export default function AdminPage() {
           );
 
           const adminSnap = await getDoc(adminRef);
+
+          if (closed || auth.currentUser?.uid !== currentUser.uid) {
+            return;
+          }
 
           if (
             !adminSnap.exists() ||
@@ -248,6 +256,7 @@ export default function AdminPage() {
     );
 
     return () => {
+      closed = true;
       unsubscribeAuth();
       unsubscribeBusinesses?.();
     };
@@ -314,34 +323,9 @@ export default function AdminPage() {
         ]);
 
       const tables: ReviewTable[] =
-        tablesSnapshot.docs.map((tableDoc, index) => {
-          const table = tableDoc.data();
-
-          return {
-            id: tableDoc.id,
-            name:
-              typeof table.name === "string"
-                ? table.name
-                : `Table ${index + 1}`,
-            seats: Array.isArray(table.seats)
-              ? table.seats
-              : [],
-            xPct:
-              typeof table.xPct === "number"
-                ? clamp(table.xPct, 0, 100)
-                : 10 + (index % 3) * 30,
-            yPct:
-              typeof table.yPct === "number"
-                ? clamp(table.yPct, 0, 100)
-                : 15 + Math.floor(index / 3) * 28,
-            shape: parseTableShape(table.shape),
-            rotation: parseTableRotation(table.rotation),
-            scale:
-              typeof table.scale === "number"
-                ? clamp(table.scale, 0.65, 1.8)
-                : 1,
-          };
-        });
+        tablesSnapshot.docs.map((tableDoc, index) =>
+          readTable(tableDoc.id, tableDoc.data(), index)
+        );
 
       const markers: ReviewMarker[] =
         markersSnapshot.docs
@@ -421,13 +405,27 @@ export default function AdminPage() {
           ""
         ).trim();
 
-      const batch = writeBatch(db);
-      const businessRef = doc(db, "businesses", business.id);
       const publicRef = doc(
         db,
         "publicBusinesses",
         business.slug
       );
+
+      // Never let one business take over another's public page.
+      const existing = await getDoc(publicRef);
+
+      if (
+        existing.exists() &&
+        existing.data().businessId !== business.id
+      ) {
+        setMessage(
+          `Another business already uses the page address "${business.slug}". Change this business's slug before approving it.`
+        );
+        return;
+      }
+
+      const batch = writeBatch(db);
+      const businessRef = doc(db, "businesses", business.id);
 
       batch.update(businessRef, {
         status: "approved",

@@ -1,6 +1,8 @@
 // Plain place data and helpers with no Firebase imports, so both browser
 // pages and server pages (city pages, link previews, sitemap) can use them.
 
+import { slugify } from "@seatmate/shared/slug";
+
 export type PublicPlace = {
   slug: string;
   businessId: string;
@@ -66,14 +68,6 @@ export type City = {
   state: string;
   slug: string;
 };
-
-const slugify = (value: string) =>
-  value
-    .toLowerCase()
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
 
 // "88 Mission St, San Francisco, CA 94105" -> San Francisco, CA.
 export function cityFromAddress(address: string): City | null {
