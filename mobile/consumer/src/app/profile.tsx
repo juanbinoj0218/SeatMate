@@ -78,7 +78,7 @@ function ProfileForm({ initialName, initialZip }: { initialName: string; initial
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.page },
-  content: { padding: 20, paddingBottom: 40, width: "100%", maxWidth: 560, alignSelf: "center" },
+  content: { padding: 24, paddingBottom: 56, width: "100%", maxWidth: 560, alignSelf: "center" },
   readonly: {
     borderWidth: 1,
     borderColor: "#e5e7eb",

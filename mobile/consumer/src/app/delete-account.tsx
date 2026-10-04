@@ -149,7 +149,7 @@ export default function DeleteAccountScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.page },
-  content: { padding: 20, paddingBottom: 40, width: "100%", maxWidth: 560, alignSelf: "center" },
+  content: { padding: 24, paddingBottom: 56, width: "100%", maxWidth: 560, alignSelf: "center" },
   title: { fontSize: 26, fontWeight: "900", color: colors.ink, letterSpacing: -0.6 },
-  note: { textAlign: "center", color: colors.faint, fontSize: 13, marginTop: 8 },
+  note: { textAlign: "center", color: colors.faint, fontSize: 14, marginTop: 10 },
 });

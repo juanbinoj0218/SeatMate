@@ -134,7 +134,7 @@ export function PlaceCard({ place, now }: { place: PlaceWithSeats; now: number }
         <View style={styles.photoTop}>
           <OpenBadge place={place} now={now} />
           <View style={{ flex: 1 }} />
-          <SaveHeart place={place} />
+          <SaveHeart place={place} size={40} />
         </View>
         <View style={styles.photoBottom}>
           <SeatPill place={place} onDark />
@@ -147,7 +147,7 @@ export function PlaceCard({ place, now }: { place: PlaceWithSeats; now: number }
             {place.name || "SeatMate location"}
           </Text>
         </View>
-        <TypeLine type={place.type} address={place.address} style={styles.meta} color={colors.muted} />
+        <TypeLine type={place.type} address={place.address} style={styles.meta} color={colors.muted} size={15} />
         <View style={styles.footer}>
           <Text style={[styles.label, { color: TONE_COLORS[availabilityTone(place)].text }]}>
             {place.seatsLoaded ? availabilityLabel(place) : " "}
@@ -193,13 +193,13 @@ export function PlaceTile({ place, now }: { place: PlaceWithSeats; now: number }
         <View style={styles.photoTop}>
           <OpenBadge place={place} now={now} />
           <View style={{ flex: 1 }} />
-          <SaveHeart place={place} size={32} />
+          <SaveHeart place={place} size={36} />
         </View>
         <View style={styles.tileText}>
           <Text style={styles.tileName} numberOfLines={1}>
             {place.name || "SeatMate location"}
           </Text>
-          <TypeLine type={place.type} style={styles.tileMeta} color="rgba(255,255,255,0.85)" />
+          <TypeLine type={place.type} style={styles.tileMeta} color="rgba(255,255,255,0.85)" size={14} />
         </View>
       </View>
       <View style={styles.tileFooter}>
@@ -241,7 +241,7 @@ export function PlaceRow({
         <Text style={styles.rowName} numberOfLines={1}>
           {name}
         </Text>
-        <TypeLine type={type} address={address} style={styles.rowMeta} color={colors.muted} size={13} />
+        <TypeLine type={type} address={address} style={styles.rowMeta} color={colors.muted} size={14} />
       </View>
       {right}
     </Pressable>
@@ -251,60 +251,60 @@ export function PlaceRow({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.card,
-    borderRadius: 24,
+    borderRadius: 26,
     overflow: "hidden",
     borderWidth: 1,
     borderColor: colors.border,
     ...shadow,
   },
   pressed: { opacity: 0.92, transform: [{ scale: 0.99 }] },
-  photoWrap: { height: 180, backgroundColor: "#e5e7eb" },
-  photoTop: { position: "absolute", top: 12, left: 12, right: 12, flexDirection: "row", alignItems: "center" },
-  photoBottom: { position: "absolute", left: 12, bottom: 12 },
-  body: { padding: 16, paddingTop: 14 },
-  name: { flex: 1, fontSize: 19, fontWeight: "900", color: colors.ink, letterSpacing: -0.3 },
-  meta: { fontSize: 14, color: colors.muted },
-  typeLine: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 },
-  footer: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 12 },
-  label: { fontSize: 14, fontWeight: "800" },
-  age: { fontSize: 12, color: colors.faint, fontWeight: "600" },
-  bar: { height: 6, borderRadius: 3, backgroundColor: colors.chip, marginTop: 10, overflow: "hidden" },
-  barFill: { height: 6, borderRadius: 3 },
+  photoWrap: { height: 196, backgroundColor: "#e5e7eb" },
+  photoTop: { position: "absolute", top: 14, left: 14, right: 14, flexDirection: "row", alignItems: "center" },
+  photoBottom: { position: "absolute", left: 14, bottom: 14 },
+  body: { paddingHorizontal: 20, paddingTop: 18, paddingBottom: 20 },
+  name: { flex: 1, fontSize: 21, fontWeight: "900", color: colors.ink, letterSpacing: -0.4 },
+  meta: { fontSize: 15, color: colors.muted },
+  typeLine: { flexDirection: "row", alignItems: "center", gap: 7, marginTop: 6 },
+  footer: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 18 },
+  label: { fontSize: 15, fontWeight: "800" },
+  age: { fontSize: 13, color: colors.faint, fontWeight: "600" },
+  bar: { height: 8, borderRadius: 4, backgroundColor: colors.chip, marginTop: 12, overflow: "hidden" },
+  barFill: { height: 8, borderRadius: 4 },
   pill: {
     flexDirection: "row",
     alignItems: "center",
     alignSelf: "flex-start",
-    gap: 6,
+    gap: 7,
     borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
   },
   dot: { width: 8, height: 8, borderRadius: 4 },
-  pillText: { fontSize: 13, fontWeight: "800" },
+  pillText: { fontSize: 14, fontWeight: "800" },
   heart: {
     backgroundColor: "rgba(255,255,255,0.95)",
     alignItems: "center",
     justifyContent: "center",
     ...shadow,
   },
-  openBadge: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
-  openText: { color: "#fff", fontSize: 12, fontWeight: "800" },
+  openBadge: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
+  openText: { color: "#fff", fontSize: 13, fontWeight: "800" },
   tile: {
-    width: 248,
+    width: 284,
     backgroundColor: colors.card,
-    borderRadius: 22,
+    borderRadius: 24,
     overflow: "hidden",
     borderWidth: 1,
     borderColor: colors.border,
     ...shadow,
   },
-  tilePhoto: { height: 150, backgroundColor: "#e5e7eb" },
-  tileText: { position: "absolute", left: 14, right: 14, bottom: 12 },
-  tileName: { color: "#fff", fontSize: 18, fontWeight: "900", letterSpacing: -0.3 },
-  tileMeta: { color: "rgba(255,255,255,0.8)", fontSize: 13, marginTop: 2, fontWeight: "600" },
-  tileFooter: { padding: 12 },
-  row: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 8 },
-  rowPhoto: { width: 56, height: 56, borderRadius: 14, backgroundColor: "#e5e7eb" },
-  rowName: { fontSize: 16, fontWeight: "800", color: colors.ink },
-  rowMeta: { fontSize: 13, color: colors.muted, marginTop: 2 },
+  tilePhoto: { height: 176, backgroundColor: "#e5e7eb" },
+  tileText: { position: "absolute", left: 18, right: 18, bottom: 16 },
+  tileName: { color: "#fff", fontSize: 20, fontWeight: "900", letterSpacing: -0.4 },
+  tileMeta: { color: "rgba(255,255,255,0.85)", fontSize: 14, marginTop: 2, fontWeight: "600" },
+  tileFooter: { paddingHorizontal: 16, paddingVertical: 14 },
+  row: { flexDirection: "row", alignItems: "center", gap: 14, paddingVertical: 10 },
+  rowPhoto: { width: 60, height: 60, borderRadius: 16, backgroundColor: "#e5e7eb" },
+  rowName: { fontSize: 17, fontWeight: "800", color: colors.ink },
+  rowMeta: { fontSize: 14, color: colors.muted, marginTop: 2 },
 });

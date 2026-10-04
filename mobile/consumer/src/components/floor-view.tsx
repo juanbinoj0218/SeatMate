@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { isGameMarker, MARKERS, type FloorMarker, type MarkerType } from "@seatmate/shared/floor-plan";
@@ -29,29 +29,97 @@ const MARKER_LOOKS: Partial<Record<MarkerType, MarkerLook>> = {
 const DEFAULT_LOOK: MarkerLook = { background: "#fff", border: "#d1d5db", text: colors.ink, radius: 12 };
 
 const ZOOMS = [1, 1.6, 2.4];
+// Room left around the outermost table or marker when fitting to the layout.
+const MARGIN = 36;
+// Never blow tables up past this on big screens.
+const MAX_SCALE = 1.1;
+
+type Box = { x: number; y: number; width: number; height: number };
+
+// The part of the 1000 × 700 canvas the business actually uses, so a small
+// layout fills the screen instead of sitting in a sea of empty grid.
+function layoutBounds(tables: Table[], markers: FloorMarker[]): Box {
+  let left = Infinity;
+  let top = Infinity;
+  let right = -Infinity;
+  let bottom = -Infinity;
+  const add = (xPct: number, yPct: number, width: number, height: number, rotation: number) => {
+    // A rotated marker can reach its longer side in either direction.
+    const turned = rotation % 180 !== 0;
+    const half = turned ? Math.max(width, height) / 2 : width / 2;
+    const halfY = turned ? Math.max(width, height) / 2 : height / 2;
+    const x = (xPct / 100) * CANVAS_WIDTH;
+    const y = (yPct / 100) * CANVAS_HEIGHT;
+    left = Math.min(left, x - half);
+    right = Math.max(right, x + half);
+    top = Math.min(top, y - halfY);
+    bottom = Math.max(bottom, y + halfY);
+  };
+  tables.forEach((table) => {
+    const box = tableSize(table.shape, table.seats.length, table.scale, table.rotation);
+    add(table.xPct, table.yPct, box.width, box.height, 0);
+  });
+  markers.forEach((marker) => {
+    const info = MARKERS[marker.type];
+    add(marker.xPct, marker.yPct, info.width * marker.scale, info.height * marker.scale, marker.rotation);
+  });
+  if (left === Infinity) return { x: 0, y: 0, width: CANVAS_WIDTH, height: CANVAS_HEIGHT };
+
+  const x = Math.max(0, left - MARGIN);
+  const y = Math.max(0, top - MARGIN);
+  return {
+    x,
+    y,
+    width: Math.min(CANVAS_WIDTH, right + MARGIN) - x,
+    height: Math.min(CANVAS_HEIGHT, bottom + MARGIN) - y,
+  };
+}
 
 export default function FloorView({
   tables,
   markers,
   width,
+  maxHeight,
 }: {
   tables: Table[];
   markers: FloorMarker[];
   // Space available for the map.
   width: number;
+  // Tallest the map may get; it fits the layout to width × maxHeight.
+  maxHeight: number;
 }) {
   const [zoom, setZoom] = useState(0);
-  const fit = Math.min(1, width / CANVAS_WIDTH);
+  const bounds = useMemo(() => layoutBounds(tables, markers), [tables, markers]);
+  // Fit the used part of the floor to the screen, phone or iPad, portrait or landscape.
+  const fit = Math.min(MAX_SCALE, width / bounds.width, maxHeight / bounds.height);
   const scale = fit * ZOOMS[zoom];
-  const frameHeight = CANVAS_HEIGHT * fit;
+  const frameHeight = Math.max(160, bounds.height * fit);
+  const contentWidth = bounds.width * scale;
+  const contentHeight = bounds.height * scale;
 
   return (
     <View>
       <View style={[styles.frame, { width, height: frameHeight }]}>
         <ScrollView horizontal bounces={false} showsHorizontalScrollIndicator={zoom > 0}>
           <ScrollView nestedScrollEnabled bounces={false} showsVerticalScrollIndicator={zoom > 0}>
-            <View style={{ width: CANVAS_WIDTH * scale, height: CANVAS_HEIGHT * scale, overflow: "hidden" }}>
-              <View style={[styles.canvas, { transform: [{ scale }], transformOrigin: "top left" }]}>
+            <View
+              style={{
+                width: contentWidth,
+                height: contentHeight,
+                marginLeft: Math.max(0, (width - 2 - contentWidth) / 2),
+                marginTop: Math.max(0, (frameHeight - 2 - contentHeight) / 2),
+                overflow: "hidden",
+              }}
+            >
+              <View
+                style={[
+                  styles.canvas,
+                  {
+                    transform: [{ translateX: -bounds.x * scale }, { translateY: -bounds.y * scale }, { scale }],
+                    transformOrigin: "top left",
+                  },
+                ]}
+              >
                 <Grid />
                 <Text style={styles.floorLabel}>TOP-DOWN FLOOR</Text>
 
@@ -96,6 +164,12 @@ export default function FloorView({
           </ScrollView>
         </ScrollView>
 
+      </View>
+
+      <View style={styles.legend}>
+        <LegendDot color="#22c55e" label="Open" />
+        <LegendDot color={colors.red} label="Taken" />
+        <View style={{ flex: 1 }} />
         <View style={styles.zoom}>
           <ZoomButton label="−" disabled={zoom === 0} onPress={() => setZoom((value) => Math.max(0, value - 1))} />
           <View style={styles.zoomDivider} />
@@ -105,12 +179,6 @@ export default function FloorView({
             onPress={() => setZoom((value) => Math.min(ZOOMS.length - 1, value + 1))}
           />
         </View>
-      </View>
-
-      <View style={styles.legend}>
-        <LegendDot color="#22c55e" label="Open" />
-        <LegendDot color={colors.red} label="Taken" />
-        {zoom > 0 ? <Text style={styles.hint}>Drag to look around</Text> : null}
       </View>
     </View>
   );
@@ -181,7 +249,7 @@ function ZoomButton({ label, disabled, onPress }: { label: string; disabled: boo
 function LegendDot({ color, label }: { color: string; label: string }) {
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-      <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: color }} />
+      <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: color }} />
       <Text style={styles.legendText}>{label}</Text>
     </View>
   );
@@ -207,7 +275,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderColor: "#dfe4de",
     borderWidth: 1,
-    borderRadius: 20,
+    borderRadius: 24,
     overflow: "hidden",
   },
   canvas: { width: CANVAS_WIDTH, height: CANVAS_HEIGHT, backgroundColor: "#fff" },
@@ -228,20 +296,16 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
   zoom: {
-    position: "absolute",
-    right: 10,
-    bottom: 10,
     backgroundColor: "#fff",
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: colors.border,
     flexDirection: "row",
     overflow: "hidden",
   },
-  zoomButton: { width: 38, height: 34, alignItems: "center", justifyContent: "center" },
-  zoomText: { fontSize: 20, fontWeight: "700", color: colors.ink, marginTop: -2 },
+  zoomButton: { width: 48, height: 44, alignItems: "center", justifyContent: "center" },
+  zoomText: { fontSize: 24, fontWeight: "700", color: colors.ink, marginTop: -2 },
   zoomDivider: { width: 1, backgroundColor: colors.border },
-  legend: { flexDirection: "row", gap: 16, alignItems: "center", marginTop: 10, paddingHorizontal: 4 },
-  legendText: { fontSize: 13, fontWeight: "700", color: colors.muted },
-  hint: { marginLeft: "auto", fontSize: 12, color: colors.faint, fontWeight: "600" },
+  legend: { flexDirection: "row", gap: 16, alignItems: "center", marginTop: 14, paddingLeft: 4 },
+  legendText: { fontSize: 15, fontWeight: "700", color: colors.muted },
 });

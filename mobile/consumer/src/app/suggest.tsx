@@ -125,7 +125,7 @@ export default function SuggestScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.page },
-  content: { padding: 20, paddingBottom: 40, width: "100%", maxWidth: 560, alignSelf: "center" },
+  content: { padding: 24, paddingBottom: 56, width: "100%", maxWidth: 560, alignSelf: "center" },
   label: { fontSize: 14, fontWeight: "700", color: colors.ink, marginTop: 14, marginBottom: 8 },
   types: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   textarea: {
