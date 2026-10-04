@@ -45,7 +45,7 @@ export default function CrowdMeter({ businessId, now }: { businessId: string; no
       <div className="flex items-center gap-3">
         <CrowdIcon
           level={level}
-          className={`h-8 w-8 shrink-0 text-white ${level === "busy" ? "animate-bounce" : ""}`}
+          className="h-8 w-8 shrink-0 text-white"
           strokeWidth={1.8}
         />
         <div>

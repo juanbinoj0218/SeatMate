@@ -949,7 +949,7 @@ export default function FloorPlanPage() {
   return (
     <main className="min-h-screen bg-[#f7f8f5]">
       <header className="bg-white border-b border-[#e3e7e2]">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 h-20 flex items-center justify-between">
           <div className="flex items-center gap-5">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 flex items-center justify-center text-[#101811]">
@@ -974,14 +974,11 @@ export default function FloorPlanPage() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-6 py-10">
+      <div className="max-w-7xl mx-auto px-5 sm:px-8 py-10">
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
           <div>
-            <div className="text-green-700 font-semibold text-sm">
-              ● LIVE FLOOR
-            </div>
 
-            <h1 className="text-4xl md:text-5xl font-bold mt-3">
+            <h1 className="text-4xl md:text-5xl font-bold">
               Floor Plan
             </h1>
 
@@ -1016,7 +1013,7 @@ export default function FloorPlanPage() {
                     : "text-gray-500"
                 }`}
               >
-                ● Occupancy
+                Occupancy
               </button>
 
               <button

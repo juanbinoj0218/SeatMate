@@ -42,25 +42,21 @@ const FEATURES = [
     title: "Floor plan",
     description: "Lay out your tables and seats.",
     Icon: FloorPlanIcon,
-    tile: "bg-emerald-100 text-emerald-700",
   },
   {
     title: "Live seats",
     description: "Mark seats open or taken as guests come and go.",
     Icon: SeatIcon,
-    tile: "bg-sky-100 text-sky-700",
   },
   {
     title: "Staff",
     description: "Invite your team to update seats.",
     Icon: StaffIcon,
-    tile: "bg-violet-100 text-violet-700",
   },
   {
     title: "Hours",
     description: "Show customers when you're open.",
     Icon: ClockIcon,
-    tile: "bg-amber-100 text-amber-700",
   },
 ];
 
@@ -566,7 +562,7 @@ export default function BusinessLoginPage() {
       {/* HEADER */}
 
       <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 h-20 flex items-center justify-between">
 
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 flex items-center justify-center text-[#101811]">
@@ -600,7 +596,7 @@ export default function BusinessLoginPage() {
 
       {/* PAGE */}
 
-      <div className="max-w-6xl mx-auto px-6 py-12">
+      <div className="max-w-6xl mx-auto px-5 sm:px-8 py-12">
 
         <div className="grid lg:grid-cols-2 gap-12 items-center">
 
@@ -608,15 +604,7 @@ export default function BusinessLoginPage() {
 
           <div>
 
-            <p className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-700">
-              <span className="relative flex w-2 h-2">
-                <span className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-60 motion-reduce:animate-none" />
-                <span className="relative w-2 h-2 rounded-full bg-emerald-500" />
-              </span>
-              SeatMate for Business
-            </p>
-
-            <h1 className="text-5xl md:text-6xl font-bold tracking-tight mt-4 leading-[1.05]">
+            <h1 className="text-5xl md:text-6xl font-bold tracking-tight leading-[1.05]">
 
               Manage your
               <br />
@@ -635,14 +623,14 @@ export default function BusinessLoginPage() {
 
             <ul className="mt-10 max-w-md space-y-5">
 
-              {FEATURES.map(({ title, description, Icon, tile }) => (
+              {FEATURES.map(({ title, description, Icon }) => (
 
                 <li
                   key={title}
                   className="flex items-center gap-4"
                 >
 
-                  <span className={`w-11 h-11 shrink-0 rounded-xl flex items-center justify-center ${tile}`}>
+                  <span className="w-11 h-11 shrink-0 rounded-xl flex items-center justify-center border border-gray-200 bg-white text-[#101811]">
                     <Icon className="w-5 h-5" />
                   </span>
 

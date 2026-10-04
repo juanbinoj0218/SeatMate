@@ -123,7 +123,7 @@ export default function SeatAlertButton({
       </button>
 
       {on && (
-        <p className="mt-2 text-center text-xs text-white/50">
+        <p className="mt-2 text-center text-xs text-white/70">
           For the next 12 hours.{" "}
           <button type="button" onClick={toggle} className="underline underline-offset-2 hover:text-white">
             Cancel

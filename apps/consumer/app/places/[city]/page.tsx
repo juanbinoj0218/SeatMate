@@ -52,7 +52,7 @@ export default async function CityPage({ params }: PageProps<"/places/[city]">) 
         </h1>
         <p className="mt-4 max-w-xl text-lg text-gray-600">
           Live seating at {city.places.length} {city.places.length === 1 ? "place" : "places"}
-          {types.length > 0 ? ` — ${types.slice(0, 3).join(", ").toLowerCase()}` : ""}. Check
+          {types.length > 0 ? `: ${types.slice(0, 3).join(", ").toLowerCase()}` : ""}. Check
           who has room before you head out.
         </p>
 

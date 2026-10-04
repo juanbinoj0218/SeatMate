@@ -13,7 +13,7 @@ import { CONTACT_EMAIL } from "@/lib/site-info";
 export function SiteHeader() {
   return (
     <header className="bg-white border-b border-gray-200">
-      <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between gap-4">
+      <div className="max-w-6xl mx-auto px-5 sm:px-8 h-20 flex items-center justify-between gap-4">
         <Link href="/business" className="flex items-center gap-3">
           <span className="w-10 h-10 flex items-center justify-center text-[#101811]">
             <SeatMateMark className="h-[85%] w-[85%]" />
@@ -43,7 +43,7 @@ export function SiteHeader() {
 export function SiteFooter() {
   return (
     <footer className="border-t border-gray-200 bg-white">
-      <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col gap-4 text-sm text-gray-500 sm:flex-row sm:items-center sm:justify-between">
+      <div className="max-w-6xl mx-auto px-5 sm:px-8 py-8 flex flex-col gap-4 text-sm text-gray-500 sm:flex-row sm:items-center sm:justify-between">
         <p>© {new Date().getFullYear()} SeatMate</p>
         <nav className="flex flex-wrap gap-x-5 gap-y-2">
           <Link href="/about" className="hover:text-[#101811]">About</Link>
@@ -70,9 +70,8 @@ export function ProsePage({
   return (
     <main className="min-h-screen flex flex-col bg-[#f7f8f5] text-[#101811]">
       <SiteHeader />
-      <article className="flex-1 w-full max-w-3xl mx-auto px-6 pt-12 pb-24 md:pt-16">
-        <p className="text-sm font-semibold text-emerald-700">SeatMate for Business</p>
-        <h1 className="mt-3 text-4xl sm:text-5xl font-bold">{title}</h1>
+      <article className="flex-1 w-full max-w-3xl mx-auto px-5 sm:px-8 pt-12 pb-24 md:pt-16">
+        <h1 className="text-4xl sm:text-5xl font-bold">{title}</h1>
         <p className="mt-4 text-sm text-gray-500">Last updated {updated}</p>
         <div className="mt-10 space-y-8 text-[17px] leading-8 text-gray-700 [&_a]:font-semibold [&_a]:text-[#101811] [&_a]:underline [&_a]:underline-offset-4 [&_h2]:text-2xl [&_h2]:text-[#101811] [&_li]:mt-2 [&_ul]:list-disc [&_ul]:pl-6">
           {children}

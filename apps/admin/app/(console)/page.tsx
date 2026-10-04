@@ -183,7 +183,7 @@ export default function OverviewPage() {
                           {place.openSeats}/{place.totalSeats}
                         </span>
                       ) : (
-                        <span className="text-gray-300">—</span>
+                        <span className="text-gray-400">No layout</span>
                       )}
                     </td>
                   </tr>

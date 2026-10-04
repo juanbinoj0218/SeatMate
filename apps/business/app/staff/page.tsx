@@ -339,7 +339,7 @@ export default function StaffConsolePage() {
 
       <header className="bg-white border-b border-[#e3e7e2]">
 
-        <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-5 sm:px-8 h-20 flex items-center justify-between">
 
           <div className="flex items-center gap-3">
 
@@ -379,28 +379,14 @@ export default function StaffConsolePage() {
 
       </header>
 
-      <div className="max-w-6xl mx-auto px-6 py-10">
+      <div className="max-w-6xl mx-auto px-5 sm:px-8 py-10">
         <UpdateReminder businessId={staffAccount.businessId} />
 
         {/* BUSINESS */}
 
         <div>
 
-          <div className="flex items-center gap-2 text-green-700 text-sm font-semibold">
-
-            <span className="relative flex h-2.5 w-2.5">
-
-              <span className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-40" />
-
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
-
-            </span>
-
-            LIVE STAFF MODE
-
-          </div>
-
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-[#101811] mt-4">
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-[#101811]">
 
             {staffAccount.businessName}
 
@@ -498,11 +484,11 @@ export default function StaffConsolePage() {
           <div className="hidden sm:flex gap-5 text-xs font-semibold">
 
             <span className="text-green-600">
-              ● Available
+              <span aria-hidden className="mr-1.5 inline-block h-2 w-2 rounded-full bg-current align-middle" />Available
             </span>
 
             <span className="text-red-500">
-              ● Occupied
+              <span aria-hidden className="mr-1.5 inline-block h-2 w-2 rounded-full bg-current align-middle" />Occupied
             </span>
 
           </div>

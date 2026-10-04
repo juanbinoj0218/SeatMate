@@ -118,7 +118,7 @@ export default function TableWithSeats({
         {!stool && (
           <div className="min-w-0 leading-tight" style={{ fontSize, maxWidth: upright ? tableWidth - 8 : undefined }}>
             <div className={`font-bold ${upright ? "break-words" : "truncate"}`}>{name}</div>
-            <div className="text-white/50 font-semibold mt-0.5">
+            <div className="text-white/70 font-semibold mt-0.5">
               {shown.length} {shown.length === 1 ? "seat" : "seats"}
             </div>
           </div>

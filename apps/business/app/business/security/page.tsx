@@ -31,11 +31,10 @@ export default function SecurityPage() {
       <PortalHeader section="Security" />
 
       <div className="mx-auto max-w-4xl px-6 py-12">
-        <p className="text-sm font-semibold text-green-700">Account security</p>
-        <h1 className="mt-2 text-4xl font-bold">Security</h1>
+        <h1 className="text-4xl font-bold">Security</h1>
         <p className="mt-3 max-w-xl text-gray-500">
           Protect your business account so only you can change your floor plan, staff and
-          customer page — even if someone learns your password.
+          customer page, even if someone learns your password.
         </p>
 
         <div className="mt-8">

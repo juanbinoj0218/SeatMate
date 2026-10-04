@@ -19,8 +19,7 @@ export default async function CitiesPage() {
       <SiteHeader />
 
       <section className="mx-auto max-w-6xl px-5 pb-20 pt-12 sm:px-8 md:pt-16">
-        <p className="text-sm font-medium text-moss">Cities</p>
-        <h1 className="font-display mt-3 text-5xl sm:text-6xl">Where SeatMate is live</h1>
+        <h1 className="font-display text-5xl sm:text-6xl">Where SeatMate is live</h1>
         <p className="mt-4 max-w-xl text-lg text-gray-600">
           Every city with at least one place showing live seats.
           <SuggestLink before={<> Don&apos;t see yours? </>}>Suggest a place</SuggestLink>

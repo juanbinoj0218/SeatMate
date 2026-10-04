@@ -1,8 +1,9 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { MARKERS, type FloorMarker } from "@seatmate/shared/floor-plan";
+import type { FloorMarker } from "@seatmate/shared/floor-plan";
 import { isSingleSeat } from "@seatmate/shared/table-geometry";
 
+import { MarkerIcon } from "@/components/icons";
 import { ChairTimer } from "@/components/table-with-seats";
 import { colors } from "@/components/ui";
 import type { Table } from "@/lib/floor";
@@ -44,12 +45,13 @@ export default function SeatList({
                   style={({ pressed }) => [
                     styles.game,
                     { backgroundColor: open ? "#22c55e" : colors.red },
-                    pressed && { opacity: 0.7 },
+                    pressed && styles.pressed,
                   ]}
                 >
-                  <Text style={styles.gameText}>
-                    {MARKERS[marker.type].icon} {marker.label}
-                  </Text>
+                  <View style={styles.gameLabel}>
+                    <MarkerIcon type={marker.type} size={16} color="#fff" />
+                    <Text style={styles.gameText}>{marker.label}</Text>
+                  </View>
                   <Text style={[styles.gameText, { fontSize: 12, opacity: 0.85 }]}>{open ? "Open" : "In use"}</Text>
                 </Pressable>
               );
@@ -84,10 +86,14 @@ export default function SeatList({
                     style={({ pressed }) => [
                       styles.seat,
                       { backgroundColor: available ? "#22c55e" : colors.red },
-                      pressed && { opacity: 0.7 },
+                      pressed && styles.pressed,
                     ]}
                   >
-                    <Text style={styles.seatText}>{isSingleSeat(table.shape) ? "●" : seat.id}</Text>
+                    {isSingleSeat(table.shape) ? (
+                      <View style={styles.seatDot} />
+                    ) : (
+                      <Text style={styles.seatText}>{seat.id}</Text>
+                    )}
                   </Pressable>
                 );
               })}
@@ -107,7 +113,10 @@ const styles = StyleSheet.create({
   seats: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 },
   seat: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center" },
   seatText: { color: "#fff", fontWeight: "800", fontSize: 16 },
+  seatDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: "#fff" },
+  pressed: { transform: [{ scale: 0.96 }] },
   game: { borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10, minWidth: 110 },
+  gameLabel: { flexDirection: "row", alignItems: "center", gap: 6 },
   gameText: { color: "#fff", fontWeight: "800", fontSize: 15 },
   empty: { color: colors.muted, textAlign: "center", paddingVertical: 30 },
 });

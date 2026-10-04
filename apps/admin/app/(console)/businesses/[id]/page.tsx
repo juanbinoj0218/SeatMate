@@ -102,7 +102,7 @@ export default function BusinessDetailPage() {
             {data.type} · {data.address}
           </p>
           <p className="mt-1 text-xs text-gray-400">
-            Joined {data.createdMs ? date.format(data.createdMs) : "—"}
+            Joined {data.createdMs ? date.format(data.createdMs) : "date unknown"}
             {data.reviewedMs ? ` · reviewed ${date.format(data.reviewedMs)}` : ""} · ID {data.id}
           </p>
         </div>
@@ -119,7 +119,7 @@ export default function BusinessDetailPage() {
 
       {/* KPIs */}
       <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Tile label="Seats open now" value={data.seats.total ? `${data.seats.open} / ${data.seats.total}` : "—"} sub={`${data.seats.tables} tables`} />
+        <Tile label="Seats open now" value={data.seats.total ? `${data.seats.open} / ${data.seats.total}` : "None"} sub={`${data.seats.tables} tables`} />
         <div className={`rounded-2xl border p-5 ${stale ? "border-orange-200 bg-orange-50" : "border-gray-200 bg-white"}`}>
           <p className="text-sm text-gray-500">Last seat update</p>
           <p className={`mt-2 text-2xl font-bold tracking-tight ${stale ? "text-orange-800" : ""}`}>
@@ -209,7 +209,7 @@ export default function BusinessDetailPage() {
                   <span className="font-semibold">{data.owner.name || data.owner.email}</span>
                   {data.owner.name && <span className="block text-gray-500">{data.owner.email}</span>}
                   <span className="block text-xs text-gray-400">
-                    Last sign-in {data.owner.lastSignInMs ? date.format(data.owner.lastSignInMs) : "—"}
+                    Last sign-in {data.owner.lastSignInMs ? date.format(data.owner.lastSignInMs) : "never"}
                     {data.owner.disabled ? " · account disabled" : ""}
                   </span>
                 </p>

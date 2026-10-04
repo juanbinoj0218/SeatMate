@@ -8,7 +8,6 @@ import { db } from "@seatmate/shared/firebase";
 
 import PortalHeader from "@/components/portal-header";
 import {
-  ChartIcon,
   EyeIcon,
   HeartIcon,
   QrIcon,
@@ -147,7 +146,7 @@ export default function AnalyticsPage() {
     return (
       <main className="min-h-screen bg-[#f7f8f5]">
         <PortalHeader section="Analytics" />
-        <p className="max-w-4xl mx-auto px-6 py-12 text-gray-500">{error || "Loading analytics…"}</p>
+        <p className="max-w-4xl mx-auto px-5 sm:px-8 py-12 text-gray-500">{error || "Loading analytics…"}</p>
       </main>
     );
   }
@@ -158,14 +157,10 @@ export default function AnalyticsPage() {
     <main className="min-h-screen bg-[#f7f8f5]">
       <PortalHeader section="Analytics" />
 
-      <div className="max-w-4xl mx-auto px-6 py-12">
+      <div className="max-w-4xl mx-auto px-5 sm:px-8 py-12">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="inline-flex items-center gap-2 text-sm font-semibold text-rose-600">
-              <ChartIcon className="w-4 h-4" />
-              Analytics
-            </p>
-            <h1 className="text-4xl font-bold tracking-tight mt-2">{business.name}</h1>
+            <h1 className="text-4xl font-bold tracking-tight">{business.name}</h1>
           </div>
 
           <div role="group" aria-label="Date range" className="inline-flex self-start rounded-xl bg-white border border-gray-200 p-1 sm:self-auto">
@@ -192,10 +187,10 @@ export default function AnalyticsPage() {
         )}
 
         <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <StatTile label="Page views" value={totals.views} Icon={EyeIcon} tile="bg-sky-100 text-sky-700" loading={!days} />
-          <StatTile label="Saves" value={totals.saves} Icon={HeartIcon} tile="bg-rose-100 text-rose-600" loading={!days} />
-          <StatTile label="QR scans" value={totals.scans} Icon={QrIcon} tile="bg-slate-200 text-slate-700" loading={!days} />
-          <StatTile label="Seat updates" value={totals.updates} Icon={SeatIcon} tile="bg-emerald-100 text-emerald-700" loading={!days} />
+          <StatTile label="Page views" value={totals.views} Icon={EyeIcon} loading={!days} />
+          <StatTile label="Saves" value={totals.saves} Icon={HeartIcon} loading={!days} />
+          <StatTile label="QR scans" value={totals.scans} Icon={QrIcon} loading={!days} />
+          <StatTile label="Seat updates" value={totals.updates} Icon={SeatIcon} loading={!days} />
         </div>
 
         <section className="mt-6 bg-white border border-gray-200 rounded-2xl p-6">
@@ -271,18 +266,16 @@ function StatTile({
   label,
   value,
   Icon,
-  tile,
   loading,
 }: {
   label: string;
   value: number;
   Icon: (props: { className?: string }) => React.ReactNode;
-  tile: string;
   loading: boolean;
 }) {
   return (
     <div className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-5 flex items-center gap-3 sm:gap-4">
-      <span className={`w-11 h-11 shrink-0 rounded-xl flex items-center justify-center ${tile}`}>
+      <span className="w-11 h-11 shrink-0 rounded-xl flex items-center justify-center bg-gray-100 text-[#101811]">
         <Icon className="w-5 h-5" />
       </span>
       <div>
@@ -376,7 +369,7 @@ function BarChart({
             {bars.map((bar) => (
               <tr key={bar.key} className="border-t border-gray-100">
                 <td className="py-1.5 text-gray-500">{bar.tooltip.split(":")[0]}</td>
-                <td className="py-1.5 text-right tabular-nums">{bar.missing ? "—" : format(bar.value)}</td>
+                <td className="py-1.5 text-right tabular-nums">{bar.missing ? "No data" : format(bar.value)}</td>
               </tr>
             ))}
           </tbody>

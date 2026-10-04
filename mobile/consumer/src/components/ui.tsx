@@ -135,7 +135,7 @@ export function Button({
         styles.button,
         { backgroundColor: look.background, borderColor: look.border },
         (disabled || busy) && { opacity: 0.5 },
-        pressed && { opacity: 0.85, transform: [{ scale: 0.985 }] },
+        pressed && { transform: [{ scale: 0.98 }] },
         style,
       ]}
     >
@@ -215,7 +215,7 @@ export function Chip({
         tap();
         onPress();
       }}
-      style={({ pressed }) => [styles.chip, active && styles.chipActive, pressed && { opacity: 0.8 }]}
+      style={({ pressed }) => [styles.chip, active && styles.chipActive, pressed && { transform: [{ scale: 0.97 }] }]}
     >
       {icon}
       <Text style={[styles.chipText, active && { color: "#fff" }]}>{label}</Text>
@@ -271,7 +271,7 @@ export function StatTile({
 }) {
   return (
     <View style={[styles.stat, dark && styles.statDark]}>
-      <Text style={[styles.statLabel, dark && { color: "rgba(255,255,255,0.45)" }]}>{label}</Text>
+      <Text style={[styles.statLabel, dark && { color: "rgba(255,255,255,0.72)" }]}>{label}</Text>
       <Text style={[styles.statValue, { color }]}>{value}</Text>
     </View>
   );

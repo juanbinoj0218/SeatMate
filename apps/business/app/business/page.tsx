@@ -181,7 +181,7 @@ export default function BusinessDashboard() {
   return (
     <main className="min-h-screen bg-[#f7f8f5]">
       <header className="bg-white border-b border-gray-200">
-        <div className="max-w-3xl mx-auto px-6 h-20 flex items-center justify-between">
+        <div className="max-w-3xl mx-auto px-5 sm:px-8 h-20 flex items-center justify-between">
           <div className="flex items-center gap-5">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 flex items-center justify-center text-[#101811]">
@@ -204,7 +204,7 @@ export default function BusinessDashboard() {
         </div>
       </header>
 
-      <div className="max-w-3xl mx-auto px-6 py-12">
+      <div className="max-w-3xl mx-auto px-5 sm:px-8 py-12">
         <span
           className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ring-1 ${STATUS_BADGES[businessStatus].className}`}
         >
@@ -301,7 +301,6 @@ export default function BusinessDashboard() {
           <DashboardLink
             title="Floor plan"
             Icon={FloorPlanIcon}
-            tile="bg-emerald-100 text-emerald-700"
             description="Arrange tables and update seat occupancy in real time."
             onClick={() => router.push("/business/floor-plan")}
           />
@@ -309,7 +308,6 @@ export default function BusinessDashboard() {
           <DashboardLink
             title="Staff"
             Icon={StaffIcon}
-            tile="bg-violet-100 text-violet-700"
             description="Invite staff and manage who can update seats."
             onClick={() => router.push("/business/staff")}
           />
@@ -317,7 +315,6 @@ export default function BusinessDashboard() {
           <DashboardLink
             title="Business hours"
             Icon={ClockIcon}
-            tile="bg-amber-100 text-amber-700"
             description="Set the hours customers see on your page."
             onClick={() => router.push("/business/hours")}
           />
@@ -325,7 +322,6 @@ export default function BusinessDashboard() {
           <DashboardLink
             title="Analytics"
             Icon={ChartIcon}
-            tile="bg-rose-100 text-rose-600"
             description="Page views, saves and your busiest hours."
             onClick={() => router.push("/business/analytics")}
           />
@@ -334,7 +330,6 @@ export default function BusinessDashboard() {
             <DashboardLink
               title="QR code"
               Icon={QrIcon}
-              tile="bg-slate-200 text-slate-700"
               description="Print a sign so customers can check seats from their phone."
               onClick={() => router.push("/business/qr")}
             />
@@ -344,7 +339,6 @@ export default function BusinessDashboard() {
             <DashboardLink
               title="Customer page"
               Icon={StorefrontIcon}
-              tile="bg-sky-100 text-sky-700"
               description="See your place the way customers do on SeatMate."
               onClick={() =>
                 window.location.assign(
@@ -357,7 +351,6 @@ export default function BusinessDashboard() {
           <DashboardLink
             title="Security"
             Icon={ShieldIcon}
-            tile="bg-emerald-100 text-emerald-700"
             description="Turn on two-factor sign-in to protect your account."
             onClick={() => router.push("/business/security")}
           />
@@ -409,13 +402,11 @@ function DashboardLink({
   title,
   description,
   Icon,
-  tile,
   onClick,
 }: {
   title: string;
   description: string;
   Icon: (props: { className?: string }) => React.ReactNode;
-  tile: string;
   onClick: () => void;
 }) {
   return (
@@ -425,7 +416,7 @@ function DashboardLink({
         onClick={onClick}
         className="group w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-gray-50 transition"
       >
-        <span className={`w-11 h-11 shrink-0 rounded-xl flex items-center justify-center ${tile}`}>
+        <span className="w-11 h-11 shrink-0 rounded-xl flex items-center justify-center bg-gray-100 text-[#101811]">
           <Icon className="w-5 h-5" />
         </span>
 

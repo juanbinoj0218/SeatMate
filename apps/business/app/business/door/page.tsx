@@ -156,7 +156,7 @@ export default function DoorCounterPage() {
   return (
     <main className="min-h-screen bg-[#101811] text-white flex flex-col select-none">
       <header className="border-b border-white/10">
-        <div className="max-w-5xl mx-auto px-6 h-20 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-5 sm:px-8 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 flex items-center justify-center">
               <SeatMateMark className="h-[85%] w-[85%]" />
@@ -200,7 +200,7 @@ export default function DoorCounterPage() {
           </div>
         </div>
       ) : (
-        <div className="flex-1 flex flex-col max-w-5xl w-full mx-auto px-6 py-8">
+        <div className="flex-1 flex flex-col max-w-5xl w-full mx-auto px-5 sm:px-8 py-8">
           <div className="text-center">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-green-400">
               Inside right now

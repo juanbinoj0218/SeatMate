@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Minus, Plus } from "lucide-react-native";
 import { Pressable, StyleSheet, Switch, Text, View } from "react-native";
 import { doc, getDoc, serverTimestamp, writeBatch } from "firebase/firestore";
 
@@ -194,11 +195,11 @@ function TimeStepper({ title, value, onChange }: { title: string; value: string;
     <View style={styles.timeRow}>
       <Text style={{ color: colors.muted, fontWeight: "600", width: 60 }}>{title}</Text>
       <Pressable accessibilityRole="button" accessibilityLabel={`${title} earlier`} onPress={() => shift(-STEP_MINUTES)} style={styles.timeButton}>
-        <Text style={styles.timeButtonText}>−</Text>
+        <Minus size={18} color={colors.ink} strokeWidth={2.2} />
       </Pressable>
       <Text style={styles.time}>{label(value)}</Text>
       <Pressable accessibilityRole="button" accessibilityLabel={`${title} later`} onPress={() => shift(STEP_MINUTES)} style={styles.timeButton}>
-        <Text style={styles.timeButtonText}>+</Text>
+        <Plus size={18} color={colors.ink} strokeWidth={2.2} />
       </Pressable>
     </View>
   );
@@ -218,5 +219,4 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  timeButtonText: { fontSize: 18, fontWeight: "800", color: colors.ink },
 });

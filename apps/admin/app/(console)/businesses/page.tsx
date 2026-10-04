@@ -722,7 +722,7 @@ export default function AdminPage() {
   return (
     <main className="min-h-screen bg-[#f7f8f5]">
 
-      <div className="max-w-7xl mx-auto px-6 py-10">
+      <div className="max-w-7xl mx-auto px-5 sm:px-8 py-10">
         <div>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
             Businesses

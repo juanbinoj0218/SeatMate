@@ -34,4 +34,4 @@ export async function sendResetLink(email: string, continueUrl: string) {
 // exists for the address, so the message can't either.
 export const resetSentMessage = (email: string) =>
   `If there's an account for ${email}, a reset link is on its way. ` +
-  `It can take a minute — check your spam or junk folder too.`;
+  `It can take a minute. Check your spam or junk folder too.`;

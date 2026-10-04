@@ -126,8 +126,8 @@ function SearchPageContent() {
 
   return (
     <main className="min-h-screen bg-[#f7f8f5] text-[#101811]">
-      <header className="sticky top-0 z-40 border-b border-black/5 bg-white/90 backdrop-blur-xl">
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 sm:px-6">
+      <header className="sticky top-0 z-40 border-b border-black/5 bg-white">
+        <div className="mx-auto flex h-20 max-w-6xl items-center justify-between px-5 sm:px-8">
           <button
             type="button"
             onClick={() => router.push("/")}
@@ -154,7 +154,7 @@ function SearchPageContent() {
       </header>
 
       <section className="border-b border-gray-200 bg-white">
-        <div className="mx-auto max-w-7xl px-5 py-10 sm:px-6 md:py-14">
+        <div className="mx-auto max-w-6xl px-5 py-10 sm:px-8 md:py-14">
           <Link
             href="/"
             className="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-500 transition hover:text-black"
@@ -165,10 +165,7 @@ function SearchPageContent() {
 
           <div className="mt-6 flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
             <div>
-              <p className="text-sm font-black uppercase tracking-[0.18em] text-green-600">
-                Live SeatMate locations
-              </p>
-              <h1 className="mt-2 text-4xl font-black tracking-tight sm:text-5xl">
+              <h1 className="font-display text-5xl sm:text-6xl">
                 Every SeatMate spot.
               </h1>
               <p className="mt-3 max-w-xl text-gray-500">
@@ -187,7 +184,7 @@ function SearchPageContent() {
         </div>
       </section>
 
-      <div className="mx-auto max-w-7xl px-5 py-8 sm:px-6 md:py-10">
+      <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8 md:py-10">
         <div className="flex flex-col gap-4 border-b border-gray-200 pb-7 md:flex-row md:items-center md:justify-between">
           <div className="flex flex-wrap gap-2">
             {FILTERS.map((option) => (
@@ -304,15 +301,15 @@ function SearchPageContent() {
                         <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent" />
 
                         <div className="absolute left-4 top-4 flex flex-wrap gap-2">
-                          <span className="rounded-full bg-white/95 px-3 py-1.5 text-xs font-black text-[#101811] shadow-sm backdrop-blur">
+                          <span className="rounded-full bg-white px-3 py-1.5 text-xs font-black text-[#101811] shadow-sm">
                             {business.type || "Restaurant"}
                           </span>
                           {business.totalSeats > 0 && (
                             <span
-                              className={`rounded-full px-3 py-1.5 text-xs font-black shadow-sm backdrop-blur ${
+                              className={`rounded-full px-3 py-1.5 text-xs font-black shadow-sm ${
                                 isStale
-                                  ? "bg-amber-50/95 text-amber-700"
-                                  : "bg-green-50/95 text-green-700"
+                                  ? "bg-amber-50 text-amber-700"
+                                  : "bg-green-50 text-green-700"
                               }`}
                             >
                               {freshnessLabel}
@@ -321,7 +318,7 @@ function SearchPageContent() {
                         </div>
 
                         {business.totalSeats > 0 && (
-                          <div className="absolute bottom-4 right-4 rounded-2xl bg-white/95 px-4 py-3 text-right shadow-lg backdrop-blur">
+                          <div className="absolute bottom-4 right-4 rounded-2xl bg-white px-4 py-3 text-right shadow-lg">
                             <p className="text-2xl font-black leading-none text-green-600">
                               {business.availableSeats}
                             </p>

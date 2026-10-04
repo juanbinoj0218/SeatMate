@@ -31,12 +31,6 @@ body {
     Helvetica,
     sans-serif;
 
-  font-feature-settings:
-    "cv02",
-    "cv03",
-    "cv04",
-    "cv11";
-
   text-rendering:
     optimizeLegibility;
 }
@@ -255,8 +249,7 @@ button {
     transform 120ms ease,
     background-color 150ms ease,
     border-color 150ms ease,
-    box-shadow 150ms ease,
-    opacity 150ms ease;
+    box-shadow 150ms ease;
 }
 
 button:active {

@@ -6,6 +6,7 @@ import { Stack } from "expo-router";
 import { CROWD_LEVELS, crowdLevel, usualCrowd, type DoorCount } from "@seatmate/shared/door-crowd";
 
 import WrongAccount from "@/components/gate";
+import { CrowdIcon, DoorIcon } from "@/components/icons";
 import { Loading } from "@/components/ui";
 import { resetDoorCount, setBouncerMode, stepDoorCount, watchDoor } from "@/lib/door";
 import { useSession } from "@/lib/session";
@@ -56,7 +57,7 @@ export default function DoorScreen() {
 
       {!door.enabled ? (
         <View style={styles.center}>
-          <Text style={{ fontSize: 48 }}>🚪</Text>
+          <DoorIcon size={44} color="#fff" />
           <Text style={styles.offTitle}>Bouncer mode is off</Text>
           <Text style={styles.offText}>
             {access.isOwner
@@ -67,7 +68,7 @@ export default function DoorScreen() {
             <Pressable
               accessibilityRole="button"
               onPress={() => void run(() => setBouncerMode(access.businessId, true), "Could not turn on bouncer mode.")}
-              style={({ pressed }) => [styles.turnOn, pressed && { opacity: 0.8 }]}
+              style={({ pressed }) => [styles.turnOn, pressed && { backgroundColor: "#16a34a" }]}
             >
               <Text style={{ fontWeight: "800", color: "#101811", fontSize: 16 }}>Turn on bouncer mode</Text>
             </Pressable>
@@ -80,13 +81,18 @@ export default function DoorScreen() {
           <Text style={styles.count} accessibilityLiveRegion="polite">
             {door.count}
           </Text>
-          <Text style={styles.level}>
-            {level
-              ? `${CROWD_LEVELS[level].icon} Customers see: ${CROWD_LEVELS[level].label}${
-                  usual !== null ? ` (usually about ${Math.round(usual)})` : ""
-                }`
-              : "Customers see the count. After a few nights they'll also see if it's quieter or busier than usual."}
-          </Text>
+          {level ? (
+            <View style={styles.levelRow}>
+              <CrowdIcon level={level} size={16} color="rgba(255,255,255,0.6)" />
+              <Text style={[styles.level, { flexShrink: 1, paddingHorizontal: 0 }]}>
+                {`Customers see: ${CROWD_LEVELS[level].label}${usual !== null ? ` (usually about ${Math.round(usual)})` : ""}`}
+              </Text>
+            </View>
+          ) : (
+            <Text style={styles.level}>
+              Customers see the count. After a few nights they&apos;ll also see if it&apos;s quieter or busier than usual.
+            </Text>
+          )}
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -144,7 +150,7 @@ function SmallButton({ label, onPress, danger = false }: { label: string; onPres
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
-      style={({ pressed }) => [styles.small, danger && { backgroundColor: "#f43f5e", borderColor: "#f43f5e" }, pressed && { opacity: 0.7 }]}
+      style={({ pressed }) => [styles.small, danger && { backgroundColor: "#f43f5e", borderColor: "#f43f5e" }, pressed && styles.pressed]}
     >
       <Text style={{ color: "#fff", fontWeight: "700" }}>{label}</Text>
     </Pressable>
@@ -160,15 +166,16 @@ const styles = StyleSheet.create({
   eyebrow: { color: "#4ade80", fontWeight: "800", letterSpacing: 2, fontSize: 12, textAlign: "center", marginTop: 8 },
   count: { color: "#fff", fontSize: 112, fontWeight: "900", textAlign: "center", fontVariant: ["tabular-nums"], lineHeight: 120 },
   level: { color: "rgba(255,255,255,0.6)", textAlign: "center", fontSize: 14, lineHeight: 20, paddingHorizontal: 12 },
+  levelRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingHorizontal: 12 },
   error: { color: "#fda4af", textAlign: "center", marginTop: 14 },
   pad: { flex: 1, flexDirection: "row", gap: 14, marginTop: 24, minHeight: 240 },
   tap: { flex: 1, borderRadius: 28, alignItems: "center", justifyContent: "center" },
   minus: { backgroundColor: "rgba(255,255,255,0.1)" },
   plus: { backgroundColor: "#22c55e" },
-  pressed: { transform: [{ scale: 0.97 }], opacity: 0.85 },
+  pressed: { transform: [{ scale: 0.97 }] },
   tapNumber: { fontSize: 64, fontWeight: "900" },
   tapLabel: { fontSize: 16, fontWeight: "700", marginTop: 4 },
   resetRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, marginTop: 20 },
   small: { borderWidth: 1, borderColor: "rgba(255,255,255,0.18)", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 9 },
-  footnote: { color: "rgba(255,255,255,0.35)", textAlign: "center", fontSize: 12, marginTop: 12 },
+  footnote: { color: "rgba(255,255,255,0.72)", textAlign: "center", fontSize: 12, marginTop: 12 },
 });
