@@ -90,7 +90,7 @@ export default function SeatAlertButton({
   };
 
   return (
-    <View style={{ marginTop: 12 }}>
+    <View style={{ marginTop: 20 }}>
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ selected: on, busy }}
@@ -102,7 +102,7 @@ export default function SeatAlertButton({
           (busy || pressed) && { opacity: 0.75 },
         ]}
       >
-        <BellIcon size={18} color={on ? "#fff" : colors.ink} filled={on} />
+        <BellIcon size={20} color={on ? "#fff" : colors.ink} filled={on} />
         <Text style={[styles.text, { color: on ? "#fff" : colors.ink }]}>
           {on ? "We'll email you when a seat opens" : "Email me when a seat opens"}
         </Text>
@@ -122,8 +122,8 @@ export default function SeatAlertButton({
 
 const styles = StyleSheet.create({
   button: {
-    minHeight: 52,
-    borderRadius: 16,
+    minHeight: 56,
+    borderRadius: 18,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
   },
   buttonOff: { backgroundColor: "#fff" },
   buttonOn: { backgroundColor: "rgba(255,255,255,0.1)", borderWidth: 1, borderColor: "rgba(255,255,255,0.25)" },
-  text: { fontSize: 15, fontWeight: "800" },
-  note: { color: "rgba(255,255,255,0.5)", fontSize: 12, textAlign: "center", marginTop: 8 },
-  error: { color: "#fca5a5", fontSize: 12, textAlign: "center", marginTop: 8 },
+  text: { fontSize: 16, fontWeight: "800" },
+  note: { color: "rgba(255,255,255,0.55)", fontSize: 14, textAlign: "center", marginTop: 10 },
+  error: { color: "#fca5a5", fontSize: 14, textAlign: "center", marginTop: 10 },
 });

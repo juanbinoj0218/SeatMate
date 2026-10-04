@@ -49,8 +49,8 @@ export default function CrowdMeter({ businessId, now }: { businessId: string; no
 }
 
 const styles = StyleSheet.create({
-  box: { flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1, borderRadius: 18, padding: 14, marginTop: 16 },
-  title: { color: "#fff", fontWeight: "900", fontSize: 16 },
+  box: { flexDirection: "row", alignItems: "center", gap: 14, borderWidth: 1, borderRadius: 20, padding: 18, marginTop: 20 },
+  title: { color: "#fff", fontWeight: "900", fontSize: 17 },
   count: { color: "rgba(255,255,255,0.6)", fontWeight: "600" },
-  detail: { fontSize: 13, marginTop: 3, lineHeight: 18 },
+  detail: { fontSize: 14, marginTop: 4, lineHeight: 20 },
 });

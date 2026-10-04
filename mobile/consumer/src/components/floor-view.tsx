@@ -110,7 +110,7 @@ export default function FloorView({
       <View style={styles.legend}>
         <LegendDot color="#22c55e" label="Open" />
         <LegendDot color={colors.red} label="Taken" />
-        {zoom > 0 ? <Text style={styles.hint}>Drag to look around</Text> : null}
+        <Text style={styles.hint}>{zoom > 0 ? "Drag to look around" : "Tap + to zoom in"}</Text>
       </View>
     </View>
   );
@@ -181,7 +181,7 @@ function ZoomButton({ label, disabled, onPress }: { label: string; disabled: boo
 function LegendDot({ color, label }: { color: string; label: string }) {
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-      <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: color }} />
+      <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: color }} />
       <Text style={styles.legendText}>{label}</Text>
     </View>
   );
@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderColor: "#dfe4de",
     borderWidth: 1,
-    borderRadius: 20,
+    borderRadius: 24,
     overflow: "hidden",
   },
   canvas: { width: CANVAS_WIDTH, height: CANVAS_HEIGHT, backgroundColor: "#fff" },
@@ -229,19 +229,19 @@ const styles = StyleSheet.create({
   },
   zoom: {
     position: "absolute",
-    right: 10,
-    bottom: 10,
+    right: 12,
+    bottom: 12,
     backgroundColor: "#fff",
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: colors.border,
     flexDirection: "row",
     overflow: "hidden",
   },
-  zoomButton: { width: 38, height: 34, alignItems: "center", justifyContent: "center" },
-  zoomText: { fontSize: 20, fontWeight: "700", color: colors.ink, marginTop: -2 },
+  zoomButton: { width: 48, height: 44, alignItems: "center", justifyContent: "center" },
+  zoomText: { fontSize: 24, fontWeight: "700", color: colors.ink, marginTop: -2 },
   zoomDivider: { width: 1, backgroundColor: colors.border },
-  legend: { flexDirection: "row", gap: 16, alignItems: "center", marginTop: 10, paddingHorizontal: 4 },
-  legendText: { fontSize: 13, fontWeight: "700", color: colors.muted },
-  hint: { marginLeft: "auto", fontSize: 12, color: colors.faint, fontWeight: "600" },
+  legend: { flexDirection: "row", gap: 20, alignItems: "center", marginTop: 14, paddingHorizontal: 4 },
+  legendText: { fontSize: 15, fontWeight: "700", color: colors.muted },
+  hint: { marginLeft: "auto", fontSize: 14, color: colors.faint, fontWeight: "600" },
 });

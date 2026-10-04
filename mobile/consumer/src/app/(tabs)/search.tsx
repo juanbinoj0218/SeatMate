@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BigIcons, CategoryIcon, CloseIcon, SearchIcon } from "@/components/icons";
 import { PlaceCard } from "@/components/place-card";
-import { Banner, Chip, colors, EmptyState, Loading } from "@/components/ui";
+import { Banner, Chip, colors, EmptyState, Loading, shadow, space } from "@/components/ui";
 import { useFeatures } from "@/lib/features";
 import { openNow } from "@/lib/format";
 import { tap } from "@/lib/haptics";
@@ -72,7 +72,7 @@ export default function SearchScreen() {
       <Text style={styles.title}>Search</Text>
 
       <View style={styles.searchBox}>
-        <SearchIcon size={20} color={colors.muted} />
+        <SearchIcon size={22} color={colors.muted} />
         <TextInput
           ref={input}
           value={text}
@@ -87,7 +87,7 @@ export default function SearchScreen() {
         {text ? (
           <Pressable accessibilityRole="button" accessibilityLabel="Clear search" hitSlop={10} onPress={() => setText("")}>
             <View style={styles.clear}>
-              <CloseIcon size={12} color="#fff" />
+              <CloseIcon size={14} color="#fff" />
             </View>
           </Pressable>
         ) : null}
@@ -98,12 +98,29 @@ export default function SearchScreen() {
           <Chip
             key={option.value}
             label={option.label}
-            icon={<CategoryIcon category={option.value} size={16} color={category === option.value ? "#fff" : colors.ink} strokeWidth={2.1} />}
+            icon={<CategoryIcon category={option.value} size={18} color={category === option.value ? "#fff" : colors.ink} strokeWidth={2.1} />}
             active={category === option.value}
             onPress={() => setCategory(option.value)}
           />
         ))}
       </ScrollView>
+
+      <View style={styles.sorts}>
+        {SORTS.map((option) => (
+          <Pressable
+            key={option.value}
+            accessibilityRole="button"
+            accessibilityState={{ selected: sort === option.value }}
+            onPress={() => {
+              tap();
+              setSort(option.value);
+            }}
+            style={[styles.sort, sort === option.value && styles.sortActive]}
+          >
+            <Text style={[styles.sortText, sort === option.value && { color: colors.ink }]}>{option.label}</Text>
+          </Pressable>
+        ))}
+      </View>
 
       <View style={styles.toolbar}>
         <Pressable
@@ -119,30 +136,13 @@ export default function SearchScreen() {
           <Text style={[styles.toggleText, openOnly && { color: "#fff" }]}>Open now</Text>
         </Pressable>
 
-        <View style={styles.sorts}>
-          {SORTS.map((option) => (
-            <Pressable
-              key={option.value}
-              accessibilityRole="button"
-              accessibilityState={{ selected: sort === option.value }}
-              onPress={() => {
-                tap();
-                setSort(option.value);
-              }}
-              style={[styles.sort, sort === option.value && styles.sortActive]}
-            >
-              <Text style={[styles.sortText, sort === option.value && { color: colors.ink }]}>{option.label}</Text>
-            </Pressable>
-          ))}
-        </View>
+        {!loading && !error && (
+          <Text style={styles.count}>
+            {results.length} {results.length === 1 ? "place" : "places"}
+            {filtered ? " match" : ""}
+          </Text>
+        )}
       </View>
-
-      {!loading && !error && (
-        <Text style={styles.count}>
-          {results.length} {results.length === 1 ? "place" : "places"}
-          {filtered ? " match" : ""}
-        </Text>
-      )}
       {error ? <Banner tone="error">{error}</Banner> : null}
     </View>
   );
@@ -161,7 +161,7 @@ export default function SearchScreen() {
           data={results}
           keyExtractor={(place) => place.slug}
           renderItem={({ item }) => <PlaceCard place={item} now={now} />}
-          ItemSeparatorComponent={() => <View style={{ height: 16 }} />}
+          ItemSeparatorComponent={() => <View style={{ height: space.item + 8 }} />}
           ListHeaderComponent={header}
           ListEmptyComponent={
             error ? null : (
@@ -182,7 +182,7 @@ export default function SearchScreen() {
           }
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
-          contentContainerStyle={[styles.pad, { paddingBottom: 32 }]}
+          contentContainerStyle={[styles.pad, { paddingBottom: 48 }]}
           showsVerticalScrollIndicator={false}
         />
       )}
@@ -192,49 +192,50 @@ export default function SearchScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.page },
-  pad: { paddingHorizontal: 20 },
-  title: { fontSize: 32, fontWeight: "900", color: colors.ink, letterSpacing: -1, marginTop: 12 },
+  pad: { paddingHorizontal: space.gutter },
+  title: { fontSize: 36, fontWeight: "900", color: colors.ink, letterSpacing: -1.2, marginTop: 24 },
   searchBox: {
-    marginTop: 14,
+    marginTop: 20,
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 12,
     backgroundColor: "#fff",
-    borderRadius: 16,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: colors.border,
-    paddingHorizontal: 14,
-    height: 52,
+    paddingHorizontal: 18,
+    height: 60,
+    ...shadow,
   },
-  searchInput: { flex: 1, fontSize: 16, color: colors.ink, height: "100%" },
+  searchInput: { flex: 1, fontSize: 17, color: colors.ink, height: "100%" },
   clear: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     backgroundColor: colors.faint,
     alignItems: "center",
     justifyContent: "center",
   },
-  chipsRow: { marginHorizontal: -20, marginTop: 14 },
-  chips: { paddingHorizontal: 20, gap: 8 },
-  toolbar: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 14, flexWrap: "wrap" },
+  chipsRow: { marginHorizontal: -space.gutter, marginTop: 20 },
+  chips: { paddingHorizontal: space.gutter, gap: 10 },
+  toolbar: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 16, marginBottom: 24 },
   toggle: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 7,
+    gap: 8,
     borderRadius: 999,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: "#fff",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
   },
   toggleOn: { backgroundColor: colors.ink, borderColor: colors.ink },
-  toggleDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.faint },
-  toggleText: { fontSize: 13, fontWeight: "800", color: colors.ink },
-  sorts: { flexDirection: "row", backgroundColor: "#eceee9", borderRadius: 12, padding: 3, marginLeft: "auto" },
-  sort: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 9 },
+  toggleDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: colors.faint },
+  toggleText: { fontSize: 15, fontWeight: "800", color: colors.ink },
+  sorts: { flexDirection: "row", backgroundColor: "#eceee9", borderRadius: 16, padding: 4, marginTop: 20 },
+  sort: { flex: 1, alignItems: "center", paddingHorizontal: 8, paddingVertical: 10, borderRadius: 12 },
   sortActive: { backgroundColor: "#fff" },
-  sortText: { fontSize: 12, fontWeight: "800", color: colors.muted },
-  count: { fontSize: 13, fontWeight: "700", color: colors.muted, marginTop: 16, marginBottom: 12 },
+  sortText: { fontSize: 14, fontWeight: "800", color: colors.muted },
+  count: { marginLeft: "auto", fontSize: 15, fontWeight: "700", color: colors.muted },
 });

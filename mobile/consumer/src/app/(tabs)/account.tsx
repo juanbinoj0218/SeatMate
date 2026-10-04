@@ -18,7 +18,7 @@ import {
   UserIcon,
 } from "@/components/icons";
 import { PlaceRow } from "@/components/place-card";
-import { Banner, Button, colors, ListRow } from "@/components/ui";
+import { Banner, Button, colors, ListRow, space } from "@/components/ui";
 import { firstName, useAccount } from "@/lib/account";
 import { useFeatures } from "@/lib/features";
 import { businessUrl, consumerUrl } from "@/lib/site-urls";
@@ -46,7 +46,7 @@ export default function AccountScreen() {
   return (
     <ScrollView
       style={styles.screen}
-      contentContainerStyle={[styles.pad, { paddingTop: insets.top + 12, paddingBottom: 40 }]}
+      contentContainerStyle={[styles.pad, { paddingTop: insets.top + 24, paddingBottom: 56 }]}
       showsVerticalScrollIndicator={false}
     >
       <Text style={styles.title}>Account</Text>
@@ -102,7 +102,7 @@ export default function AccountScreen() {
                   Clear
                 </Text>
               </View>
-              <View style={[styles.group, { paddingHorizontal: 14, paddingVertical: 6 }]}>
+              <View style={[styles.group, { paddingHorizontal: 18, paddingVertical: 8 }]}>
                 {profile.recentlyViewed.map((item) => (
                   <PlaceRow key={item.slug} {...item} />
                 ))}
@@ -115,19 +115,19 @@ export default function AccountScreen() {
             <ListRow
               title="Your details"
               detail="Name and home ZIP"
-              icon={<UserIcon size={19} />}
+              icon={<UserIcon size={21} />}
               onPress={() => router.push("/profile")}
             />
             <ListRow
               title="Saved places"
               detail={`${favorites.length} ${favorites.length === 1 ? "place" : "places"}`}
-              icon={<HeartIcon size={19} />}
+              icon={<HeartIcon size={21} />}
               onPress={() => router.navigate("/saved")}
             />
             <ListRow
               title="Security"
               detail="Password and two-step sign-in, on the website"
-              icon={<ShieldIcon size={19} />}
+              icon={<ShieldIcon size={21} />}
               onPress={() => openSite(consumerUrl("/account"))}
               last
             />
@@ -135,16 +135,16 @@ export default function AccountScreen() {
         </>
       ) : (
         <View style={styles.signIn}>
-          <SeatMateMark size={44} color="#fff" />
+          <SeatMateMark size={48} color="#fff" />
           <Text style={styles.signInTitle}>Make SeatMate yours</Text>
           <Text style={styles.signInText}>
             Save places, pick up where you left off and get an email the moment a seat opens at a full spot.
           </Text>
-          <Button title="Sign in or create account" variant="green" onPress={() => router.push("/login")} style={{ marginTop: 18 }} />
+          <Button title="Sign in or create account" variant="green" onPress={() => router.push("/login")} style={{ marginTop: 24 }} />
           <View style={styles.perks}>
-            <Perk icon={<HeartIcon size={16} color="#fff" />} text="Saved places" />
-            <Perk icon={<BellIcon size={16} color="#fff" />} text="Seat alerts" />
-            <Perk icon={<PinIcon size={16} color="#fff" />} text="Your area" />
+            <Perk icon={<HeartIcon size={17} color="#fff" />} text="Saved places" />
+            <Perk icon={<BellIcon size={17} color="#fff" />} text="Seat alerts" />
+            <Perk icon={<PinIcon size={17} color="#fff" />} text="Your area" />
           </View>
         </View>
       )}
@@ -152,26 +152,26 @@ export default function AccountScreen() {
       <Text style={styles.groupTitleAlone}>SeatMate</Text>
       <View style={styles.group}>
         {features.suggestPlace && (
-          <ListRow title="Suggest a place" detail="Ask for live seats somewhere new" icon={<PlusIcon size={19} />} onPress={() => router.push("/suggest")} />
+          <ListRow title="Suggest a place" detail="Ask for live seats somewhere new" icon={<PlusIcon size={21} />} onPress={() => router.push("/suggest")} />
         )}
-        <ListRow title="Contact us" detail="Questions, feedback, problems" icon={<MailIcon size={19} />} onPress={() => router.push("/contact")} />
+        <ListRow title="Contact us" detail="Questions, feedback, problems" icon={<MailIcon size={21} />} onPress={() => router.push("/contact")} />
         <ListRow
           title="Own a business?"
           detail="Put your seats on SeatMate"
-          icon={<StorefrontIcon size={19} />}
+          icon={<StorefrontIcon size={21} />}
           onPress={() => openSite(businessUrl("/"))}
         />
-        <ListRow title="How SeatMate works" icon={<SeatMateMark size={19} />} onPress={() => openSite(consumerUrl("/about"))} />
-        <ListRow title="Privacy" icon={<ShieldIcon size={19} />} onPress={() => openSite(consumerUrl("/privacy"))} />
-        <ListRow title="Terms" icon={<DocIcon size={19} />} onPress={() => openSite(consumerUrl("/terms"))} last />
+        <ListRow title="How SeatMate works" icon={<SeatMateMark size={21} />} onPress={() => openSite(consumerUrl("/about"))} />
+        <ListRow title="Privacy" icon={<ShieldIcon size={21} />} onPress={() => openSite(consumerUrl("/privacy"))} />
+        <ListRow title="Terms" icon={<DocIcon size={21} />} onPress={() => openSite(consumerUrl("/terms"))} last />
       </View>
 
       {user && (
         <>
-          <View style={[styles.group, { marginTop: 22 }]}>
+          <View style={[styles.group, { marginTop: 32 }]}>
             <ListRow
               title="Sign out"
-              icon={<SignOutIcon size={19} />}
+              icon={<SignOutIcon size={21} />}
               onPress={() => confirm("Sign out?", "You can sign back in any time.", "Sign out", () => signOut())}
             />
             <ListRow title="Delete account" danger onPress={() => router.push("/delete-account")} last />
@@ -195,59 +195,59 @@ function Perk({ icon, text }: { icon: React.ReactNode; text: string }) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.page },
-  pad: { paddingHorizontal: 20 },
-  title: { fontSize: 32, fontWeight: "900", color: colors.ink, letterSpacing: -1 },
-  profile: { flexDirection: "row", alignItems: "center", gap: 14, marginTop: 18 },
+  pad: { paddingHorizontal: space.gutter },
+  title: { fontSize: 36, fontWeight: "900", color: colors.ink, letterSpacing: -1.2 },
+  profile: { flexDirection: "row", alignItems: "center", gap: 16, marginTop: 28 },
   avatar: {
-    width: 62,
-    height: 62,
-    borderRadius: 31,
+    width: 68,
+    height: 68,
+    borderRadius: 34,
     backgroundColor: colors.ink,
     alignItems: "center",
     justifyContent: "center",
   },
-  avatarText: { color: "#fff", fontSize: 26, fontWeight: "900" },
-  name: { fontSize: 21, fontWeight: "900", color: colors.ink },
-  email: { fontSize: 14, color: colors.muted, marginTop: 2 },
+  avatarText: { color: "#fff", fontSize: 28, fontWeight: "900" },
+  name: { fontSize: 23, fontWeight: "900", color: colors.ink, letterSpacing: -0.4 },
+  email: { fontSize: 16, color: colors.muted, marginTop: 4 },
   stats: {
     flexDirection: "row",
     backgroundColor: "#fff",
-    borderRadius: 20,
+    borderRadius: 24,
     borderWidth: 1,
     borderColor: colors.border,
-    marginTop: 18,
-    paddingVertical: 14,
+    marginTop: 24,
+    paddingVertical: 20,
   },
   stat: { flex: 1, alignItems: "center" },
-  statValue: { fontSize: 20, fontWeight: "900", color: colors.ink },
-  statLabel: { fontSize: 12, fontWeight: "700", color: colors.muted, marginTop: 2 },
+  statValue: { fontSize: 24, fontWeight: "900", color: colors.ink },
+  statLabel: { fontSize: 14, fontWeight: "700", color: colors.muted, marginTop: 4 },
   statDivider: { width: 1, backgroundColor: colors.line },
-  groupHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", marginTop: 26, marginBottom: 10 },
-  groupTitle: { fontSize: 13, fontWeight: "900", color: colors.muted, textTransform: "uppercase", letterSpacing: 1 },
-  groupAction: { fontSize: 14, fontWeight: "800", color: colors.green },
+  groupHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", marginTop: space.section, marginBottom: 14 },
+  groupTitle: { fontSize: 14, fontWeight: "900", color: colors.muted, textTransform: "uppercase", letterSpacing: 1 },
+  groupAction: { fontSize: 15, fontWeight: "800", color: colors.green },
   groupTitleAlone: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "900",
     color: colors.muted,
     textTransform: "uppercase",
     letterSpacing: 1,
-    marginTop: 26,
-    marginBottom: 10,
+    marginTop: space.section,
+    marginBottom: 14,
   },
-  group: { backgroundColor: "#fff", borderRadius: 20, borderWidth: 1, borderColor: colors.border, overflow: "hidden" },
-  signIn: { backgroundColor: colors.ink, borderRadius: 26, padding: 22, marginTop: 18 },
-  signInTitle: { color: "#fff", fontSize: 24, fontWeight: "900", marginTop: 14, letterSpacing: -0.5 },
-  signInText: { color: "rgba(255,255,255,0.65)", fontSize: 15, lineHeight: 21, marginTop: 6 },
-  perks: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 16 },
+  group: { backgroundColor: "#fff", borderRadius: 24, borderWidth: 1, borderColor: colors.border, overflow: "hidden" },
+  signIn: { backgroundColor: colors.ink, borderRadius: 28, padding: 28, marginTop: 28 },
+  signInTitle: { color: "#fff", fontSize: 26, fontWeight: "900", marginTop: 20, letterSpacing: -0.5 },
+  signInText: { color: "rgba(255,255,255,0.7)", fontSize: 16, lineHeight: 24, marginTop: 10 },
+  perks: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 20 },
   perk: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 7,
     backgroundColor: "rgba(255,255,255,0.08)",
     borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 13,
+    paddingVertical: 8,
   },
-  perkText: { color: "#fff", fontSize: 12, fontWeight: "700" },
-  version: { textAlign: "center", color: colors.faint, fontSize: 12, marginTop: 26 },
+  perkText: { color: "#fff", fontSize: 14, fontWeight: "700" },
+  version: { textAlign: "center", color: colors.faint, fontSize: 13, marginTop: space.section },
 });

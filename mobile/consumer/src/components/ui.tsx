@@ -37,6 +37,15 @@ export const colors = {
   amberText: "#92400e",
 };
 
+// Spacing scale, so every screen breathes the same way: a 24pt side gutter,
+// 40pt between sections and 16pt between items in a list.
+export const space = {
+  gutter: 24,
+  section: 40,
+  item: 16,
+  tight: 8,
+};
+
 export const shadow: ViewStyle = {
   shadowColor: "#101811",
   shadowOpacity: 0.07,
@@ -152,7 +161,7 @@ const buttonLooks: Record<ButtonVariant, { background: string; border: string; t
 
 export function Field({ label, hint, ...input }: TextInputProps & { label: string; hint?: string }) {
   return (
-    <View style={{ marginTop: 14 }}>
+    <View style={{ marginTop: 20 }}>
       <Text style={styles.label}>{label}</Text>
       <TextInput placeholderTextColor={colors.faint} style={styles.input} {...input} />
       {hint ? <Text style={styles.hint}>{hint}</Text> : null}
@@ -286,8 +295,8 @@ export function EmptyState({
     <View style={styles.empty}>
       <View style={styles.emptyIcon}>{icon}</View>
       <Text style={styles.emptyTitle}>{title}</Text>
-      <Text style={[styles.muted, { textAlign: "center", marginTop: 6 }]}>{text}</Text>
-      {action && onAction ? <Button title={action} onPress={onAction} style={{ marginTop: 18, alignSelf: "stretch" }} /> : null}
+      <Text style={[styles.muted, { textAlign: "center", marginTop: 8, maxWidth: 300 }]}>{text}</Text>
+      {action && onAction ? <Button title={action} onPress={onAction} style={{ marginTop: 24, alignSelf: "stretch" }} /> : null}
     </View>
   );
 }
@@ -299,69 +308,69 @@ export const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderColor: colors.border,
     borderWidth: 1,
-    borderRadius: 22,
-    padding: 18,
+    borderRadius: 24,
+    padding: 20,
   },
   title: { fontSize: 30, fontWeight: "900", color: colors.ink, letterSpacing: -0.8 },
   eyebrow: { fontSize: 12, fontWeight: "900", letterSpacing: 1.6, textTransform: "uppercase" },
-  muted: { color: colors.muted, fontSize: 15, lineHeight: 21 },
+  muted: { color: colors.muted, fontSize: 16, lineHeight: 23 },
   sectionHeader: {
     flexDirection: "row",
     alignItems: "baseline",
     justifyContent: "space-between",
-    marginTop: 28,
-    marginBottom: 12,
+    marginTop: 40,
+    marginBottom: 16,
   },
-  sectionTitle: { fontSize: 20, fontWeight: "900", color: colors.ink, letterSpacing: -0.4 },
-  sectionAction: { fontSize: 14, fontWeight: "800", color: colors.green },
-  label: { fontSize: 14, fontWeight: "700", color: colors.ink, marginBottom: 6 },
-  hint: { fontSize: 12, color: colors.faint, marginTop: 5 },
+  sectionTitle: { fontSize: 22, fontWeight: "900", color: colors.ink, letterSpacing: -0.5 },
+  sectionAction: { fontSize: 15, fontWeight: "800", color: colors.green },
+  label: { fontSize: 15, fontWeight: "700", color: colors.ink, marginBottom: 8 },
+  hint: { fontSize: 13, color: colors.faint, marginTop: 6, lineHeight: 18 },
   input: {
     borderWidth: 1,
     borderColor: "#e5e7eb",
     borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
+    paddingHorizontal: 16,
+    paddingVertical: 15,
     fontSize: 16,
     color: colors.ink,
     backgroundColor: "#fff",
   },
   button: {
-    minHeight: 52,
+    minHeight: 56,
     borderRadius: 16,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 18,
+    paddingHorizontal: 20,
   },
   buttonInner: { flexDirection: "row", alignItems: "center", gap: 8 },
   buttonText: { fontSize: 16, fontWeight: "800" },
-  banner: { borderWidth: 1, borderRadius: 14, padding: 14, marginTop: 14 },
+  banner: { borderWidth: 1, borderRadius: 16, padding: 16, marginTop: 16 },
   chip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 15,
-    paddingVertical: 9,
+    gap: 7,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
     borderRadius: 999,
     backgroundColor: "#fff",
     borderWidth: 1,
     borderColor: colors.border,
   },
   chipActive: { backgroundColor: colors.ink, borderColor: colors.ink },
-  chipText: { fontSize: 14, fontWeight: "800", color: colors.ink },
-  listRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 15, paddingHorizontal: 16 },
+  chipText: { fontSize: 15, fontWeight: "800", color: colors.ink },
+  listRow: { flexDirection: "row", alignItems: "center", gap: 14, paddingVertical: 18, paddingHorizontal: 18 },
   listRowBorder: { borderBottomWidth: 1, borderBottomColor: colors.line },
   listIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     backgroundColor: colors.chip,
     alignItems: "center",
     justifyContent: "center",
   },
-  listTitle: { fontSize: 16, fontWeight: "700", color: colors.ink },
-  listDetail: { fontSize: 13, color: colors.muted, marginTop: 2 },
+  listTitle: { fontSize: 17, fontWeight: "700", color: colors.ink },
+  listDetail: { fontSize: 14, color: colors.muted, marginTop: 3, lineHeight: 19 },
   chevron: { fontSize: 24, color: colors.faint, marginTop: -2 },
   stat: {
     flex: 1,
@@ -369,12 +378,12 @@ export const styles = StyleSheet.create({
     borderColor: colors.border,
     borderWidth: 1,
     borderRadius: 18,
-    padding: 14,
+    padding: 16,
   },
   statDark: { backgroundColor: "rgba(255,255,255,0.06)", borderColor: "transparent" },
-  statLabel: { fontSize: 11, fontWeight: "800", color: colors.faint, textTransform: "uppercase", letterSpacing: 0.8 },
+  statLabel: { fontSize: 12, fontWeight: "800", color: colors.faint, textTransform: "uppercase", letterSpacing: 0.8 },
   statValue: { fontSize: 26, fontWeight: "900", marginTop: 6 },
-  empty: { alignItems: "center", paddingVertical: 36, paddingHorizontal: 24 },
+  empty: { alignItems: "center", paddingVertical: 48, paddingHorizontal: 24 },
   emptyIcon: {
     width: 84,
     height: 84,
@@ -383,5 +392,5 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  emptyTitle: { fontSize: 20, fontWeight: "900", color: colors.ink, marginTop: 12, textAlign: "center" },
+  emptyTitle: { fontSize: 22, fontWeight: "900", color: colors.ink, marginTop: 20, textAlign: "center" },
 });

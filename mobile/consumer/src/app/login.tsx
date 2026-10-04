@@ -302,5 +302,5 @@ const styles = StyleSheet.create({
   orText: { color: colors.faint, fontWeight: "700" },
   switch: { textAlign: "center", marginTop: 24, fontSize: 15, color: colors.muted },
   switchLink: { color: colors.ink, fontWeight: "900" },
-  legal: { textAlign: "center", marginTop: 18, fontSize: 12, color: colors.faint, lineHeight: 17 },
+  legal: { textAlign: "center", marginTop: 24, fontSize: 13, color: colors.faint, lineHeight: 19 },
 });

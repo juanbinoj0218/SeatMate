@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BigIcons, CategoryIcon, SearchIcon, SeatMateMark } from "@/components/icons";
 import LiveDot from "@/components/live-dot";
 import { PlaceCard, PlaceRow, PlaceTile } from "@/components/place-card";
-import { Banner, Button, colors, EmptyState, Loading, SectionHeader, shadow } from "@/components/ui";
+import { Banner, Button, colors, EmptyState, Loading, SectionHeader, shadow, space } from "@/components/ui";
 import { firstName, useAccount } from "@/lib/account";
 import { useFeatures } from "@/lib/features";
 import { greeting, openNow } from "@/lib/format";
@@ -38,13 +38,13 @@ export default function ExploreScreen() {
   return (
     <ScrollView
       style={styles.screen}
-      contentContainerStyle={{ paddingTop: insets.top + 8, paddingBottom: 32 }}
+      contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: 48 }}
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.pad}>
         <View style={styles.topBar}>
           <View style={styles.brand}>
-            <SeatMateMark size={30} />
+            <SeatMateMark size={32} />
             <Text style={styles.brandText}>SeatMate</Text>
           </View>
           <Pressable
@@ -72,7 +72,7 @@ export default function ExploreScreen() {
           }}
           style={({ pressed }) => [styles.search, pressed && { opacity: 0.9 }]}
         >
-          <SearchIcon size={20} color={colors.muted} />
+          <SearchIcon size={22} color={colors.muted} />
           <Text style={styles.searchText}>Cafés, bars, barbershops…</Text>
         </Pressable>
 
@@ -99,7 +99,7 @@ export default function ExploreScreen() {
             style={({ pressed }) => [styles.category, pressed && { transform: [{ scale: 0.96 }] }]}
           >
             <View style={styles.categoryIcon}>
-              <CategoryIcon category={category.value} size={22} />
+              <CategoryIcon category={category.value} size={24} />
             </View>
             <Text style={styles.categoryLabel}>{category.label}</Text>
           </Pressable>
@@ -155,7 +155,7 @@ export default function ExploreScreen() {
 
           <View style={styles.pad}>
             <SectionHeader title="Every SeatMate spot" />
-            <View style={{ gap: 16 }}>
+            <View style={{ gap: space.item + 8 }}>
               {sorted.map((place) => (
                 <PlaceCard key={place.slug} place={place} now={now} />
               ))}
@@ -165,11 +165,11 @@ export default function ExploreScreen() {
       )}
 
       {features.suggestPlace && (
-        <View style={[styles.pad, { marginTop: 28 }]}>
+        <View style={[styles.pad, { marginTop: space.section + 8 }]}>
           <View style={styles.suggest}>
             <Text style={styles.suggestTitle}>Don&apos;t see your spot?</Text>
             <Text style={styles.suggestText}>Tell us where you&apos;d like live seats next and we&apos;ll ask them to join.</Text>
-            <Button title="Suggest a place" variant="green" onPress={() => router.push("/suggest")} style={{ marginTop: 16 }} />
+            <Button title="Suggest a place" variant="green" onPress={() => router.push("/suggest")} style={{ marginTop: 20 }} />
           </View>
         </View>
       )}
@@ -179,70 +179,70 @@ export default function ExploreScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.page },
-  pad: { paddingHorizontal: 20 },
-  topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  brand: { flexDirection: "row", alignItems: "center", gap: 8 },
-  brandText: { fontSize: 20, fontWeight: "900", color: colors.ink, letterSpacing: -0.4 },
+  pad: { paddingHorizontal: space.gutter },
+  topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 44 },
+  brand: { flexDirection: "row", alignItems: "center", gap: 10 },
+  brandText: { fontSize: 21, fontWeight: "900", color: colors.ink, letterSpacing: -0.4 },
   avatar: {
-    minWidth: 40,
-    height: 40,
-    borderRadius: 20,
-    paddingHorizontal: 12,
+    minWidth: 44,
+    height: 44,
+    borderRadius: 22,
+    paddingHorizontal: 16,
     backgroundColor: colors.ink,
     alignItems: "center",
     justifyContent: "center",
   },
-  avatarText: { color: "#fff", fontWeight: "900", fontSize: 14 },
-  hello: { marginTop: 26, fontSize: 15, fontWeight: "700", color: colors.green },
-  headline: { marginTop: 6, fontSize: 36, lineHeight: 40, fontWeight: "900", color: colors.ink, letterSpacing: -1.2 },
+  avatarText: { color: "#fff", fontWeight: "900", fontSize: 15 },
+  hello: { marginTop: 36, fontSize: 16, fontWeight: "700", color: colors.green },
+  headline: { marginTop: 8, fontSize: 38, lineHeight: 44, fontWeight: "900", color: colors.ink, letterSpacing: -1.2 },
   search: {
-    marginTop: 20,
+    marginTop: 28,
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 12,
     backgroundColor: "#fff",
-    borderRadius: 18,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: colors.border,
-    paddingHorizontal: 16,
-    height: 54,
+    paddingHorizontal: 18,
+    height: 60,
     ...shadow,
   },
-  searchText: { fontSize: 16, color: colors.faint, fontWeight: "600" },
-  liveStrip: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 16 },
-  liveText: { fontSize: 14, color: colors.muted, flex: 1 },
-  categories: { paddingHorizontal: 20, gap: 10, paddingTop: 20, paddingBottom: 4 },
+  searchText: { fontSize: 17, color: colors.faint, fontWeight: "600" },
+  liveStrip: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 20 },
+  liveText: { fontSize: 15, lineHeight: 21, color: colors.muted, flex: 1 },
+  categories: { paddingHorizontal: space.gutter, gap: 12, paddingTop: 32, paddingBottom: 6 },
   category: {
-    width: 92,
-    paddingVertical: 14,
-    borderRadius: 20,
+    width: 104,
+    paddingVertical: 18,
+    borderRadius: 22,
     backgroundColor: "#fff",
     borderWidth: 1,
     borderColor: colors.border,
     alignItems: "center",
   },
   categoryIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     backgroundColor: colors.chip,
     alignItems: "center",
     justifyContent: "center",
   },
-  categoryLabel: { fontSize: 12, fontWeight: "800", color: colors.ink, marginTop: 6 },
-  carousel: { paddingHorizontal: 20, gap: 14, paddingBottom: 8 },
-  fullCard: { backgroundColor: colors.ink, borderRadius: 22, padding: 20 },
-  fullTitle: { color: "#fff", fontSize: 18, fontWeight: "900" },
-  fullText: { color: "rgba(255,255,255,0.65)", fontSize: 14, lineHeight: 20, marginTop: 6 },
+  categoryLabel: { fontSize: 14, fontWeight: "800", color: colors.ink, marginTop: 10 },
+  carousel: { paddingHorizontal: space.gutter, gap: space.item, paddingBottom: 10 },
+  fullCard: { backgroundColor: colors.ink, borderRadius: 24, padding: 24 },
+  fullTitle: { color: "#fff", fontSize: 19, fontWeight: "900" },
+  fullText: { color: "rgba(255,255,255,0.65)", fontSize: 15, lineHeight: 22, marginTop: 8 },
   recentCard: {
     backgroundColor: "#fff",
-    borderRadius: 22,
+    borderRadius: 24,
     borderWidth: 1,
     borderColor: colors.border,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
-  suggest: { backgroundColor: colors.ink, borderRadius: 26, padding: 22 },
-  suggestTitle: { color: "#fff", fontSize: 22, fontWeight: "900", letterSpacing: -0.4 },
-  suggestText: { color: "rgba(255,255,255,0.65)", fontSize: 15, lineHeight: 21, marginTop: 6 },
+  suggest: { backgroundColor: colors.ink, borderRadius: 28, padding: 28 },
+  suggestTitle: { color: "#fff", fontSize: 24, fontWeight: "900", letterSpacing: -0.5 },
+  suggestText: { color: "rgba(255,255,255,0.65)", fontSize: 16, lineHeight: 23, marginTop: 10 },
 });
