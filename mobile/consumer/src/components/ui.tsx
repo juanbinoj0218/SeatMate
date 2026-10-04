@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -11,6 +11,17 @@ import {
   type TextStyle,
   type ViewStyle,
 } from "react-native";
+
+import Animated, {
+  cancelAnimation,
+  Easing,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from "react-native-reanimated";
+import { CloudOff } from "lucide-react-native";
 
 import { tap } from "@/lib/haptics";
 
@@ -301,6 +312,51 @@ export function EmptyState({
   );
 }
 
+// Keeps content at a comfortable reading width on tablets and phones in
+// landscape. Put it on a ScrollView's contentContainerStyle (or a wrapper).
+export const readable: ViewStyle = { width: "100%", maxWidth: 720, alignSelf: "center" };
+
+// A neutral block that gently pulses while content loads. Size it with
+// `style` (width, height, borderRadius) to match what it stands in for.
+export function Skeleton({ style }: { style?: StyleProp<ViewStyle> }) {
+  const reduceMotion = useReducedMotion();
+  const pulse = useSharedValue(0);
+
+  useEffect(() => {
+    if (reduceMotion) return;
+    pulse.set(withRepeat(withTiming(1, { duration: 850, easing: Easing.inOut(Easing.quad) }), -1, true));
+    return () => cancelAnimation(pulse);
+  }, [pulse, reduceMotion]);
+
+  const animated = useAnimatedStyle(() => ({ opacity: 1 - pulse.get() * 0.45 }));
+
+  return <Animated.View style={[styles.skeleton, animated, style]} />;
+}
+
+// Shown when something couldn't load, with a way to try again.
+export function RetryPanel({
+  title,
+  text,
+  onRetry,
+  style,
+}: {
+  title: string;
+  text: string;
+  onRetry: () => void;
+  style?: StyleProp<ViewStyle>;
+}) {
+  return (
+    <View accessibilityRole="alert" style={[styles.retry, style]}>
+      <View style={styles.emptyIcon}>
+        <CloudOff size={36} color={colors.muted} strokeWidth={1.9} />
+      </View>
+      <Text style={styles.emptyTitle}>{title}</Text>
+      <Text style={[styles.muted, { textAlign: "center", marginTop: 8, maxWidth: 320 }]}>{text}</Text>
+      <Button title="Retry" onPress={onRetry} style={{ marginTop: 24, alignSelf: "stretch" }} />
+    </View>
+  );
+}
+
 export const styles = StyleSheet.create({
   fill: { flex: 1, backgroundColor: colors.page },
   center: { alignItems: "center", justifyContent: "center" },
@@ -393,4 +449,14 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
   },
   emptyTitle: { fontSize: 22, fontWeight: "900", color: colors.ink, marginTop: 20, textAlign: "center" },
+  skeleton: { backgroundColor: "#e7eae5", borderRadius: 12 },
+  retry: {
+    alignItems: "center",
+    backgroundColor: colors.card,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 24,
+    paddingVertical: 36,
+    paddingHorizontal: 24,
+  },
 });

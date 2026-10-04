@@ -1,38 +1,26 @@
 "use client";
 
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  deleteUser,
   EmailAuthProvider,
   GoogleAuthProvider,
   OAuthProvider,
   reauthenticateWithCredential,
   reauthenticateWithPopup,
+  signOut,
   type MultiFactorResolver,
   type User,
 } from "firebase/auth";
-import {
-  collection,
-  deleteDoc,
-  doc,
-  getDocs,
-  query,
-  where,
-  writeBatch,
-} from "firebase/firestore";
 
-import { db } from "@seatmate/shared/firebase";
-import { SEAT_ALERTS } from "@seatmate/shared/seat-alerts";
+import { auth } from "@seatmate/shared/firebase";
 import TwoFactorPrompt from "@seatmate/shared/components/TwoFactorPrompt";
 import { twoFactorResolver } from "@seatmate/shared/two-factor";
 
-import { useAccount } from "@/components/account-provider";
-
-// "Delete account" on the account page. Confirms who you are again (your
+// "Delete account" on the Security page. Confirms who you are again (your
 // password, Google or Apple, plus the authenticator-app code when two-step
-// sign-in is on), then removes saved places, seat alerts, your profile and
-// finally the sign-in account itself.
+// sign-in is on), then asks the server (/api/delete-account) to delete the
+// business, its listing, floor plan, staff and analytics, and the sign-in.
 
 const linked = (user: User, providerId: string) =>
   user.providerData.some((provider) => provider.providerId === providerId);
@@ -46,21 +34,6 @@ const popupProvider = (method: "google" | "apple") => {
   provider.addScope("name");
   return provider;
 };
-
-async function deleteCustomerData(uid: string) {
-  const favorites = await getDocs(collection(db, "users", uid, "favorites"));
-  const alerts = await getDocs(query(collection(db, SEAT_ALERTS), where("uid", "==", uid)));
-
-  // Batches hold up to 500 writes.
-  const refs = [...favorites.docs, ...alerts.docs].map((item) => item.ref);
-  for (let start = 0; start < refs.length; start += 450) {
-    const batch = writeBatch(db);
-    refs.slice(start, start + 450).forEach((ref) => batch.delete(ref));
-    await batch.commit();
-  }
-
-  await deleteDoc(doc(db, "users", uid));
-}
 
 const describe = (error: unknown) => {
   const code =
@@ -79,8 +52,6 @@ const describe = (error: unknown) => {
       return "Your browser blocked the confirmation window. Allow pop-ups and try again.";
     case "auth/user-mismatch":
       return "Confirm with the same account you're signed in with.";
-    case "auth/requires-recent-login":
-      return "For your security, confirm it's you again, then delete your account.";
     case "auth/too-many-requests":
       return "Too many attempts. Wait a moment and try again.";
     case "auth/network-request-failed":
@@ -90,76 +61,59 @@ const describe = (error: unknown) => {
   }
 };
 
-export default function DeleteAccount({
-  user,
-  onDeleting,
-}: {
-  user: User;
-  onDeleting: (deleting: boolean) => void;
-}) {
+export default function DeleteAccount({ user }: { user: User }) {
   const router = useRouter();
-  const { pauseSync } = useAccount();
-  const dialogRef = useRef<HTMLDialogElement>(null);
   const [open, setOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const [password, setPassword] = useState("");
+  const [twoFactor, setTwoFactor] = useState<MultiFactorResolver | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [twoFactor, setTwoFactor] = useState<MultiFactorResolver | null>(null);
 
   const needsPassword = linked(user, "password");
-  // Without a password, confirm with whichever of Google and Apple the
-  // account uses (both buttons if it uses both).
   const popupMethods = (["google", "apple"] as const).filter((method) =>
     linked(user, method === "google" ? "google.com" : "apple.com")
   );
 
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
-    if (!open && dialog.open) dialog.close();
-  }, [open]);
-
-  const close = () => {
+  const cancel = () => {
     if (busy) return;
     setOpen(false);
     setConfirmText("");
     setPassword("");
-    setError("");
     setTwoFactor(null);
+    setError("");
   };
 
-  // Runs once the account is confirmed: data first (the rules need the
-  // signed-in account), then the sign-in itself.
+  // Runs once the account is confirmed. A fresh ID token carries the new
+  // sign-in time the server checks.
   const removeEverything = async () => {
     setBusy(true);
-    onDeleting(true);
-    pauseSync();
 
     try {
-      await deleteCustomerData(user.uid);
+      const idToken = await user.getIdToken(true);
+      const response = await fetch("/api/delete-account", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+        body: "{}",
+      });
+      const result = (await response.json().catch(() => null)) as
+        | { ok?: boolean; error?: string }
+        | null;
+
+      if (!response.ok || !result?.ok) {
+        setError(result?.error || "We couldn't delete your account. Please try again, or contact us.");
+        setBusy(false);
+        return;
+      }
     } catch (caught) {
-      console.error("Could not delete account data:", caught);
-      onDeleting(false);
+      console.error("Could not delete account:", caught);
       setError(describe(caught));
       setBusy(false);
       return;
     }
 
-    try {
-      await deleteUser(user);
-    } catch (caught) {
-      console.error("Deleted data but not the account:", caught);
-      onDeleting(false);
-      setError(
-        "Your saved places, history and seat alerts were deleted, but we couldn't remove your sign-in. Please try again, or contact us and we'll finish it for you."
-      );
-      setBusy(false);
-      return;
-    }
-
-    router.replace("/?account=deleted");
+    await signOut(auth).catch(() => undefined);
+    router.replace("/business/login");
   };
 
   const confirmAndDelete = async (method: Method) => {
@@ -178,8 +132,7 @@ export default function DeleteAccount({
     setBusy(true);
 
     try {
-      // Firebase only deletes accounts that signed in recently, so confirm
-      // first; nothing is removed if this step fails.
+      // Nothing is removed if this step fails.
       if (method === "password") {
         await reauthenticateWithCredential(
           user,
@@ -209,57 +162,46 @@ export default function DeleteAccount({
   };
 
   return (
-    <>
-      <div className="mt-6 rounded-3xl border border-line bg-white p-6 sm:p-7">
-        <h2 className="text-lg font-semibold">Delete account</h2>
-        <p className="mt-1.5 text-sm text-gray-600">
-          Permanently remove your account, saved places, history and seat alerts.
-        </p>
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="mt-4 h-11 w-full rounded-xl border border-red-200 font-semibold text-red-600 transition hover:bg-red-50"
-        >
-          Delete account…
-        </button>
+    <section className="rounded-3xl border border-gray-200 bg-white p-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="max-w-md">
+          <h2 className="text-lg font-bold text-[#101811]">Delete account</h2>
+          <p className="mt-1 text-sm text-gray-500">
+            Permanently delete your sign-in and, if you own a business, its SeatMate listing,
+            floor plan, staff accounts and invites, hours, cover photo and analytics. It
+            can&apos;t be undone.
+          </p>
+        </div>
+
+        {!open && (
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="rounded-xl border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50"
+          >
+            Delete account…
+          </button>
+        )}
       </div>
 
-      <dialog
-        ref={dialogRef}
-        onClose={close}
-        onCancel={(event) => {
-          if (busy) event.preventDefault();
-        }}
-        aria-labelledby="delete-account-title"
-        className="m-auto w-[calc(100%-2rem)] max-w-md rounded-3xl p-0 text-ink backdrop:bg-black/40"
-      >
-        {twoFactor ? (
-          <div className="space-y-4 p-7">
-            {/* The code finishes confirming the account; then it's deleted. */}
-            <TwoFactorPrompt
-              resolver={twoFactor}
-              onSignedIn={async () => {
-                setTwoFactor(null);
-                await removeEverything();
-              }}
-              onCancel={() => setTwoFactor(null)}
-            />
-          </div>
-        ) : (
-        <form onSubmit={submit} className="space-y-5 p-7">
-          <div>
-            <h2 id="delete-account-title" className="font-display text-3xl">
-              Delete your account?
-            </h2>
-            <p className="mt-2 text-gray-600">
-              This permanently deletes <strong>{user.email}</strong>, your saved places, recently
-              viewed places, home ZIP and any seat alerts. It can&apos;t be undone.
-            </p>
-          </div>
+      {open && twoFactor && (
+        <div className="mt-5 max-w-md">
+          <TwoFactorPrompt
+            resolver={twoFactor}
+            onSignedIn={async () => {
+              setTwoFactor(null);
+              await removeEverything();
+            }}
+            onCancel={() => setTwoFactor(null)}
+          />
+        </div>
+      )}
 
+      {open && !twoFactor && (
+        <form onSubmit={submit} className="mt-5 max-w-md space-y-4">
           <div>
-            <label htmlFor="delete-confirm" className="mb-1.5 block text-sm font-medium">
-              Type <span className="font-mono font-semibold">DELETE</span> to confirm
+            <label htmlFor="delete-confirm" className="mb-1.5 block text-sm font-semibold">
+              Type <span className="font-mono">DELETE</span> to confirm
             </label>
             <input
               id="delete-confirm"
@@ -267,13 +209,13 @@ export default function DeleteAccount({
               value={confirmText}
               onChange={(event) => setConfirmText(event.target.value)}
               autoComplete="off"
-              className="w-full"
+              className="w-full rounded-xl border border-gray-200 px-4 py-3"
             />
           </div>
 
           {needsPassword ? (
             <div>
-              <label htmlFor="delete-password" className="mb-1.5 block text-sm font-medium">
+              <label htmlFor="delete-password" className="mb-1.5 block text-sm font-semibold">
                 Your password
               </label>
               <input
@@ -282,11 +224,11 @@ export default function DeleteAccount({
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 autoComplete="current-password"
-                className="w-full"
+                className="w-full rounded-xl border border-gray-200 px-4 py-3"
               />
             </div>
           ) : (
-            <p className="rounded-xl bg-paper px-4 py-3 text-sm text-gray-600">
+            <p className="rounded-xl bg-[#f7f8f5] px-4 py-3 text-sm text-gray-600">
               You&apos;ll confirm with{" "}
               {popupMethods.length > 1
                 ? "Google or Apple"
@@ -298,7 +240,7 @@ export default function DeleteAccount({
           )}
 
           {error && (
-            <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
+            <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
               {error}
             </p>
           )}
@@ -306,11 +248,11 @@ export default function DeleteAccount({
           <div className="flex flex-col-reverse gap-3 sm:flex-row">
             <button
               type="button"
-              onClick={close}
+              onClick={cancel}
               disabled={busy}
-              className="h-12 flex-1 rounded-xl border border-line font-semibold transition hover:border-gray-300 disabled:opacity-50"
+              className="h-12 flex-1 rounded-xl border border-gray-200 font-semibold hover:bg-gray-50 disabled:opacity-50"
             >
-              Cancel
+              Keep my account
             </button>
             {!needsPassword && popupMethods.length > 1 ? (
               popupMethods.map((method) => (
@@ -319,7 +261,7 @@ export default function DeleteAccount({
                   type="button"
                   onClick={() => void confirmAndDelete(method)}
                   disabled={busy}
-                  className="h-12 flex-1 rounded-xl bg-red-600 font-semibold text-white transition hover:bg-red-700 disabled:opacity-60"
+                  className="h-12 flex-1 rounded-xl bg-red-600 font-semibold text-white hover:bg-red-700 disabled:opacity-60"
                 >
                   {busy ? "Deleting…" : method === "apple" ? "Delete with Apple" : "Delete with Google"}
                 </button>
@@ -328,15 +270,14 @@ export default function DeleteAccount({
               <button
                 type="submit"
                 disabled={busy}
-                className="h-12 flex-1 rounded-xl bg-red-600 font-semibold text-white transition hover:bg-red-700 disabled:opacity-60"
+                className="h-12 flex-1 rounded-xl bg-red-600 font-semibold text-white hover:bg-red-700 disabled:opacity-60"
               >
                 {busy ? "Deleting…" : "Delete forever"}
               </button>
             )}
           </div>
         </form>
-        )}
-      </dialog>
-    </>
+      )}
+    </section>
   );
 }

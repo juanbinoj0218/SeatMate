@@ -15,6 +15,7 @@ import {
   FileText,
   Heart,
   LayoutGrid,
+  List,
   LogIn,
   LogOut,
   Mail,
@@ -22,6 +23,8 @@ import {
   Map as MapIcon,
   MapPin,
   Martini,
+  Maximize,
+  Minus,
   Navigation,
   PartyPopper,
   PlugZap,
@@ -85,6 +88,9 @@ export const MailIcon = lucide(Mail, 20);
 export const DocIcon = lucide(FileText, 20);
 export const ShieldIcon = lucide(ShieldCheck, 20);
 export const PlusIcon = lucide(Plus, 20);
+export const MinusIcon = lucide(Minus, 20);
+export const FitIcon = lucide(Maximize, 18);
+export const ListIcon = lucide(List, 18);
 export const SignOutIcon = lucide(LogOut, 20);
 export const TimerIcon = lucide(Timer, 14);
 export const ChairIcon = lucide(Armchair, 20);

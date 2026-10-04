@@ -4,6 +4,8 @@ import { FormEvent, Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   GoogleAuthProvider,
+  OAuthProvider,
+  type AuthProvider,
   type MultiFactorResolver,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -49,9 +51,11 @@ const errorMessage = (error: unknown) => {
     case "auth/cancelled-popup-request":
       return "";
     case "auth/popup-blocked":
-      return "Your browser blocked the Google sign-in window. Allow pop-ups and try again.";
+      return "Your browser blocked the sign-in window. Allow pop-ups and try again.";
     case "auth/unauthorized-domain":
-      return "Google sign-in isn't enabled for this web address yet. Use email and password instead.";
+      return "This sign-in option isn't enabled for this web address yet. Use email and password instead.";
+    case "auth/operation-not-allowed":
+      return "This sign-in option isn't available yet. Use email and password instead.";
     case "auth/account-exists-with-different-credential":
       return "This email already uses a different sign-in method.";
     case "auth/too-many-requests":
@@ -142,13 +146,13 @@ function LoginContent() {
     }
   };
 
-  const continueWithGoogle = async () => {
+  const continueWith = async (provider: AuthProvider) => {
     setError("");
     setNotice("");
     setBusy(true);
 
     try {
-      await signInWithPopup(auth, new GoogleAuthProvider());
+      await signInWithPopup(auth, provider);
     } catch (caught) {
       setBusy(false);
       const resolver = twoFactorResolver(caught);
@@ -231,12 +235,22 @@ function LoginContent() {
 
           <button
             type="button"
-            onClick={continueWithGoogle}
+            onClick={() => continueWith(new GoogleAuthProvider())}
             disabled={busy}
             className="mt-7 flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-line bg-white font-semibold transition hover:border-gray-300 hover:bg-paper disabled:opacity-60"
           >
             <GoogleIcon className="h-5 w-5" />
             Continue with Google
+          </button>
+
+          <button
+            type="button"
+            onClick={() => continueWith(appleProvider())}
+            disabled={busy}
+            className="mt-3 flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-line bg-white font-semibold transition hover:border-gray-300 hover:bg-paper disabled:opacity-60"
+          >
+            <AppleIcon className="h-5 w-5" />
+            Continue with Apple
           </button>
 
           <div className="my-6 flex items-center gap-4 text-xs uppercase tracking-[0.14em] text-gray-400">
@@ -362,6 +376,23 @@ function Field({
       </div>
       {children}
     </div>
+  );
+}
+
+// Sign in with Apple. Needs the Apple provider switched on in Firebase
+// Authentication (with an Apple Services ID for the web).
+function appleProvider() {
+  const provider = new OAuthProvider("apple.com");
+  provider.addScope("email");
+  provider.addScope("name");
+  return provider;
+}
+
+function AppleIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+      <path d="M16.37 12.6c-.02-2.3 1.88-3.4 1.96-3.46-1.07-1.56-2.73-1.77-3.32-1.8-1.41-.14-2.76.83-3.47.83-.72 0-1.82-.81-2.99-.79-1.54.02-2.96.9-3.75 2.27-1.6 2.78-.41 6.88 1.15 9.13.76 1.1 1.67 2.34 2.86 2.3 1.15-.05 1.58-.74 2.97-.74 1.38 0 1.78.74 2.99.72 1.24-.02 2.02-1.12 2.77-2.23.87-1.28 1.23-2.52 1.25-2.58-.03-.01-2.4-.92-2.42-3.65ZM14.1 5.86c.63-.77 1.06-1.83.94-2.9-.91.04-2.02.61-2.67 1.37-.58.67-1.09 1.76-.96 2.8 1.02.08 2.06-.52 2.69-1.27Z" />
+    </svg>
   );
 }
 

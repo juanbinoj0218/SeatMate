@@ -4,7 +4,7 @@ import { router } from "expo-router";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 
 import { MailCheckIcon } from "@/components/icons";
-import { Banner, Button, Chip, colors, Field, Muted } from "@/components/ui";
+import { Banner, Button, Chip, colors, Field, Muted, readable } from "@/components/ui";
 import { useAccount } from "@/lib/account";
 import { useFeatures } from "@/lib/features";
 import { db } from "@/lib/firebase";
@@ -83,7 +83,7 @@ export default function ContactScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={[styles.content, readable]} keyboardShouldPersistTaps="handled">
         <Muted>Questions, feedback or a problem with a place? We read everything.</Muted>
         {error ? <Banner tone="error">{error}</Banner> : null}
         <Text style={styles.label}>Topic</Text>
