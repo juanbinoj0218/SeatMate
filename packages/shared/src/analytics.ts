@@ -12,8 +12,9 @@ import { db } from "./firebase";
 //   hour of the day, `occ_{h}` (sum of % seats taken at each update) and
 //   `n_{h}` (number of updates), written by the owner and staff.
 
-export const dayKey = (date = new Date()) =>
-  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+import { dayKey } from "./day-key";
+
+export { dayKey };
 
 export type PlaceStat = "views" | "saves" | "scans";
 

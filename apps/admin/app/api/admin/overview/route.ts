@@ -1,5 +1,7 @@
 import { Timestamp } from "firebase-admin/firestore";
 
+import { dayKey, SEATMATE_TIMEZONE } from "@seatmate/shared/day-key";
+
 import type { DayPoint, Overview, PlaceRow } from "@/lib/overview-types";
 import { adminRoute } from "@/lib/require-admin";
 
@@ -9,8 +11,9 @@ import { adminRoute } from "@/lib/require-admin";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-const dayKey = (date: Date) =>
-  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+// Day buckets follow SeatMate's home time zone (stats documents are filed
+// under the writer's local day), not the server's UTC clock.
+
 
 const num = (value: unknown) => (typeof value === "number" && Number.isFinite(value) ? value : 0);
 const ms = (value: unknown) => (value instanceof Timestamp ? value.toMillis() : null);
@@ -25,7 +28,7 @@ export const GET = adminRoute(async (request, admin) => {
   const now = new Date();
   const days: DayPoint[] = Array.from({ length: rangeDays }, (_, index) => {
     const date = new Date(now.getTime() - (rangeDays - 1 - index) * DAY_MS);
-    return { day: dayKey(date), views: 0, saves: 0, scans: 0, updates: 0, customers: 0, businesses: 0 };
+    return { day: dayKey(date, SEATMATE_TIMEZONE), views: 0, saves: 0, scans: 0, updates: 0, customers: 0, businesses: 0 };
   });
   const byDay = new Map(days.map((point) => [point.day, point]));
   const firstDay = days[0].day;
@@ -57,7 +60,7 @@ export const GET = adminRoute(async (request, admin) => {
 
     const created = ms(business.get("createdAt"));
     if (created) {
-      const point = byDay.get(dayKey(new Date(created)));
+      const point = byDay.get(dayKey(new Date(created), SEATMATE_TIMEZONE));
       if (point) point.businesses += 1;
     }
 
@@ -73,7 +76,7 @@ export const GET = adminRoute(async (request, admin) => {
 
   newCustomers.forEach((user) => {
     const created = ms(user.get("createdAt"));
-    const point = created ? byDay.get(dayKey(new Date(created))) : undefined;
+    const point = created ? byDay.get(dayKey(new Date(created), SEATMATE_TIMEZONE)) : undefined;
     if (point) point.customers += 1;
   });
 

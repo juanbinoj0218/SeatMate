@@ -20,16 +20,17 @@ export type SeatAlert = {
   active: boolean;
 };
 
-// Called by the business site after a seat is marked open. Fire and forget:
-// seat updates never wait on (or fail because of) alert emails.
-export function notifySeatAlerts(businessId: string) {
-  if (typeof window === "undefined" || !businessId) {
+// Called by the business site after a seat is marked open, with the signed-in
+// owner's or staff member's ID token. Fire and forget: seat updates never
+// wait on (or fail because of) alert emails.
+export function notifySeatAlerts(businessId: string, idToken: string, endpoint = "/api/seat-alerts") {
+  if (!businessId || !idToken) {
     return;
   }
 
-  void fetch("/api/seat-alerts", {
+  void fetch(endpoint, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
     body: JSON.stringify({ businessId }),
     keepalive: true,
   }).catch(() => {});

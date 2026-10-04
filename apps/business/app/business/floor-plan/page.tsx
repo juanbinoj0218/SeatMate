@@ -14,8 +14,11 @@ import {
   collection,
   deleteDoc,
   doc,
+  type DocumentData,
+  type DocumentReference,
   getDoc,
   onSnapshot,
+  runTransaction,
   serverTimestamp,
   updateDoc,
 } from "firebase/firestore";
@@ -26,14 +29,17 @@ import CoverPhoto from "@/components/cover-photo";
 import UpdateReminder from "@/components/update-reminder";
 import GameStatus from "@seatmate/shared/components/GameStatus";
 import TableWithSeats, {
-  parseTableRotation,
   isSingleSeat,
-  parseTableShape,
   tableSize,
   type TableRotation,
   type TableShape,
 } from "@seatmate/shared/components/TableWithSeats";
 import { toggleSeat as toggleSeatStatus } from "@/lib/seat-updates";
+import {
+  newTablePosition,
+  readMarker,
+  readTable,
+} from "@seatmate/shared/floor-docs";
 import {
   clamp,
   type FloorMarker,
@@ -43,7 +49,6 @@ import {
   MARKERS,
   markerClassName,
   type MarkerType,
-  markerStatus,
 } from "@seatmate/shared/floor-plan";
 
 type SeatStatus = "available" | "occupied";
@@ -58,6 +63,7 @@ type BusinessStatus =
 type Seat = {
   id: number;
   status: SeatStatus;
+  occupiedSince?: number;
 };
 
 type Table = {
@@ -132,12 +138,21 @@ export default function FloorPlanPage() {
   });
 
   useEffect(() => {
-    let unsubscribeTables: (() => void) | undefined;
-    let unsubscribeMarkers: (() => void) | undefined;
+    // Listeners for the signed-in owner's floor plan. Stopped when the
+    // account changes or the page closes, even if that happens while the
+    // business is still loading.
+    let closed = false;
+    let listeners: (() => void)[] = [];
+    const stopListeners = () => {
+      listeners.forEach((unsubscribe) => unsubscribe());
+      listeners = [];
+    };
 
     const unsubscribeAuth = onAuthStateChanged(
       auth,
       async (currentUser) => {
+        stopListeners();
+
         if (!currentUser) {
           router.push("/business/login");
           return;
@@ -153,6 +168,10 @@ export default function FloorPlanPage() {
           );
 
           const businessSnap = await getDoc(businessRef);
+
+          if (closed || auth.currentUser?.uid !== currentUser.uid) {
+            return;
+          }
 
           if (!businessSnap.exists()) {
             router.replace("/business/setup");
@@ -175,106 +194,39 @@ export default function FloorPlanPage() {
             setBusinessStatus("approved");
           }
 
-          const tablesRef = collection(
-            db,
-            "businesses",
-            currentUser.uid,
-            "tables"
-          );
-
-          unsubscribeTables = onSnapshot(
-            tablesRef,
-            (snapshot) => {
-              const data: Table[] = snapshot.docs.map(
-                (tableDoc, index) => {
-                  const table = tableDoc.data();
-
-                  return {
-                    id: tableDoc.id,
-                    name: table.name || `Table ${index + 1}`,
-                    seats: table.seats || [],
-                    xPct:
-                      typeof table.xPct === "number"
-                        ? table.xPct
-                        : 12 + (index % 3) * 32,
-                    yPct:
-                      typeof table.yPct === "number"
-                        ? table.yPct
-                        : 18 + Math.floor(index / 3) * 30,
-                    shape: parseTableShape(table.shape),
-                    rotation: parseTableRotation(table.rotation),
-                    scale:
-                      typeof table.scale === "number"
-                        ? clamp(table.scale, 0.65, 1.8)
-                        : 1,
-                  };
-                }
-              );
-
-              setTables(data);
-              setLoading(false);
-            },
-            (error) => {
-              console.error(error);
-              setMessage("Could not load floor plan.");
-              setLoading(false);
-            }
-          );
-
-          const markersRef = collection(
-            db,
-            "businesses",
-            currentUser.uid,
-            "floorMarkers"
-          );
-
-          unsubscribeMarkers = onSnapshot(
-            markersRef,
-            (snapshot) => {
-              const data: FloorMarker[] = snapshot.docs.map(
-                (markerDoc, index) => {
-                  const marker = markerDoc.data();
-                  const type =
-                    marker.type in MARKERS
-                      ? (marker.type as MarkerType)
-                      : "outlet";
-
-                  return {
-                    id: markerDoc.id,
-                    type,
-                    label:
-                      typeof marker.label === "string"
-                        ? marker.label
-                        : MARKERS[type].label,
-                    xPct:
-                      typeof marker.xPct === "number"
-                        ? marker.xPct
-                        : 15 + (index % 4) * 20,
-                    yPct:
-                      typeof marker.yPct === "number"
-                        ? marker.yPct
-                        : 82,
-                    scale:
-                      typeof marker.scale === "number"
-                        ? clamp(marker.scale, 0.5, 2.5)
-                        : 1,
-                    rotation:
-                      typeof marker.rotation === "number"
-                        ? marker.rotation
-                        : 0,
-                    status: markerStatus(marker.status),
-                  };
-                }
-              );
-
-              setMarkers(data);
-            },
-            (error) => {
-              console.error(error);
-              setMessage(
-                "Could not load floor markers. Check your Firestore rules."
-              );
-            }
+          listeners.push(
+            onSnapshot(
+              collection(db, "businesses", currentUser.uid, "tables"),
+              (snapshot) => {
+                setTables(
+                  snapshot.docs.map((tableDoc, index) =>
+                    readTable(tableDoc.id, tableDoc.data(), index)
+                  )
+                );
+                setLoading(false);
+              },
+              (error) => {
+                console.error(error);
+                setMessage("Could not load floor plan.");
+                setLoading(false);
+              }
+            ),
+            onSnapshot(
+              collection(db, "businesses", currentUser.uid, "floorMarkers"),
+              (snapshot) => {
+                setMarkers(
+                  snapshot.docs.map((markerDoc, index) =>
+                    readMarker(markerDoc.id, markerDoc.data(), index)
+                  )
+                );
+              },
+              (error) => {
+                console.error(error);
+                setMessage(
+                  "Could not load floor markers. Check your Firestore rules."
+                );
+              }
+            )
           );
         } catch (error) {
           console.error(error);
@@ -285,9 +237,9 @@ export default function FloorPlanPage() {
     );
 
     return () => {
+      closed = true;
       unsubscribeAuth();
-      unsubscribeTables?.();
-      unsubscribeMarkers?.();
+      stopListeners();
     };
   }, [router]);
 
@@ -345,8 +297,7 @@ export default function FloorPlanPage() {
           ? { xPct: clamp(lastStool.xPct + (newTableShape === "barberChair" ? 9 : 6), 4, 96), yPct: lastStool.yPct }
           : { xPct: newTableShape === "barberChair" ? 20 : 50, yPct: newTableShape === "barberChair" ? 50 : 85 }
         : {
-            xPct: 18 + (index % 3) * 31,
-            yPct: 22 + (Math.floor(index / 3) % 3) * 28,
+            ...newTablePosition(index),
           };
 
       const newTable = await addDoc(
@@ -488,64 +439,73 @@ export default function FloorPlanPage() {
     }
   };
 
-  const addSeat = async (table: Table) => {
-    if (!user) return;
-
-    if (table.seats.length >= 12) {
-      setMessage("A table can have at most 12 seats.");
-      return;
+  // Layout edits from the toolbar or a drag. Problems (offline, rules) show
+  // a message instead of failing silently.
+  const saveChange = async (
+    ref: DocumentReference,
+    fields: DocumentData
+  ) => {
+    try {
+      await updateDoc(ref, fields);
+    } catch (error) {
+      console.error(error);
+      setMessage("Couldn't save that change. Check your connection and try again.");
     }
-
-    const nextId =
-      table.seats.length === 0
-        ? 1
-        : Math.max(...table.seats.map((seat) => seat.id)) + 1;
-
-    const updatedSeats = [
-      ...table.seats,
-      {
-        id: nextId,
-        status: "available" as SeatStatus,
-      },
-    ];
-
-    await updateDoc(
-      doc(
-        db,
-        "businesses",
-        user.uid,
-        "tables",
-        table.id
-      ),
-      {
-        seats: updatedSeats,
-        updatedAt: serverTimestamp(),
-      }
-    );
   };
 
-  const removeSeat = async (table: Table) => {
+  // Adds or removes a seat on the latest copy of the table, so a seat staff
+  // just marked taken isn't undone by an older copy on this screen.
+  const editSeats = async (
+    table: Table,
+    change: (seats: Seat[]) => Seat[] | string
+  ) => {
     if (!user) return;
 
-    if (table.seats.length <= 1) {
-      setMessage("A table must have at least one seat.");
-      return;
-    }
+    const tableRef = doc(db, "businesses", user.uid, "tables", table.id);
 
-    await updateDoc(
-      doc(
-        db,
-        "businesses",
-        user.uid,
-        "tables",
-        table.id
-      ),
-      {
-        seats: table.seats.slice(0, -1),
-        updatedAt: serverTimestamp(),
-      }
-    );
+    try {
+      const problem = await runTransaction(db, async (transaction) => {
+        const snapshot = await transaction.get(tableRef);
+        if (!snapshot.exists()) return "This table was deleted.";
+
+        const seats: Seat[] = Array.isArray(snapshot.data().seats)
+          ? snapshot.data().seats
+          : [];
+        const result = change(seats);
+        if (typeof result === "string") return result;
+
+        transaction.update(tableRef, {
+          seats: result,
+          updatedAt: serverTimestamp(),
+        });
+        return "";
+      });
+
+      if (problem) setMessage(problem);
+    } catch (error) {
+      console.error(error);
+      setMessage("Couldn't save that change. Check your connection and try again.");
+    }
   };
+
+  const addSeat = (table: Table) =>
+    editSeats(table, (seats) => {
+      if (seats.length >= 12) return "A table can have at most 12 seats.";
+
+      const nextId =
+        seats.length === 0
+          ? 1
+          : Math.max(...seats.map((seat) => seat.id)) + 1;
+
+      return [...seats, { id: nextId, status: "available" as SeatStatus }];
+    });
+
+  const removeSeat = (table: Table) =>
+    editSeats(table, (seats) =>
+      seats.length <= 1
+        ? "A table must have at least one seat."
+        : seats.slice(0, -1)
+    );
 
   const changeShape = async (table: Table) => {
     if (!user) return;
@@ -553,7 +513,7 @@ export default function FloorPlanPage() {
     const newShape: TableShape =
       table.shape === "rectangle" ? "round" : "rectangle";
 
-    await updateDoc(
+    await saveChange(
       doc(
         db,
         "businesses",
@@ -571,7 +531,7 @@ export default function FloorPlanPage() {
   const rotateTable = async (table: Table) => {
     if (!user) return;
 
-    await updateDoc(
+    await saveChange(
       doc(
         db,
         "businesses",
@@ -598,7 +558,7 @@ export default function FloorPlanPage() {
       1.8
     );
 
-    await updateDoc(
+    await saveChange(
       doc(
         db,
         "businesses",
@@ -625,7 +585,7 @@ export default function FloorPlanPage() {
       2.5
     );
 
-    await updateDoc(
+    await saveChange(
       doc(
         db,
         "businesses",
@@ -645,7 +605,7 @@ export default function FloorPlanPage() {
 
     const rotation = (marker.rotation + 90) % 360;
 
-    await updateDoc(
+    await saveChange(
       doc(
         db,
         "businesses",
@@ -665,7 +625,7 @@ export default function FloorPlanPage() {
     if (!user) return;
 
     try {
-      await updateDoc(
+      await saveChange(
         doc(db, "businesses", user.uid, "floorMarkers", marker.id),
         {
           status: marker.status === "occupied" ? "available" : "occupied",
@@ -813,7 +773,7 @@ export default function FloorPlanPage() {
     const table = tables.find((item) => item.id === tableId);
     if (!table) return;
 
-    await updateDoc(
+    await saveChange(
       doc(
         db,
         "businesses",
@@ -908,7 +868,7 @@ export default function FloorPlanPage() {
     const marker = markers.find((item) => item.id === markerId);
     if (!marker) return;
 
-    await updateDoc(
+    await saveChange(
       doc(
         db,
         "businesses",

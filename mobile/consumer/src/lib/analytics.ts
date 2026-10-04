@@ -1,15 +1,13 @@
 import { doc, increment, setDoc } from "firebase/firestore";
 
+import { dayKey } from "@seatmate/shared/day-key";
+
 import { db } from "@/lib/firebase";
 
 // The same daily counters the website bumps (publicBusinesses/{slug}/stats/
 // {day}), so a business's analytics include views and saves from the app.
-// (packages/shared/src/analytics.ts imports the website's Firebase setup,
-// so its day key is repeated here.) Fire and forget: analytics never block or break a screen.
+// Fire and forget: analytics never block or break a screen.
 export type PlaceStat = "views" | "saves" | "scans";
-
-const dayKey = (date = new Date()) =>
-  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
 export function bumpPlaceStat(slug: string, stat: PlaceStat) {
   if (!slug) return;

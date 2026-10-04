@@ -23,6 +23,7 @@ export function useOwnedBusiness() {
   const [user, setUser] = useState<User | null>(null);
   const [business, setBusiness] = useState<OwnedBusiness | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(
     () =>
@@ -44,6 +45,7 @@ export function useOwnedBusiness() {
           setBusiness({ id: snapshot.id, ...(snapshot.data() as Omit<OwnedBusiness, "id">) });
         } catch (error) {
           console.error("Error loading business:", error);
+          setError("Couldn't load your business. Check your connection and refresh the page.");
         } finally {
           setLoading(false);
         }
@@ -51,5 +53,5 @@ export function useOwnedBusiness() {
     [router]
   );
 
-  return { user, business, loading };
+  return { user, business, loading, error };
 }

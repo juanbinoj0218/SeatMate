@@ -2,9 +2,10 @@ import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { router } from "expo-router";
 import { signOut } from "firebase/auth";
-import { doc, serverTimestamp, setDoc } from "firebase/firestore";
+import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 
 import { BUSINESS_TYPES, businessTypeLabel } from "@seatmate/shared/floor-plan";
+import { businessSlug, slugify } from "@seatmate/shared/slug";
 
 import WrongAccount from "@/components/gate";
 import { Banner, Button, Card, colors, Eyebrow, Field, Muted, Screen, Title } from "@/components/ui";
@@ -13,13 +14,6 @@ import { useSession } from "@/lib/session";
 
 // Same list as the web portal's setup page.
 const TYPES = BUSINESS_TYPES.map((value) => ({ value, label: businessTypeLabel(value) }));
-
-const createSlug = (name: string) =>
-  name
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
 
 // Step 1 of 2 for a new owner (step 2 is the floor plan). The business
 // starts as a private draft until it's submitted and approved.
@@ -43,12 +37,16 @@ export default function SetupScreen() {
     if (!address.trim()) return setError("Enter your business address.");
     if (!/^\d{5}$/.test(zipcode.trim())) return setError("Enter a valid 5-digit ZIP code.");
 
-    const slug = createSlug(name);
-    if (!slug) return setError("Please enter a valid business name.");
+    if (!slugify(name)) return setError("Please enter a valid business name.");
 
     try {
       setSaving(true);
       const uid = session.user.uid;
+
+      // Another place already listed under this name gets its own address,
+      // so the two listings never overwrite each other.
+      const listed = await getDoc(doc(db, "publicBusinesses", slugify(name))).catch(() => null);
+      const slug = businessSlug(name, uid, Boolean(listed?.exists() && listed.data().businessId !== uid));
 
       await setDoc(doc(db, "businesses", uid), {
         ownerId: uid,

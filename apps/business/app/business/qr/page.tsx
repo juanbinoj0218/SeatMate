@@ -15,7 +15,7 @@ const INK = "#101811";
 // Printable sign with a QR code that opens the business's live seating page.
 // Scans are tagged ?ref=qr so they show up in Analytics.
 export default function QrCodePage() {
-  const { business, loading } = useOwnedBusiness();
+  const { business, loading, error } = useOwnedBusiness();
   const [svg, setSvg] = useState("");
 
   const slug = business?.status === "approved" ? business.slug : undefined;
@@ -49,7 +49,7 @@ export default function QrCodePage() {
     return (
       <main className="min-h-screen bg-[#f7f8f5]">
         <PortalHeader section="QR code" />
-        <p className="max-w-4xl mx-auto px-6 py-12 text-gray-500">Loading…</p>
+        <p className="max-w-4xl mx-auto px-6 py-12 text-gray-500">{error || "Loading…"}</p>
       </main>
     );
   }

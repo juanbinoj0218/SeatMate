@@ -1,6 +1,6 @@
 import "server-only";
 
-import { adminAuth, adminDb } from "@/lib/firebase-admin";
+import { adminAuth, adminDb } from "@seatmate/shared/firebase-admin";
 
 // Every /api/admin route starts with this: it checks the caller's Firebase
 // ID token and that they're an active admin (admins/{uid}.active == true).
@@ -36,12 +36,14 @@ export async function requireAdmin(request: Request): Promise<AdminContext | Res
   let email: string;
 
   try {
-    const decoded = await auth.verifyIdToken(token);
+    // checkRevoked: a disabled account or one signed out everywhere loses
+    // access straight away, not when its token expires.
+    const decoded = await auth.verifyIdToken(token, true);
     uid = decoded.uid;
     email = decoded.email || "";
   } catch (error) {
     console.error("Admin token check failed:", error);
-    return jsonError(`Couldn't verify your sign-in: ${describe(error)}`, 401);
+    return jsonError("Your sign-in has expired. Please sign in again.", 401);
   }
 
   try {

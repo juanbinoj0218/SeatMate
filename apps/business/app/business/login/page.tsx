@@ -24,6 +24,7 @@ import {
 import { auth, db } from "@seatmate/shared/firebase";
 import ResetPassword from "@seatmate/shared/components/ResetPassword";
 import TwoFactorPrompt from "@seatmate/shared/components/TwoFactorPrompt";
+import { safeNextPath } from "@seatmate/shared/safe-next";
 import { twoFactorResolver } from "@seatmate/shared/two-factor";
 import { adminUrl, consumerUrl } from "@seatmate/shared/site-urls";
 
@@ -145,18 +146,11 @@ export default function BusinessLoginPage() {
         window.location.search
       );
 
-    const next =
-      params.get("next");
-
-    if (
-      next &&
-      next.startsWith("/") &&
-      !next.startsWith("//")
-    ) {
-      return next;
-    }
-
-    return null;
+    // Only pages on this site (no "//other-site" style redirects).
+    return safeNextPath(
+      params.get("next"),
+      null
+    );
   };
 
   // --------------------------------

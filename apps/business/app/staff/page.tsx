@@ -26,8 +26,6 @@ import {
 import { auth, db } from "@seatmate/shared/firebase";
 
 import TableWithSeats, {
-  parseTableRotation,
-  parseTableShape,
   type TableRotation,
   type TableShape,
 } from "@seatmate/shared/components/TableWithSeats";
@@ -35,12 +33,11 @@ import TableWithSeats, {
 import GameStatus from "@seatmate/shared/components/GameStatus";
 import {
   isGameMarker,
-  MARKERS,
-  markerStatus,
   type MarkerType,
 } from "@seatmate/shared/floor-plan";
 
 import { doorRef, readDoorCount } from "@seatmate/shared/door-count";
+import { readMarker, readTable } from "@seatmate/shared/floor-docs";
 
 import UpdateReminder from "@/components/update-reminder";
 import { toggleSeat as toggleSeatStatus } from "@/lib/seat-updates";
@@ -99,15 +96,20 @@ export default function StaffConsolePage() {
     useState("");
 
   useEffect(() => {
-    let stopGames: (() => void) | undefined;
-    let stopDoor: (() => void) | undefined;
-    let stopTables:
-      | (() => void)
-      | undefined;
+    // Live listeners for the signed-in staff member's business. Stopped
+    // when the account changes or the page closes, even mid-load.
+    let closed = false;
+    let listeners: (() => void)[] = [];
+    const stopListeners = () => {
+      listeners.forEach((stop) => stop());
+      listeners = [];
+    };
 
     const stopAuth = onAuthStateChanged(
       auth,
       async (currentUser) => {
+        stopListeners();
+
         if (!currentUser) {
           router.push("/business/login");
           return;
@@ -122,6 +124,10 @@ export default function StaffConsolePage() {
 
           const staffSnap =
             await getDoc(staffRef);
+
+          if (closed || auth.currentUser?.uid !== currentUser.uid) {
+            return;
+          }
 
           if (!staffSnap.exists()) {
             router.push("/business");
@@ -142,14 +148,7 @@ export default function StaffConsolePage() {
 
           setStaffAccount(account);
 
-          const tablesRef = collection(
-            db,
-            "businesses",
-            account.businessId,
-            "tables"
-          );
-
-          stopDoor = onSnapshot(
+          const stopDoor = onSnapshot(
             doorRef(account.businessId),
             (snapshot) => {
               const door = readDoorCount(snapshot.data({ serverTimestamps: "estimate" }));
@@ -158,26 +157,14 @@ export default function StaffConsolePage() {
             (snapshotError) => console.error(snapshotError)
           );
 
-          stopGames = onSnapshot(
+          const stopGames = onSnapshot(
             collection(db, "businesses", account.businessId, "floorMarkers"),
             (snapshot) => {
               setGames(
                 snapshot.docs
-                  .map((markerDoc) => {
-                    const data = markerDoc.data();
-                    const type = (
-                      data.type in MARKERS ? data.type : "outlet"
-                    ) as MarkerType;
-
-                    return {
-                      id: markerDoc.id,
-                      type,
-                      label:
-                        typeof data.label === "string"
-                          ? data.label
-                          : MARKERS[type].label,
-                      status: markerStatus(data.status),
-                    };
+                  .map((markerDoc, index) => {
+                    const marker = readMarker(markerDoc.id, markerDoc.data(), index);
+                    return { id: marker.id, type: marker.type, label: marker.label, status: marker.status };
                   })
                   .filter((game) => isGameMarker(game.type))
                   .sort((a, b) => a.label.localeCompare(b.label))
@@ -186,51 +173,13 @@ export default function StaffConsolePage() {
             (snapshotError) => console.error(snapshotError)
           );
 
-          stopTables = onSnapshot(
-            tablesRef,
+          const stopTables = onSnapshot(
+            collection(db, "businesses", account.businessId, "tables"),
             (snapshot) => {
-              const loadedTables: Table[] =
-                snapshot.docs.map(
-                  (tableDoc, index) => {
-                    const data =
-                      tableDoc.data();
-
-                    return {
-                      id: tableDoc.id,
-
-                      name:
-                        data.name ||
-                        "Table",
-
-                      seats:
-                        data.seats || [],
-
-                      xPct:
-                        typeof data.xPct ===
-                        "number"
-                          ? data.xPct
-                          : 8 +
-                            (index % 3) *
-                              30,
-
-                      yPct:
-                        typeof data.yPct ===
-                        "number"
-                          ? data.yPct
-                          : 10 +
-                            Math.floor(
-                              index / 3
-                            ) *
-                              30,
-
-                      shape: parseTableShape(data.shape),
-                      rotation: parseTableRotation(data.rotation),
-                    };
-                  }
-                );
-
               setTables(
-                loadedTables
+                snapshot.docs.map((tableDoc, index) =>
+                  readTable(tableDoc.id, tableDoc.data(), index)
+                )
               );
 
               setLoading(false);
@@ -247,6 +196,8 @@ export default function StaffConsolePage() {
               setLoading(false);
             }
           );
+
+          listeners.push(stopDoor, stopGames, stopTables);
         } catch (err) {
           console.error(err);
 
@@ -260,10 +211,9 @@ export default function StaffConsolePage() {
     );
 
     return () => {
+      closed = true;
       stopAuth();
-      stopTables?.();
-      stopGames?.();
-      stopDoor?.();
+      stopListeners();
     };
   }, [router]);
 

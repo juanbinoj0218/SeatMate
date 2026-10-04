@@ -76,7 +76,9 @@ export async function setBouncerMode(businessId: string, enabled: boolean) {
   const snapshot = await getDoc(ref);
 
   if (snapshot.exists()) {
-    await updateDoc(ref, { enabled, timezone: localTimezone() });
+    // Keep the bar's own time zone; an owner switching this from a laptop
+    // in another zone mustn't move every tap to the wrong hour.
+    await updateDoc(ref, snapshot.data().timezone ? { enabled } : { enabled, timezone: localTimezone() });
     return;
   }
 

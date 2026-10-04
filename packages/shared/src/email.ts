@@ -1,3 +1,5 @@
+import "server-only";
+
 // Sends email through Resend (https://resend.com). Needs RESEND_API_KEY and,
 // once your domain is verified in Resend, ALERT_EMAIL_FROM
 // (e.g. "SeatMate <alerts@seatmate360.com>").
@@ -47,4 +49,5 @@ export const escapeHtml = (value: string) =>
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");

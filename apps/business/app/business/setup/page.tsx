@@ -3,6 +3,7 @@
 import { ArrowRight } from "lucide-react";
 
 import { BUSINESS_TYPES, businessTypeLabel } from "@seatmate/shared/floor-plan";
+import { businessSlug, slugify } from "@seatmate/shared/slug";
 import SeatMateMark from "@seatmate/shared/components/SeatMateMark";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -78,14 +79,6 @@ export default function BusinessSetupPage() {
     return () => unsubscribe();
   }, [router]);
 
-  const createSlug = (businessName: string) => {
-    return businessName
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
-  };
-
   const handleCreateBusiness = async (
     event: React.FormEvent
   ) => {
@@ -112,7 +105,20 @@ export default function BusinessSetupPage() {
     setError("");
 
     try {
-      const slug = createSlug(name);
+      // Another place already listed under this name gets its own
+      // address, so the two listings never overwrite each other.
+      const listed = await getDoc(
+        doc(db, "publicBusinesses", slugify(name))
+      ).catch(() => null);
+
+      const slug = businessSlug(
+        name,
+        user.uid,
+        Boolean(
+          listed?.exists() &&
+            listed.data().businessId !== user.uid
+        )
+      );
 
       if (!slug) {
         setError("Please enter a valid business name.");

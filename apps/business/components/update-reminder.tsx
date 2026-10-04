@@ -48,7 +48,9 @@ export default function UpdateReminder({ businessId }: { businessId: string }) {
         let latest: number | null = null;
 
         snapshot.docs.forEach((tableDoc) => {
-          const updatedAt = tableDoc.data().occupancyUpdatedAt;
+          // "estimate" so a just-confirmed update (still pending on the
+          // server) counts as now instead of briefly looking stale.
+          const updatedAt = tableDoc.data({ serverTimestamps: "estimate" }).occupancyUpdatedAt;
 
           if (updatedAt instanceof Timestamp && (latest === null || updatedAt.toMillis() > latest)) {
             latest = updatedAt.toMillis();

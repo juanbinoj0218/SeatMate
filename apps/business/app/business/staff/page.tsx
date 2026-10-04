@@ -53,11 +53,16 @@ export default function StaffManagementPage() {
     useState("");
 
   useEffect(() => {
+    // Stopped when the account changes or the page closes, even mid-load.
+    let closed = false;
     let stopStaff: (() => void) | undefined;
 
     const stopAuth = onAuthStateChanged(
       auth,
       async (currentUser) => {
+        stopStaff?.();
+        stopStaff = undefined;
+
         if (!currentUser) {
           router.push("/business/login");
           return;
@@ -74,6 +79,10 @@ export default function StaffManagementPage() {
 
           const businessSnap =
             await getDoc(businessRef);
+
+          if (closed || auth.currentUser?.uid !== currentUser.uid) {
+            return;
+          }
 
           if (!businessSnap.exists()) {
             setError(
@@ -139,6 +148,7 @@ export default function StaffManagementPage() {
     );
 
     return () => {
+      closed = true;
       stopAuth();
       stopStaff?.();
     };

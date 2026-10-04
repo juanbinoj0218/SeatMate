@@ -108,8 +108,8 @@ export default function BusinessDashboard() {
 
           setLoading(false);
 
-          // Live seat count across all tables. The dashboard still works
-          // without it.
+          // Seat count across all tables when the dashboard opens. The
+          // dashboard still works without it.
           try {
             const tables = await getDocs(
               collection(db, "businesses", currentUser.uid, "tables")
@@ -166,7 +166,13 @@ export default function BusinessDashboard() {
   }
 
   if (!business) {
-    return null;
+    return (
+      <main className="min-h-screen bg-[#f7f8f5] flex items-center justify-center p-6">
+        <p className="text-gray-500 text-center">
+          Couldn&apos;t load your business. Check your connection and refresh the page.
+        </p>
+      </main>
+    );
   }
 
   const businessStatus: BusinessStatus =

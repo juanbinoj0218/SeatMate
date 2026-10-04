@@ -51,24 +51,41 @@ const key = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, " ").t
 export default function AdminInboxPage() {
   const user = useAdmin();
   const router = useRouter();
-  const [state, setState] = useState<"loading" | "denied" | "ready">("loading");
+  const [state, setState] = useState<"loading" | "denied" | "error" | "ready">("loading");
   const [tab, setTab] = useState<"requests" | "messages">("requests");
   const [requests, setRequests] = useState<PlaceRequest[]>([]);
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [showDone, setShowDone] = useState(false);
 
   useEffect(() => {
-    const stops: (() => void)[] = [];
+    // Stopped when the account changes or the page closes, even mid-load.
+    let closed = false;
+    let stops: (() => void)[] = [];
+    const stopListeners = () => {
+      stops.forEach((stop) => stop());
+      stops = [];
+    };
 
     const stopAuth = onAuthStateChanged(auth, async (user) => {
+      stopListeners();
+
       if (!user) {
         router.replace("/login?next=/inbox");
         return;
       }
 
-      const admin = await getDoc(doc(db, "admins", user.uid)).catch(() => null);
+      let admin;
+      try {
+        admin = await getDoc(doc(db, "admins", user.uid));
+      } catch (error) {
+        console.error("Could not check admin access:", error);
+        if (!closed) setState("error");
+        return;
+      }
 
-      if (!admin?.exists() || admin.data().active !== true) {
+      if (closed || auth.currentUser?.uid !== user.uid) return;
+
+      if (!admin.exists() || admin.data().active !== true) {
         setState("denied");
         return;
       }
@@ -91,7 +108,8 @@ export default function AdminInboxPage() {
                 createdMs: toMs(data.createdAt),
               };
             })
-          )
+          ),
+          (error) => console.error("Could not load place requests:", error)
         ),
         onSnapshot(query(collection(db, "contactMessages"), orderBy("createdAt", "desc"), limit(200)), (snapshot) =>
           setMessages(
@@ -107,14 +125,16 @@ export default function AdminInboxPage() {
                 createdMs: toMs(data.createdAt),
               };
             })
-          )
+          ),
+          (error) => console.error("Could not load contact messages:", error)
         )
       );
     });
 
     return () => {
+      closed = true;
       stopAuth();
-      stops.forEach((stop) => stop());
+      stopListeners();
     };
   }, [router]);
 
@@ -149,7 +169,11 @@ export default function AdminInboxPage() {
   if (state !== "ready") {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#f7f8f5] p-6 text-gray-500">
-        {state === "denied" ? "This area is only for SeatMate administrators." : "Loading inbox…"}
+        {state === "denied"
+          ? "This area is only for SeatMate administrators."
+          : state === "error"
+            ? "Couldn't load the inbox. Check your connection and refresh."
+            : "Loading inbox…"}
       </main>
     );
   }

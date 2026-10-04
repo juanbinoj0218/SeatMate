@@ -21,7 +21,8 @@ export const DELETE = adminRoute<{ id: string }>(async (_request, admin, { param
   const slug = String(business.get("slug") || "");
   if (slug) {
     const publicRef = admin.db.collection("publicBusinesses").doc(slug);
-    if ((await publicRef.get()).exists) batch.update(publicRef, fields);
+    const listing = await publicRef.get();
+    if (listing.exists && listing.get("businessId") === id) batch.update(publicRef, fields);
   }
 
   batch.delete(admin.db.collection(PHOTO_COLLECTION).doc(id));

@@ -4,13 +4,14 @@ import { FEATURES_DOC, readFeatures } from "@seatmate/shared/features";
 import { SEAT_ALERT_TTL_MS, SEAT_ALERTS } from "@seatmate/shared/seat-alerts";
 import { consumerUrl } from "@seatmate/shared/site-urls";
 
-import { emailConfigured, escapeHtml, sendEmail } from "@/lib/email";
-import { adminDb } from "@/lib/firebase-admin";
+import { emailConfigured, escapeHtml, sendEmail } from "@seatmate/shared/email";
+import { adminAuth, adminDb } from "@seatmate/shared/firebase-admin";
 
 // Emails customers waiting on a place once it has an open seat.
 //
-// Anyone may call this: it re-reads the seats itself and only emails when
-// a seat really is open, and each alert is sent at most once.
+// Only the business's owner or active staff may call this (with their
+// Firebase ID token). It re-reads the seats itself and only emails when a
+// seat really is open, and each alert is sent at most once.
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const businessId = body?.businessId;
@@ -20,9 +21,25 @@ export async function POST(request: Request) {
   }
 
   const db = adminDb();
+  const auth = adminAuth();
 
-  if (!db || !emailConfigured()) {
+  if (!db || !auth || !emailConfigured()) {
     return Response.json({ sent: 0, skipped: "Seat alerts are not configured." }, { status: 503 });
+  }
+
+  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+  const uid = token ? await auth.verifyIdToken(token).then((decoded) => decoded.uid, () => null) : null;
+
+  if (!uid) {
+    return Response.json({ error: "Sign in first." }, { status: 401 });
+  }
+
+  if (uid !== businessId) {
+    const staff = await db.collection("staffUsers").doc(uid).get();
+
+    if (staff.get("businessId") !== businessId || staff.get("active") !== true) {
+      return Response.json({ error: "Only this business's team can send seat alerts." }, { status: 403 });
+    }
   }
 
   const features = readFeatures((await db.doc(FEATURES_DOC.join("/")).get()).data());
@@ -49,6 +66,18 @@ export async function POST(request: Request) {
     .where("active", "==", true)
     .get();
 
+  // The place name and link come from the published listing, never from
+  // what the customer's alert document says.
+  const listing = (
+    await db.collection("publicBusinesses").where("businessId", "==", businessId).limit(1).get()
+  ).docs[0];
+
+  if (!listing) {
+    return Response.json({ sent: 0 });
+  }
+
+  const placeName = String(listing.get("name") || "your place");
+  const placeUrl = consumerUrl(`/place/${listing.id}`);
   let sent = 0;
 
   for (const alertDoc of alerts.docs) {
@@ -82,15 +111,13 @@ export async function POST(request: Request) {
     }
 
     const email = String(alertDoc.get("email") || "");
-    const placeName = String(alertDoc.get("placeName") || "your place");
-    const slug = String(alertDoc.get("slug") || "");
 
     if (!email) {
       continue;
     }
 
     try {
-      await sendEmail(seatOpenEmail(email, placeName, consumerUrl(`/place/${slug}`), openSeats));
+      await sendEmail(seatOpenEmail(email, placeName, placeUrl, openSeats));
       sent += 1;
     } catch (error) {
       console.error(`Could not email seat alert ${alertDoc.id}:`, error);

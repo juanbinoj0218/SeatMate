@@ -3,7 +3,7 @@ import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { businessUrl } from "@seatmate/shared/site-urls";
 
 import { writeLog } from "@/lib/activity-log";
-import { escapeHtml, sendEmail } from "@/lib/email";
+import { escapeHtml, sendEmail } from "@seatmate/shared/email";
 import { adminRoute, jsonError } from "@/lib/require-admin";
 
 // Reminds a business to update their seats. Emails the owner through

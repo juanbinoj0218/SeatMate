@@ -1,5 +1,9 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {};
+import { securityHeadersConfig } from "../../packages/shared/src/security-headers";
+
+const nextConfig: NextConfig = {
+  headers: securityHeadersConfig,
+};
 
 export default nextConfig;

@@ -1,5 +1,7 @@
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 
+import { dayKey, SEATMATE_TIMEZONE } from "@seatmate/shared/day-key";
+
 import { writeLog } from "@/lib/activity-log";
 import type { BusinessDay, BusinessDetail } from "@/lib/business-types";
 import { adminRoute, jsonError } from "@/lib/require-admin";
@@ -10,8 +12,6 @@ import { adminRoute, jsonError } from "@/lib/require-admin";
 const DAY_MS = 24 * 60 * 60 * 1000;
 const RANGE_DAYS = 30;
 
-const dayKey = (date: Date) =>
-  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 const ms = (value: unknown) => (value instanceof Timestamp ? value.toMillis() : null);
 const num = (value: unknown) => (typeof value === "number" && Number.isFinite(value) ? value : 0);
 
@@ -23,9 +23,12 @@ export const GET = adminRoute<{ id: string }>(async (_request, admin, { params }
   if (!business.exists) return jsonError("Business not found.", 404);
 
   const slug = String(business.get("slug") || "");
+  // Day buckets in the business's own time zone, matching how its devices
+  // file their stats (the server's clock is UTC).
+  const timeZone = String(business.get("timezone") || SEATMATE_TIMEZONE);
   const now = new Date();
   const days: BusinessDay[] = Array.from({ length: RANGE_DAYS }, (_, index) => ({
-    day: dayKey(new Date(now.getTime() - (RANGE_DAYS - 1 - index) * DAY_MS)),
+    day: dayKey(new Date(now.getTime() - (RANGE_DAYS - 1 - index) * DAY_MS), timeZone),
     views: 0,
     saves: 0,
     scans: 0,
@@ -147,6 +150,25 @@ export const PATCH = adminRoute<{ id: string }>(async (request, admin, { params 
     }
   }
 
+  const slug = String(business.get("slug") || "");
+  const publicRef = slug ? admin.db.collection("publicBusinesses").doc(slug) : null;
+  const listing = publicRef ? await publicRef.get() : null;
+  const isPublic = Boolean(listing?.exists && listing.get("businessId") === id);
+
+  // The page address can only change before the business goes public (it's
+  // the document id of its public listing), and must not be someone else's.
+  if (typeof body.slug === "string" && body.slug.trim() !== slug) {
+    const newSlug = body.slug.trim();
+    if (isPublic) return jsonError("This business is already public, so its page address can't change.", 400);
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(newSlug) || newSlug.length > 80) {
+      return jsonError("Page address: lowercase letters, numbers and dashes only.", 400);
+    }
+    const taken = await admin.db.collection("publicBusinesses").doc(newSlug).get();
+    if (taken.exists && taken.get("businessId") !== id) return jsonError("Another business already uses that page address.", 400);
+    changes.slug = newSlug;
+    summary.push(`slug: "${slug}" → "${newSlug}"`);
+  }
+
   if (summary.length === 0) {
     return Response.json({ ok: true, changed: false });
   }
@@ -154,12 +176,8 @@ export const PATCH = adminRoute<{ id: string }>(async (request, admin, { params 
   const batch = admin.db.batch();
   batch.update(ref, { ...changes, updatedAt: FieldValue.serverTimestamp() });
 
-  const slug = String(business.get("slug") || "");
-  if (slug) {
-    const publicRef = admin.db.collection("publicBusinesses").doc(slug);
-    if ((await publicRef.get()).exists) {
-      batch.update(publicRef, { ...changes, updatedAt: FieldValue.serverTimestamp() });
-    }
+  if (publicRef && isPublic) {
+    batch.update(publicRef, { ...changes, updatedAt: FieldValue.serverTimestamp() });
   }
 
   await batch.commit();
