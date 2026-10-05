@@ -168,7 +168,9 @@ function Seat({
       first.current = false;
       return;
     }
-    pulse.set(withSequence(withTiming(1.3, { duration: 160 }), withSpring(1, { damping: 9, stiffness: 180 })));
+    // A small pop that stays inside the gap around the seat, so it never
+    // runs into the table or the next seat.
+    pulse.set(withSequence(withTiming(1.1, { duration: 140 }), withSpring(1, { damping: 14, stiffness: 260 })));
   }, [open, progress, pulse]);
 
   const animated = useAnimatedStyle(() => ({
@@ -255,7 +257,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.18,
     shadowRadius: 2,
     shadowOffset: { width: 0, height: 1 },
-    elevation: 2,
+    // Always above the table top, on Android too (where elevation decides).
+    zIndex: 2,
+    elevation: 6,
   },
   seatFill: {
     flex: 1,

@@ -672,7 +672,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  card: { position: "absolute", left: 12, right: 12, bottom: 12 },
+  card: { position: "absolute", left: 12, right: 12, bottom: 12, zIndex: 10, elevation: 12 },
   cardInner: {
     flexDirection: "row",
     alignItems: "flex-start",
