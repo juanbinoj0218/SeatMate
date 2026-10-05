@@ -56,6 +56,9 @@ export default function RootLayout() {
               headerTitleStyle: { fontWeight: "700" },
               headerShadowVisible: false,
               contentStyle: { backgroundColor: colors.page },
+              // Native push: the iOS slide (with swipe back) on both
+              // platforms, run by the OS rather than JavaScript.
+              animation: "ios_from_right",
             }}
           >
             <Stack.Screen name="index" options={{ headerShown: false }} />

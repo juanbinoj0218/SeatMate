@@ -50,6 +50,9 @@ const MAX_FIT = 1.1;
 // Zoom range, relative to the fitted view.
 const MAX_ZOOM = 4;
 const DOUBLE_TAP_ZOOM = 2.4;
+// The map is laid out at its most zoomed-in size and shrunk to fit, so text,
+// seats and edges stay sharp at every zoom instead of being stretched up.
+const SHARP = MAX_ZOOM;
 const SPRING = { damping: 22, stiffness: 220, mass: 0.8 };
 
 type Box = { x: number; y: number; width: number; height: number };
@@ -122,6 +125,8 @@ export default function FloorView({
   const bounds = useMemo(() => layoutBounds(tables, markers), [tables, markers]);
   // Fit the used part of the floor to the screen, phone or iPad, portrait or landscape.
   const fit = Math.min(MAX_FIT, width / bounds.width, maxHeight / bounds.height);
+  // Points per canvas pixel in the sharp, fully zoomed-in drawing.
+  const unit = fit * SHARP;
   const contentWidth = bounds.width * fit;
   const contentHeight = bounds.height * fit;
   const frameHeight = Math.max(200, contentHeight);
@@ -277,7 +282,7 @@ export default function FloorView({
   const gestures = Gesture.Simultaneous(Gesture.Simultaneous(pinch, pan), Gesture.Exclusive(doubleTap, singleTap));
 
   const mapStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: panX.get() }, { translateY: panY.get() }, { scale: zoom.get() }],
+    transform: [{ translateX: panX.get() }, { translateY: panY.get() }, { scale: zoom.get() / SHARP }],
   }));
 
   const zoomBy = (factor: number) => {
@@ -295,21 +300,22 @@ export default function FloorView({
         <View style={[styles.frame, { width, height: frameHeight }]}>
           <GestureDetector gesture={gestures}>
             <View style={styles.stage} collapsable={false}>
-              <Animated.View style={[{ width: contentWidth, height: contentHeight }, mapStyle]}>
-                <View style={{ width: contentWidth, height: contentHeight, overflow: "hidden" }}>
+              <Animated.View style={[{ width: contentWidth * SHARP, height: contentHeight * SHARP }, mapStyle]}>
+                <View style={{ width: contentWidth * SHARP, height: contentHeight * SHARP, overflow: "hidden" }}>
                   <View
-                    style={[
-                      styles.canvas,
-                      {
-                        transform: [{ translateX: -bounds.x * fit }, { translateY: -bounds.y * fit }, { scale: fit }],
-                        transformOrigin: "top left",
-                      },
-                    ]}
+                    style={{
+                      position: "absolute",
+                      left: -bounds.x * unit,
+                      top: -bounds.y * unit,
+                      width: CANVAS_WIDTH * unit,
+                      height: CANVAS_HEIGHT * unit,
+                      backgroundColor: FLOOR,
+                    }}
                   >
-                    <DotGrid />
+                    <DotGrid unit={unit} />
 
                     {markers.map((marker) => (
-                      <Marker key={marker.id} marker={marker} />
+                      <Marker key={marker.id} marker={marker} unit={unit} />
                     ))}
 
                     {tables.map((table) => {
@@ -320,10 +326,10 @@ export default function FloorView({
                           pointerEvents="none"
                           style={{
                             position: "absolute",
-                            left: (table.xPct / 100) * CANVAS_WIDTH - box.width / 2,
-                            top: (table.yPct / 100) * CANVAS_HEIGHT - box.height / 2,
-                            width: box.width,
-                            height: box.height,
+                            left: ((table.xPct / 100) * CANVAS_WIDTH - box.width / 2) * unit,
+                            top: ((table.yPct / 100) * CANVAS_HEIGHT - box.height / 2) * unit,
+                            width: box.width * unit,
+                            height: box.height * unit,
                             zIndex: 20,
                           }}
                         >
@@ -334,6 +340,7 @@ export default function FloorView({
                             scale={table.scale}
                             rotation={table.rotation}
                             selected={table.id === selectedId}
+                            magnify={unit}
                           />
                         </View>
                       );
@@ -353,8 +360,10 @@ export default function FloorView({
           )}
 
           {selected && (
-            <Animated.View entering={FadeInDown.duration(200)} exiting={FadeOutDown.duration(150)} style={styles.card}>
-              <TableCard table={selected} onClose={() => setSelectedId(null)} />
+            <Animated.View entering={FadeInDown.springify().damping(18)} exiting={FadeOutDown.duration(150)} style={styles.card}>
+              <SwipeAway onDismiss={() => setSelectedId(null)}>
+                <TableCard table={selected} onClose={() => setSelectedId(null)} />
+              </SwipeAway>
             </Animated.View>
           )}
         </View>
@@ -388,6 +397,32 @@ export default function FloorView({
         {mode === "map" && !empty && <Text style={styles.hint}>Pinch to zoom, tap a table</Text>}
       </View>
     </View>
+  );
+}
+
+// Lets the table card be flicked down to close; it follows the finger and
+// springs back if the swipe is too short.
+function SwipeAway({ onDismiss, children }: { onDismiss: () => void; children: ReactNode }) {
+  const drag = useSharedValue(0);
+  const swipe = Gesture.Pan()
+    .activeOffsetY(6)
+    .failOffsetX([-12, 12])
+    .onUpdate((event) => {
+      drag.set(event.translationY > 0 ? event.translationY : event.translationY * 0.2);
+    })
+    .onEnd((event) => {
+      if (event.translationY > 50 || event.velocityY > 600) {
+        drag.set(withTiming(220, { duration: 160 }));
+        runOnJS(onDismiss)();
+      } else {
+        drag.set(withSpring(0, SPRING));
+      }
+    });
+  const style = useAnimatedStyle(() => ({ transform: [{ translateY: drag.get() }] }));
+  return (
+    <GestureDetector gesture={swipe}>
+      <Animated.View style={style}>{children}</Animated.View>
+    </GestureDetector>
   );
 }
 
@@ -466,11 +501,11 @@ function TableList({ tables, width }: { tables: Table[]; width: number }) {
   );
 }
 
-function Marker({ marker }: { marker: FloorMarker }) {
+function Marker({ marker, unit }: { marker: FloorMarker; unit: number }) {
   const info = MARKERS[marker.type];
   const look = MARKER_LOOKS[marker.type] ?? DEFAULT_LOOK;
-  const width = info.width * marker.scale;
-  const height = info.height * marker.scale;
+  const width = info.width * marker.scale * unit;
+  const height = info.height * marker.scale * unit;
   const game = isGameMarker(marker.type);
 
   return (
@@ -480,28 +515,39 @@ function Marker({ marker }: { marker: FloorMarker }) {
       style={[
         styles.marker,
         {
-          left: (marker.xPct / 100) * CANVAS_WIDTH - width / 2,
-          top: (marker.yPct / 100) * CANVAS_HEIGHT - height / 2,
+          left: (marker.xPct / 100) * CANVAS_WIDTH * unit - width / 2,
+          top: (marker.yPct / 100) * CANVAS_HEIGHT * unit - height / 2,
           width,
           height,
           backgroundColor: look.background,
           borderColor: look.border,
-          borderWidth: look.borderWidth ?? 1,
-          borderRadius: Math.min(look.radius ?? 0, Math.min(width, height) / 2),
+          borderWidth: (look.borderWidth ?? 1) * unit,
+          borderRadius: Math.min((look.radius ?? 0) * unit, Math.min(width, height) / 2),
           transform: [{ rotate: `${marker.rotation}deg` }],
         },
       ]}
     >
       {marker.type !== "wall" && (
         <View style={{ transform: [{ rotate: `${-marker.rotation}deg` }], alignItems: "center" }}>
-          <MarkerIcon type={marker.type} size={Math.max(12, 17 * marker.scale)} color={look.text} />
+          <MarkerIcon type={marker.type} size={Math.max(12, 17 * marker.scale) * unit} color={look.text} />
           {marker.scale >= 0.75 && (
-            <Text numberOfLines={1} style={{ fontSize: Math.max(9, 11 * marker.scale), fontWeight: "700", color: look.text }}>
+            <Text numberOfLines={1} style={{ fontSize: Math.max(9, 11 * marker.scale) * unit, fontWeight: "700", color: look.text }}>
               {marker.label}
             </Text>
           )}
           {game && (
-            <Text style={[styles.game, { backgroundColor: marker.status === "occupied" ? SEAT_TAKEN : SEAT_OPEN }]}>
+            <Text
+              style={[
+                styles.game,
+                {
+                  backgroundColor: marker.status === "occupied" ? SEAT_TAKEN : SEAT_OPEN,
+                  marginTop: 3 * unit,
+                  paddingHorizontal: 7 * unit,
+                  paddingVertical: unit,
+                  fontSize: 10 * unit,
+                },
+              ]}
+            >
               {marker.status === "occupied" ? "In use" : "Open"}
             </Text>
           )}
@@ -561,17 +607,33 @@ function LegendDot({ color, label }: { color: string; label: string }) {
 }
 
 // A faint dotted floor, drawn once as a pattern instead of hundreds of views.
-function DotGrid() {
+// It is drawn at half the sharp size to keep its memory small; the dots are
+// faint enough that it doesn't show.
+function DotGrid({ unit }: { unit: number }) {
   const id = `dots${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
+  const half = unit / 2;
   return (
-    <Svg pointerEvents="none" width={CANVAS_WIDTH} height={CANVAS_HEIGHT} style={StyleSheet.absoluteFill}>
-      <Defs>
-        <Pattern id={id} width={25} height={25} patternUnits="userSpaceOnUse">
-          <Circle cx={12.5} cy={12.5} r={1.6} fill={DOT} />
-        </Pattern>
-      </Defs>
-      <Rect x={0} y={0} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} fill={`url(#${id})`} />
-    </Svg>
+    <View
+      pointerEvents="none"
+      style={{
+        position: "absolute",
+        left: 0,
+        top: 0,
+        width: CANVAS_WIDTH * half,
+        height: CANVAS_HEIGHT * half,
+        transform: [{ scale: 2 }],
+        transformOrigin: "top left",
+      }}
+    >
+      <Svg width={CANVAS_WIDTH * half} height={CANVAS_HEIGHT * half} viewBox={`0 0 ${CANVAS_WIDTH} ${CANVAS_HEIGHT}`}>
+        <Defs>
+          <Pattern id={id} width={25} height={25} patternUnits="userSpaceOnUse">
+            <Circle cx={12.5} cy={12.5} r={1.6} fill={DOT} />
+          </Pattern>
+        </Defs>
+        <Rect x={0} y={0} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} fill={`url(#${id})`} />
+      </Svg>
+    </View>
   );
 }
 
@@ -584,7 +646,6 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   stage: { flex: 1, alignItems: "center", justifyContent: "center" },
-  canvas: { width: CANVAS_WIDTH, height: CANVAS_HEIGHT, backgroundColor: FLOOR },
   empty: { ...StyleSheet.absoluteFill, alignItems: "center", justifyContent: "center", padding: 24, gap: 6 },
   emptyTitle: { fontSize: 17, fontWeight: "800", color: colors.ink, marginTop: 4 },
   emptyText: { fontSize: 15, color: colors.muted, textAlign: "center" },

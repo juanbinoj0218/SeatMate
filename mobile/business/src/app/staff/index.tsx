@@ -8,12 +8,14 @@ import type { FloorMarker } from "@seatmate/shared/floor-plan";
 import WrongAccount from "@/components/gate";
 import LiveSeats from "@/components/live-seats";
 import UpdateReminder from "@/components/update-reminder";
-import { Banner, Button, Card, colors, Loading, Muted, Screen, Title } from "@/components/ui";
+import { AnimatedNumber } from "@/components/animated-number";
+import { Banner, Button, Card, colors, Loading, Muted, PressableScale, Screen, Title } from "@/components/ui";
 import { auth } from "@/lib/firebase";
 import { watchDoor } from "@/lib/door";
 import { toggleGame, watchMarkers, watchTables, type Table } from "@/lib/floor";
-import { toggleSeat } from "@/lib/seat-updates";
+import { tap, warning } from "@/lib/haptics";
 import { useWide } from "@/lib/layout";
+import { useOptimisticSeats } from "@/lib/optimistic-seats";
 import { useSession } from "@/lib/session";
 
 export default function StaffConsoleScreen() {
@@ -21,12 +23,14 @@ export default function StaffConsoleScreen() {
   const staff = session.state === "staff" ? session.staff : null;
   const businessId = staff?.active ? staff.businessId : null;
 
-  const [tables, setTables] = useState<Table[] | null>(null);
+  const [liveTables, setTables] = useState<Table[] | null>(null);
   const [markers, setMarkers] = useState<FloorMarker[]>([]);
   const [error, setError] = useState("");
   // People inside, when the owner has bouncer mode on.
   const [doorCount, setDoorCount] = useState<number | null>(null);
   const wide = useWide();
+  // Seat taps show at once; the snapshot catches up behind them.
+  const { tables, toggleSeat } = useOptimisticSeats(businessId, liveTables, setError);
 
   useEffect(() => {
     if (!businessId) return;
@@ -70,14 +74,9 @@ export default function StaffConsoleScreen() {
     return <Loading label="Loading staff console…" />;
   }
 
-  const onSeatPress = async (tableId: string, seatId: number) => {
-    try {
-      setError("");
-      await toggleSeat(staff.businessId, tableId, seatId, tables);
-    } catch (err) {
-      console.error(err);
-      setError("Could not update this seat.");
-    }
+  const onSeatPress = (tableId: string, seatId: number) => {
+    setError("");
+    toggleSeat(tableId, seatId);
   };
 
   const doorCard =
@@ -85,7 +84,10 @@ export default function StaffConsoleScreen() {
       <Card style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: wide ? 0 : 16 }}>
         <View style={{ flex: 1 }}>
           <Text style={{ fontWeight: "800", color: colors.ink, fontSize: 16 }}>On the door?</Text>
-          <Muted>{doorCount} inside right now</Muted>
+          <View style={{ flexDirection: "row", alignItems: "center" }} accessible accessibilityLabel={`${doorCount} inside right now`}>
+            <AnimatedNumber value={doorCount} style={{ color: colors.muted, fontSize: 15, lineHeight: 21 }} />
+            <Muted> inside right now</Muted>
+          </View>
         </View>
         <Button title="Door counter" onPress={() => router.push("/door")} />
       </Card>
@@ -107,12 +109,16 @@ export default function StaffConsoleScreen() {
       tables={tables}
       markers={markers}
       onSeatPress={onSeatPress}
-      onGamePress={(marker) =>
+      onGamePress={(marker) => {
+        // A plain Firestore update, which shows locally at once and is
+        // rolled back by Firestore itself if the server refuses it.
+        tap();
         void toggleGame(staff.businessId, marker).catch((err) => {
           console.error(err);
+          warning();
           setError("Could not update this game.");
-        })
-      }
+        });
+      }}
       aside={
         <>
           {wide && title}
@@ -121,13 +127,9 @@ export default function StaffConsoleScreen() {
           {error ? <Banner tone="error">{error}</Banner> : null}
           {wide && <Button title="Log out" variant="secondary" onPress={() => void signOut(auth)} />}
           {wide && (
-            <Text
-              accessibilityRole="button"
-              onPress={() => router.push("/delete-account")}
-              style={{ alignSelf: "center", padding: 6, color: colors.redText, fontWeight: "700", fontSize: 14 }}
-            >
-              Delete account
-            </Text>
+            <PressableScale onPress={() => router.push("/delete-account")} style={{ alignSelf: "center", padding: 6 }}>
+              <Text style={{ color: colors.redText, fontWeight: "700", fontSize: 14 }}>Delete account</Text>
+            </PressableScale>
           )}
         </>
       }
@@ -142,13 +144,9 @@ export default function StaffConsoleScreen() {
       {title}
       {live}
       <Button title="Log out" variant="secondary" onPress={() => void signOut(auth)} style={{ marginTop: 28 }} />
-      <Text
-        accessibilityRole="button"
-        onPress={() => router.push("/delete-account")}
-        style={{ alignSelf: "center", marginTop: 18, padding: 6, color: colors.redText, fontWeight: "700", fontSize: 14 }}
-      >
-        Delete account
-      </Text>
+      <PressableScale onPress={() => router.push("/delete-account")} style={{ alignSelf: "center", marginTop: 18, padding: 6 }}>
+        <Text style={{ color: colors.redText, fontWeight: "700", fontSize: 14 }}>Delete account</Text>
+      </PressableScale>
     </Screen>
   );
 }

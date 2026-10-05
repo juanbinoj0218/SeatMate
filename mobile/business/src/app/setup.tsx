@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { router } from "expo-router";
 import { signOut } from "firebase/auth";
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
@@ -8,7 +8,7 @@ import { BUSINESS_TYPES, businessTypeLabel } from "@seatmate/shared/floor-plan";
 import { businessSlug, slugify } from "@seatmate/shared/slug";
 
 import WrongAccount from "@/components/gate";
-import { Banner, Button, Card, colors, Eyebrow, Field, Muted, Screen, Title } from "@/components/ui";
+import { Banner, Button, Card, colors, Eyebrow, Field, Muted, PressableScale, Screen, Title } from "@/components/ui";
 import { auth, db } from "@/lib/firebase";
 import { useSession } from "@/lib/session";
 
@@ -87,10 +87,10 @@ export default function SetupScreen() {
           {TYPES.map((option) => {
             const selected = option.value === type;
             return (
-              <Pressable
+              <PressableScale
                 key={option.value}
-                accessibilityRole="button"
                 accessibilityState={{ selected }}
+                haptic
                 onPress={() => setType(option.value)}
                 style={{
                   paddingHorizontal: 14,
@@ -102,7 +102,7 @@ export default function SetupScreen() {
                 }}
               >
                 <Text style={{ fontWeight: "700", color: selected ? "#fff" : colors.ink }}>{option.label}</Text>
-              </Pressable>
+              </PressableScale>
             );
           })}
         </View>

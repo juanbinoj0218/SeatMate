@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack } from "expo-router";
 
 import { CROWD_LEVELS, crowdLevel, usualCrowd, type DoorCount } from "@seatmate/shared/door-crowd";
 
 import WrongAccount from "@/components/gate";
+import { AnimatedNumber } from "@/components/animated-number";
 import { CrowdIcon, DoorIcon } from "@/components/icons";
-import { Loading } from "@/components/ui";
+import { Loading, PressableScale } from "@/components/ui";
 import { resetDoorCount, setBouncerMode, stepDoorCount, watchDoor } from "@/lib/door";
+import { success, tap, warning } from "@/lib/haptics";
 import { useSession } from "@/lib/session";
 
 // Bouncer mode: big +1 / −1 buttons for whoever is on the door. Owners and
@@ -38,14 +40,24 @@ export default function DoorScreen() {
   if (!access) return <WrongAccount />;
   if (!door) return <Loading label={error || "Loading door counter…"} />;
 
+  // Door writes are plain Firestore updates, so the count on screen moves
+  // the moment a button is tapped (Firestore applies the write locally and
+  // syncs it in the background). If the server refuses it, Firestore puts
+  // the count back and we say so with a warning haptic.
   const run = async (work: () => Promise<void>, failure: string) => {
     try {
       setError("");
       await work();
     } catch (err) {
       console.error(err);
+      warning();
       setError(failure);
     }
+  };
+
+  const step = (amount: 1 | -1) => {
+    tap();
+    void run(() => stepDoorCount(access.businessId, door, amount), "That tap didn't go through. Try again.");
   };
 
   const usual = usualCrowd(door);
@@ -65,22 +77,27 @@ export default function DoorScreen() {
               : "Ask the owner to turn on bouncer mode from their dashboard."}
           </Text>
           {access.isOwner && (
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => void run(() => setBouncerMode(access.businessId, true), "Could not turn on bouncer mode.")}
-              style={({ pressed }) => [styles.turnOn, pressed && { backgroundColor: "#16a34a" }]}
+            <PressableScale
+              haptic
+              onPress={() =>
+                void run(async () => {
+                  await setBouncerMode(access.businessId, true);
+                  success();
+                }, "Could not turn on bouncer mode.")
+              }
+              style={styles.turnOn}
             >
               <Text style={{ fontWeight: "800", color: "#101811", fontSize: 16 }}>Turn on bouncer mode</Text>
-            </Pressable>
+            </PressableScale>
           )}
           {error ? <Text style={styles.error}>{error}</Text> : null}
         </View>
       ) : (
         <View style={{ flex: 1, padding: 20 }}>
           <Text style={styles.eyebrow}>INSIDE RIGHT NOW</Text>
-          <Text style={styles.count} accessibilityLiveRegion="polite">
-            {door.count}
-          </Text>
+          <View style={styles.countWrap} accessibilityLiveRegion="polite">
+            <AnimatedNumber value={door.count} style={styles.count} accessibilityLabel={`${door.count} inside`} />
+          </View>
           {level ? (
             <View style={styles.levelRow}>
               <CrowdIcon level={level} size={16} color="rgba(255,255,255,0.6)" />
@@ -97,25 +114,23 @@ export default function DoorScreen() {
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
           <View style={styles.pad}>
-            <Pressable
-              accessibilityRole="button"
+            <PressableScale
               accessibilityLabel="Someone left: minus one"
               disabled={door.count === 0}
-              onPress={() => void run(() => stepDoorCount(access.businessId, door, -1), "That tap didn't go through. Try again.")}
-              style={({ pressed }) => [styles.tap, styles.minus, door.count === 0 && { opacity: 0.3 }, pressed && styles.pressed]}
+              onPress={() => step(-1)}
+              style={[styles.tap, styles.minus, door.count === 0 && { opacity: 0.3 }]}
             >
               <Text style={[styles.tapNumber, { color: "#fff" }]}>−1</Text>
               <Text style={[styles.tapLabel, { color: "rgba(255,255,255,0.6)" }]}>Left</Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
+            </PressableScale>
+            <PressableScale
               accessibilityLabel="Someone came in: plus one"
-              onPress={() => void run(() => stepDoorCount(access.businessId, door, 1), "That tap didn't go through. Try again.")}
-              style={({ pressed }) => [styles.tap, styles.plus, pressed && styles.pressed]}
+              onPress={() => step(1)}
+              style={[styles.tap, styles.plus]}
             >
               <Text style={[styles.tapNumber, { color: "#101811" }]}>+1</Text>
               <Text style={[styles.tapLabel, { color: "rgba(16,24,17,0.7)" }]}>Came in</Text>
-            </Pressable>
+            </PressableScale>
           </View>
 
           <View style={styles.resetRow}>
@@ -127,8 +142,8 @@ export default function DoorScreen() {
                   danger
                   onPress={() =>
                     void run(async () => {
-                      await resetDoorCount(access.businessId);
                       setConfirmReset(false);
+                      await resetDoorCount(access.businessId);
                     }, "Could not reset the count.")
                   }
                 />
@@ -147,13 +162,13 @@ export default function DoorScreen() {
 
 function SmallButton({ label, onPress, danger = false }: { label: string; onPress: () => void; danger?: boolean }) {
   return (
-    <Pressable
-      accessibilityRole="button"
+    <PressableScale
+      haptic
       onPress={onPress}
-      style={({ pressed }) => [styles.small, danger && { backgroundColor: "#f43f5e", borderColor: "#f43f5e" }, pressed && styles.pressed]}
+      style={[styles.small, danger && { backgroundColor: "#f43f5e", borderColor: "#f43f5e" }]}
     >
       <Text style={{ color: "#fff", fontWeight: "700" }}>{label}</Text>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -164,7 +179,8 @@ const styles = StyleSheet.create({
   offText: { color: "rgba(255,255,255,0.6)", textAlign: "center", marginTop: 10, fontSize: 16, lineHeight: 22 },
   turnOn: { marginTop: 22, backgroundColor: "#22c55e", borderRadius: 14, paddingHorizontal: 22, paddingVertical: 14 },
   eyebrow: { color: "#4ade80", fontWeight: "800", letterSpacing: 2, fontSize: 12, textAlign: "center", marginTop: 8 },
-  count: { color: "#fff", fontSize: 112, fontWeight: "900", textAlign: "center", fontVariant: ["tabular-nums"], lineHeight: 120 },
+  countWrap: { alignItems: "center" },
+  count: { color: "#fff", fontSize: 112, fontWeight: "900", fontVariant: ["tabular-nums"], lineHeight: 120 },
   level: { color: "rgba(255,255,255,0.6)", textAlign: "center", fontSize: 14, lineHeight: 20, paddingHorizontal: 12 },
   levelRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingHorizontal: 12 },
   error: { color: "#fda4af", textAlign: "center", marginTop: 14 },
@@ -172,7 +188,6 @@ const styles = StyleSheet.create({
   tap: { flex: 1, borderRadius: 28, alignItems: "center", justifyContent: "center" },
   minus: { backgroundColor: "rgba(255,255,255,0.1)" },
   plus: { backgroundColor: "#22c55e" },
-  pressed: { transform: [{ scale: 0.97 }] },
   tapNumber: { fontSize: 64, fontWeight: "900" },
   tapLabel: { fontSize: 16, fontWeight: "700", marginTop: 4 },
   resetRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, marginTop: 20 },

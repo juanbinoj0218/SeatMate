@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { deleteDoc, doc, getDoc, serverTimestamp, setDoc, Timestamp } from "firebase/firestore";
 
 import { SEAT_ALERT_TTL_MS, SEAT_ALERTS, seatAlertId } from "@seatmate/shared/seat-alerts";
 
 import { BellIcon } from "@/components/icons";
-import { colors } from "@/components/ui";
+import { colors, PressableScale } from "@/components/ui";
 import { useAccount } from "@/lib/account";
 import { useFeatures } from "@/lib/features";
 import { db } from "@/lib/firebase";
@@ -91,23 +91,17 @@ export default function SeatAlertButton({
 
   return (
     <View style={{ marginTop: 20 }}>
-      <Pressable
-        accessibilityRole="button"
+      <PressableScale
         accessibilityState={{ selected: on, busy }}
         disabled={busy}
         onPress={toggle}
-        style={({ pressed }) => [
-          styles.button,
-          on ? styles.buttonOn : styles.buttonOff,
-          busy && { opacity: 0.75 },
-          pressed && { transform: [{ scale: 0.98 }] },
-        ]}
+        style={[styles.button, on ? styles.buttonOn : styles.buttonOff, busy && { opacity: 0.75 }]}
       >
         <BellIcon size={20} color={on ? "#fff" : colors.ink} filled={on} />
         <Text style={[styles.text, { color: on ? "#fff" : colors.ink }]}>
           {on ? "We'll email you when a seat opens" : "Email me when a seat opens"}
         </Text>
-      </Pressable>
+      </PressableScale>
       {on ? (
         <Text style={styles.note}>
           For the next 12 hours.{" "}

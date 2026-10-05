@@ -7,6 +7,7 @@ import {
   Text,
   TextInput,
   View,
+  type PressableProps,
   type StyleProp,
   type TextInputProps,
   type TextStyle,
@@ -15,13 +16,18 @@ import {
 import Animated, {
   cancelAnimation,
   Easing,
+  LinearTransition,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
   withRepeat,
+  withSpring,
   withTiming,
 } from "react-native-reanimated";
 import { SafeAreaView, type Edge } from "react-native-safe-area-context";
+
+import { AnimatedNumber } from "@/components/animated-number";
+import { tap } from "@/lib/haptics";
 
 // Colors from the web portal.
 export const colors = {
@@ -41,6 +47,70 @@ export const colors = {
   amberBorder: "#fde68a",
   amberText: "#92400e",
 };
+
+// Press feedback for everything tappable: springs down a touch on press-in
+// and back on release (no fading). Skipped when the system asks for reduced
+// motion. `haptic` adds a light tap on press for primary actions.
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+const PRESS_IN = { damping: 24, stiffness: 520, mass: 0.6 };
+const PRESS_OUT = { damping: 15, stiffness: 300, mass: 0.6 };
+
+export type PressableScaleProps = Omit<PressableProps, "style" | "children"> & {
+  style?: StyleProp<ViewStyle>;
+  children?: ReactNode;
+  scaleTo?: number;
+  haptic?: boolean;
+};
+
+export function PressableScale({
+  style,
+  children,
+  scaleTo = 0.96,
+  haptic = false,
+  disabled,
+  onPress,
+  onPressIn,
+  onPressOut,
+  accessibilityRole = "button",
+  accessibilityState,
+  ...rest
+}: PressableScaleProps) {
+  const reduceMotion = useReducedMotion();
+  const scale = useSharedValue(1);
+  const animated = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
+
+  return (
+    <AnimatedPressable
+      {...rest}
+      accessibilityRole={accessibilityRole}
+      accessibilityState={{ ...accessibilityState, disabled: Boolean(disabled || accessibilityState?.disabled) }}
+      disabled={disabled}
+      onPressIn={(event) => {
+        if (!reduceMotion) scale.set(withSpring(scaleTo, PRESS_IN));
+        onPressIn?.(event);
+      }}
+      onPressOut={(event) => {
+        scale.set(withSpring(1, PRESS_OUT));
+        onPressOut?.(event);
+      }}
+      onPress={
+        onPress
+          ? (event) => {
+              if (haptic) tap();
+              onPress(event);
+            }
+          : undefined
+      }
+      style={[style, animated]}
+    >
+      {children}
+    </AnimatedPressable>
+  );
+}
+
+// Items that move because someone did something glide to their new spot on
+// the same spring as the floor plan.
+export const layoutSpring = LinearTransition.springify().damping(22).stiffness(220).mass(0.8);
 
 export function Screen({
   children,
@@ -109,15 +179,15 @@ export function Button({
   const look = buttonLooks[variant];
 
   return (
-    <Pressable
-      accessibilityRole="button"
+    <PressableScale
+      accessibilityState={{ disabled: disabled || busy, busy }}
+      haptic
       onPress={onPress}
       disabled={disabled || busy}
-      style={({ pressed }) => [
+      style={[
         styles.button,
         { backgroundColor: look.background, borderColor: look.border },
         (disabled || busy) && { opacity: 0.5 },
-        pressed && { transform: [{ scale: 0.98 }] },
         style,
       ]}
     >
@@ -126,7 +196,7 @@ export function Button({
       ) : (
         <Text style={[styles.buttonText, { color: look.text }]}>{title}</Text>
       )}
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -182,15 +252,15 @@ export function Segmented<T extends string | number>({
       {options.map((option) => {
         const selected = option.value === value;
         return (
-          <Pressable
+          <PressableScale
             key={String(option.value)}
-            accessibilityRole="button"
             accessibilityState={{ selected }}
+            haptic
             onPress={() => onChange(option.value)}
             style={[styles.segment, selected && styles.segmentSelected]}
           >
             <Text style={[styles.segmentText, selected && { color: colors.ink }]}>{option.label}</Text>
-          </Pressable>
+          </PressableScale>
         );
       })}
     </View>
@@ -201,7 +271,11 @@ export function StatTile({ label, value, color = colors.ink }: { label: string; 
   return (
     <View style={styles.stat}>
       <Text style={styles.statLabel}>{label}</Text>
-      <Text style={[styles.statValue, { color }]}>{value}</Text>
+      {typeof value === "number" ? (
+        <AnimatedNumber value={value} style={[styles.statNumber, { color }]} containerStyle={{ marginTop: 6 }} />
+      ) : (
+        <Text style={[styles.statValue, { color }]}>{value}</Text>
+      )}
     </View>
   );
 }
@@ -312,6 +386,7 @@ export const styles = StyleSheet.create({
   },
   statLabel: { fontSize: 11, fontWeight: "800", color: colors.faint, textTransform: "uppercase" },
   statValue: { fontSize: 24, fontWeight: "800", marginTop: 6 },
+  statNumber: { fontSize: 24, lineHeight: 30, fontWeight: "800" },
   row: { flexDirection: "row", gap: 10 },
   skeleton: { backgroundColor: "#e7eae5", borderRadius: 10 },
 });

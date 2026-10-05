@@ -3,7 +3,6 @@ import {
   KeyboardAvoidingView,
   Linking,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -23,7 +22,7 @@ import {
 import AppleButton, { useAppleAvailable } from "@/components/apple-button";
 import GoogleButton, { googleAvailable } from "@/components/google-button";
 import { ClockIcon, FloorPlanIcon, SeatIcon, SeatMateMark, StaffIcon } from "@/components/icons";
-import { Banner, Button, colors, Field, Muted, Segmented } from "@/components/ui";
+import { Banner, Button, colors, Field, Muted, PressableScale, Segmented } from "@/components/ui";
 import { friendlyAuthError } from "@/lib/errors";
 import { auth } from "@/lib/firebase";
 import { businessUrl, consumerUrl } from "@/lib/site-urls";
@@ -323,9 +322,9 @@ export default function LoginScreen() {
           )}
 
           {mode === "signin" && (
-            <Pressable onPress={forgotPassword} accessibilityRole="button" style={{ alignSelf: "flex-end", marginTop: 10 }}>
+            <PressableScale onPress={forgotPassword} style={{ alignSelf: "flex-end", marginTop: 10 }}>
               <Text style={{ color: colors.greenText, fontWeight: "700" }}>Forgot password?</Text>
-            </Pressable>
+            </PressableScale>
           )}
 
           {error ? <Banner tone="error">{error}</Banner> : null}
@@ -374,17 +373,17 @@ export default function LoginScreen() {
         </View>
         <View style={{ flexDirection: "row", gap: 16 }}>
           {!wide && (
-            <Pressable accessibilityRole="button" onPress={() => scroll.current?.scrollTo({ y: cardY - 12 })}>
+            <PressableScale onPress={() => scroll.current?.scrollTo({ y: cardY - 12 })}>
               <Text style={styles.nav}>Sign in</Text>
-            </Pressable>
+            </PressableScale>
           )}
-          <Pressable accessibilityRole="link" onPress={() => void Linking.openURL(businessUrl("/about"))}>
+          <PressableScale accessibilityRole="link" onPress={() => void Linking.openURL(businessUrl("/about"))}>
             <Text style={styles.nav}>How it works</Text>
-          </Pressable>
+          </PressableScale>
           {wide && (
-            <Pressable accessibilityRole="link" onPress={() => void Linking.openURL(consumerUrl("/"))}>
+            <PressableScale accessibilityRole="link" onPress={() => void Linking.openURL(consumerUrl("/"))}>
               <Text style={styles.nav}>Customer site</Text>
-            </Pressable>
+            </PressableScale>
           )}
         </View>
       </View>

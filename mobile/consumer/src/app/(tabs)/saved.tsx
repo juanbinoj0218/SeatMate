@@ -1,12 +1,16 @@
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
+import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
+import Animated, { SlideOutLeft, useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Trash2 } from "lucide-react-native";
 
 import { BigIcons, HeartIcon } from "@/components/icons";
 import { PlaceCard, PlaceRow } from "@/components/place-card";
 import { PlaceListSkeleton } from "@/components/place-card-skeleton";
-import { Banner, Button, colors, EmptyState, readable, RetryPanel, space } from "@/components/ui";
-import { useAccount } from "@/lib/account";
+import { Banner, Button, colors, EmptyState, layoutSpring, PressableScale, readable, RetryPanel, space } from "@/components/ui";
+import { useAccount, type SavedPlace } from "@/lib/account";
+import { impact } from "@/lib/haptics";
 import { usePlaces } from "@/lib/places";
 import { useNow } from "@/lib/use-now";
 
@@ -79,17 +83,25 @@ export default function SavedScreen() {
           style={{ marginTop: 28 }}
         />
       ) : (
-        <View style={{ gap: space.item + 8, marginTop: 28 }}>
+        <View style={{ marginTop: 28 }}>
+          <Text style={styles.swipeHint}>Swipe a place to the left to remove it.</Text>
           {favorites.map((saved) => {
             const live = places.find((place) => place.slug === saved.slug);
-            return live ? (
-              <PlaceCard key={saved.slug} place={live} now={now} />
-            ) : (
-              <View key={saved.slug} style={styles.gone}>
-                <PlaceRow {...saved} />
-                <Text style={styles.goneText}>This place isn&apos;t on SeatMate right now.</Text>
-                <Button title="Remove" variant="secondary" onPress={() => toggleFavorite(saved)} style={{ marginTop: 16 }} />
-              </View>
+            return (
+              // The rest of the list closes the gap on a spring when one is removed.
+              <Animated.View key={saved.slug} layout={layoutSpring} exiting={SlideOutLeft.duration(220)} style={styles.item}>
+                <SwipeToRemove saved={saved} onRemove={() => toggleFavorite(saved)}>
+                  {live ? (
+                    <PlaceCard place={live} now={now} />
+                  ) : (
+                    <View style={styles.gone}>
+                      <PlaceRow {...saved} />
+                      <Text style={styles.goneText}>This place isn&apos;t on SeatMate right now.</Text>
+                      <Button title="Remove" variant="secondary" onPress={() => toggleFavorite(saved)} style={{ marginTop: 16 }} />
+                    </View>
+                  )}
+                </SwipeToRemove>
+              </Animated.View>
             );
           })}
         </View>
@@ -98,7 +110,79 @@ export default function SavedScreen() {
   );
 }
 
+const ACTION_WIDTH = 104;
+
+// Swipe a saved place left to show a red Remove button.
+function SwipeToRemove({
+  saved,
+  onRemove,
+  children,
+}: {
+  saved: SavedPlace;
+  onRemove: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <ReanimatedSwipeable
+      friction={1.6}
+      rightThreshold={ACTION_WIDTH / 2}
+      overshootRight={false}
+      // Room under the card so its shadow isn't clipped by the swipe area.
+      containerStyle={{ paddingBottom: 18, marginBottom: -18, borderRadius: 24 }}
+      onSwipeableWillOpen={() => impact()}
+      renderRightActions={(_progress, translation, methods) => (
+        <RemoveAction
+          translation={translation}
+          name={saved.name}
+          onPress={() => {
+            methods.close();
+            onRemove();
+          }}
+        />
+      )}
+    >
+      {children}
+    </ReanimatedSwipeable>
+  );
+}
+
+function RemoveAction({
+  translation,
+  name,
+  onPress,
+}: {
+  translation: SharedValue<number>;
+  name: string;
+  onPress: () => void;
+}) {
+  // The button rides in with the card instead of sitting still behind it.
+  const follow = useAnimatedStyle(() => ({
+    transform: [{ translateX: Math.max(0, ACTION_WIDTH + translation.get()) }],
+  }));
+
+  return (
+    <Animated.View style={[styles.actionWrap, follow]}>
+      <PressableScale accessibilityLabel={`Remove ${name} from saved`} haptic onPress={onPress} style={styles.removeAction}>
+        <Trash2 size={22} color="#fff" strokeWidth={2.2} />
+        <Text style={styles.removeText}>Remove</Text>
+      </PressableScale>
+    </Animated.View>
+  );
+}
+
 const styles = StyleSheet.create({
+  item: { marginBottom: space.item + 8 },
+  swipeHint: { fontSize: 14, color: colors.faint, marginBottom: 14 },
+  actionWrap: { width: ACTION_WIDTH, paddingLeft: 12 },
+  removeAction: {
+    flex: 1,
+    borderRadius: 24,
+    backgroundColor: colors.red,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  removeText: { color: "#fff", fontSize: 14, fontWeight: "800" },
   screen: { flex: 1, backgroundColor: colors.page },
   pad: { paddingHorizontal: space.gutter },
   title: { fontSize: 36, fontWeight: "900", color: colors.ink, letterSpacing: -1.2 },

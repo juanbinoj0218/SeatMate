@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -13,7 +13,7 @@ import {
 import AppleButton, { useAppleAvailable } from "@/components/apple-button";
 import GoogleButton, { googleAvailable } from "@/components/google-button";
 import { BellIcon, CloseIcon, HeartIcon, SeatMateMark } from "@/components/icons";
-import { Banner, Button, colors, Field } from "@/components/ui";
+import { Banner, Button, colors, Field, PressableScale } from "@/components/ui";
 import { useAccount } from "@/lib/account";
 import { friendlyAuthError } from "@/lib/errors";
 import { auth } from "@/lib/firebase";
@@ -143,9 +143,9 @@ export default function LoginScreen() {
       >
         <View style={styles.topRow}>
           <SeatMateMark size={36} />
-          <Pressable accessibilityRole="button" accessibilityLabel="Close" hitSlop={10} onPress={close} style={styles.close}>
+          <PressableScale accessibilityLabel="Close" hitSlop={10} scaleTo={0.9} onPress={close} style={styles.close}>
             <CloseIcon size={16} />
-          </Pressable>
+          </PressableScale>
         </View>
 
         {twoFactor ? (

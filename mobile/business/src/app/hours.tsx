@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { Minus, Plus } from "lucide-react-native";
-import { Pressable, StyleSheet, Switch, Text, View } from "react-native";
+import { StyleSheet, Switch, Text, View } from "react-native";
 import { doc, getDoc, serverTimestamp, writeBatch } from "firebase/firestore";
 
 import { toMinutes, type DayHours, type DayName, type Hours } from "@seatmate/shared/business-hours";
 
 import WrongAccount from "@/components/gate";
-import { Banner, Button, Card, colors, Loading, Muted, Screen, Title } from "@/components/ui";
+import { Banner, Button, Card, colors, Loading, Muted, PressableScale, Screen, Title } from "@/components/ui";
+import { success, tap, warning } from "@/lib/haptics";
 import { db } from "@/lib/firebase";
 import { useOwner } from "@/lib/session";
 
@@ -126,6 +127,7 @@ export default function HoursScreen() {
       }
 
       await batch.commit();
+      success();
       setMessage({
         tone: "success",
         text:
@@ -135,6 +137,7 @@ export default function HoursScreen() {
       });
     } catch (error) {
       console.error(error);
+      warning();
       setMessage({ tone: "error", text: "Could not save business hours." });
     } finally {
       setSaving(false);
@@ -159,7 +162,10 @@ export default function HoursScreen() {
                   <Text style={{ color: colors.muted }}>{today.closed ? "Closed" : "Open"}</Text>
                   <Switch
                     value={!today.closed}
-                    onValueChange={(open) => updateDay(day, { closed: !open })}
+                    onValueChange={(open) => {
+                      tap();
+                      updateDay(day, { closed: !open });
+                    }}
                     trackColor={{ true: "#86efac" }}
                     thumbColor={today.closed ? undefined : colors.green}
                   />
@@ -194,13 +200,13 @@ function TimeStepper({ title, value, onChange }: { title: string; value: string;
   return (
     <View style={styles.timeRow}>
       <Text style={{ color: colors.muted, fontWeight: "600", width: 60 }}>{title}</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel={`${title} earlier`} onPress={() => shift(-STEP_MINUTES)} style={styles.timeButton}>
+      <PressableScale accessibilityLabel={`${title} earlier`} scaleTo={0.92} haptic onPress={() => shift(-STEP_MINUTES)} style={styles.timeButton}>
         <Minus size={18} color={colors.ink} strokeWidth={2.2} />
-      </Pressable>
+      </PressableScale>
       <Text style={styles.time}>{label(value)}</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel={`${title} later`} onPress={() => shift(STEP_MINUTES)} style={styles.timeButton}>
+      <PressableScale accessibilityLabel={`${title} later`} scaleTo={0.92} haptic onPress={() => shift(STEP_MINUTES)} style={styles.timeButton}>
         <Plus size={18} color={colors.ink} strokeWidth={2.2} />
-      </Pressable>
+      </PressableScale>
     </View>
   );
 }

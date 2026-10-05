@@ -6,6 +6,7 @@ import {
   Text,
   TextInput,
   View,
+  type PressableProps,
   type StyleProp,
   type TextInputProps,
   type TextStyle,
@@ -15,14 +16,17 @@ import {
 import Animated, {
   cancelAnimation,
   Easing,
+  LinearTransition,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
   withRepeat,
+  withSpring,
   withTiming,
 } from "react-native-reanimated";
-import { CloudOff } from "lucide-react-native";
+import { ChevronRight, CloudOff } from "lucide-react-native";
 
+import { AnimatedNumber } from "@/components/animated-number";
 import { tap } from "@/lib/haptics";
 
 // Colors from the customer website (seatmate360.com).
@@ -65,6 +69,71 @@ export const shadow: ViewStyle = {
   elevation: 2,
 };
 
+// Press feedback for everything tappable: springs down a touch on press-in
+// and back on release (no fading). Skipped when the system asks for reduced
+// motion. `haptic` adds a light tap on press for primary actions.
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+const PRESS_IN = { damping: 24, stiffness: 520, mass: 0.6 };
+const PRESS_OUT = { damping: 15, stiffness: 300, mass: 0.6 };
+
+export type PressableScaleProps = Omit<PressableProps, "style" | "children"> & {
+  style?: StyleProp<ViewStyle>;
+  children?: ReactNode;
+  scaleTo?: number;
+  haptic?: boolean;
+};
+
+export function PressableScale({
+  style,
+  children,
+  scaleTo = 0.96,
+  haptic = false,
+  disabled,
+  onPress,
+  onPressIn,
+  onPressOut,
+  accessibilityRole = "button",
+  accessibilityState,
+  ...rest
+}: PressableScaleProps) {
+  const reduceMotion = useReducedMotion();
+  const scale = useSharedValue(1);
+  const animated = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
+
+  return (
+    <AnimatedPressable
+      {...rest}
+      accessibilityRole={accessibilityRole}
+      accessibilityState={{ ...accessibilityState, disabled: Boolean(disabled || accessibilityState?.disabled) }}
+      disabled={disabled}
+      onPressIn={(event) => {
+        if (!reduceMotion) scale.set(withSpring(scaleTo, PRESS_IN));
+        onPressIn?.(event);
+      }}
+      onPressOut={(event) => {
+        scale.set(withSpring(1, PRESS_OUT));
+        onPressOut?.(event);
+      }}
+      onPress={
+        onPress
+          ? (event) => {
+              if (haptic) tap();
+              onPress(event);
+            }
+          : undefined
+      }
+      style={[style, animated]}
+    >
+      {children}
+    </AnimatedPressable>
+  );
+}
+
+// Items that move because the customer did something (removed a saved
+// place, changed a filter) glide to their new spot on the same spring as
+// the floor plan.
+export const layoutSpring = LinearTransition.springify().damping(22).stiffness(220).mass(0.8);
+
 export function Loading({ label = "Loading…" }: { label?: string }) {
   return (
     <View style={[styles.fill, styles.center]}>
@@ -104,9 +173,9 @@ export function SectionHeader({
     <View style={styles.sectionHeader}>
       <Text style={styles.sectionTitle}>{title}</Text>
       {action && onAction ? (
-        <Pressable accessibilityRole="button" hitSlop={10} onPress={onAction}>
+        <PressableScale hitSlop={10} haptic onPress={onAction}>
           <Text style={styles.sectionAction}>{action}</Text>
-        </Pressable>
+        </PressableScale>
       ) : null}
     </View>
   );
@@ -134,19 +203,15 @@ export function Button({
   const look = buttonLooks[variant];
 
   return (
-    <Pressable
-      accessibilityRole="button"
+    <PressableScale
       accessibilityState={{ disabled: disabled || busy, busy }}
-      onPress={() => {
-        tap();
-        onPress();
-      }}
+      haptic
+      onPress={onPress}
       disabled={disabled || busy}
-      style={({ pressed }) => [
+      style={[
         styles.button,
         { backgroundColor: look.background, borderColor: look.border },
         (disabled || busy) && { opacity: 0.5 },
-        pressed && { transform: [{ scale: 0.98 }] },
         style,
       ]}
     >
@@ -158,7 +223,7 @@ export function Button({
           <Text style={[styles.buttonText, { color: look.text }]}>{title}</Text>
         </View>
       )}
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -219,18 +284,15 @@ export function Chip({
   icon?: ReactNode;
 }) {
   return (
-    <Pressable
-      accessibilityRole="button"
+    <PressableScale
       accessibilityState={{ selected: active }}
-      onPress={() => {
-        tap();
-        onPress();
-      }}
-      style={({ pressed }) => [styles.chip, active && styles.chipActive, pressed && { transform: [{ scale: 0.97 }] }]}
+      haptic
+      onPress={onPress}
+      style={[styles.chip, active && styles.chipActive]}
     >
       {icon}
       <Text style={[styles.chipText, active && { color: "#fff" }]}>{label}</Text>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -252,20 +314,24 @@ export function ListRow({
   last?: boolean;
   right?: ReactNode;
 }) {
-  return (
-    <Pressable
-      accessibilityRole={onPress ? "button" : undefined}
-      disabled={!onPress}
-      onPress={onPress}
-      style={({ pressed }) => [styles.listRow, !last && styles.listRowBorder, pressed && { backgroundColor: "#fafbf9" }]}
-    >
+  const content = (
+    <>
       {icon ? <View style={styles.listIcon}>{icon}</View> : null}
       <View style={{ flex: 1 }}>
         <Text style={[styles.listTitle, danger && { color: colors.redText }]}>{title}</Text>
         {detail ? <Text style={styles.listDetail}>{detail}</Text> : null}
       </View>
-      {right ?? (onPress ? <Text style={styles.chevron}>›</Text> : null)}
-    </Pressable>
+      {right ?? (onPress ? <ChevronRight size={20} color={colors.faint} strokeWidth={2.2} /> : null)}
+    </>
+  );
+
+  if (!onPress) return <View style={[styles.listRow, !last && styles.listRowBorder]}>{content}</View>;
+
+  // Rows sit edge to edge in a grouped card, so they give a smaller squeeze.
+  return (
+    <PressableScale scaleTo={0.98} haptic onPress={onPress} style={[styles.listRow, !last && styles.listRowBorder]}>
+      {content}
+    </PressableScale>
   );
 }
 
@@ -283,7 +349,11 @@ export function StatTile({
   return (
     <View style={[styles.stat, dark && styles.statDark]}>
       <Text style={[styles.statLabel, dark && { color: "rgba(255,255,255,0.72)" }]}>{label}</Text>
-      <Text style={[styles.statValue, { color }]}>{value}</Text>
+      {typeof value === "number" ? (
+        <AnimatedNumber value={value} style={[styles.statNumber, { color }]} containerStyle={{ marginTop: 6 }} />
+      ) : (
+        <Text style={[styles.statValue, { color }]}>{value}</Text>
+      )}
     </View>
   );
 }
@@ -427,7 +497,6 @@ export const styles = StyleSheet.create({
   },
   listTitle: { fontSize: 17, fontWeight: "700", color: colors.ink },
   listDetail: { fontSize: 14, color: colors.muted, marginTop: 3, lineHeight: 19 },
-  chevron: { fontSize: 24, color: colors.faint, marginTop: -2 },
   stat: {
     flex: 1,
     backgroundColor: colors.card,
@@ -439,6 +508,7 @@ export const styles = StyleSheet.create({
   statDark: { backgroundColor: "rgba(255,255,255,0.06)", borderColor: "transparent" },
   statLabel: { fontSize: 12, fontWeight: "800", color: colors.faint, textTransform: "uppercase", letterSpacing: 0.8 },
   statValue: { fontSize: 26, fontWeight: "900", marginTop: 6 },
+  statNumber: { fontSize: 26, lineHeight: 32, fontWeight: "900" },
   empty: { alignItems: "center", paddingVertical: 48, paddingHorizontal: 24 },
   emptyIcon: {
     width: 84,

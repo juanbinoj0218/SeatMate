@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { StyleSheet } from "react-native";
+import { Platform, StyleSheet } from "react-native";
 import { Stack, type ErrorBoundaryProps } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
@@ -61,11 +61,23 @@ export default function RootLayout() {
                 headerShadowVisible: false,
                 headerBackButtonDisplayMode: "minimal",
                 contentStyle: { backgroundColor: colors.page },
+                // Native push: the iOS slide (with swipe back) on both
+                // platforms, run by the OS rather than JavaScript.
+                animation: "ios_from_right",
+                gestureEnabled: true,
               }}
             >
               <Stack.Screen name="(tabs)" options={{ headerShown: false, title: "SeatMate" }} />
               <Stack.Screen name="place/[slug]" options={{ headerShown: false }} />
-              <Stack.Screen name="login" options={{ presentation: "modal", headerShown: false }} />
+              {/* A native sheet on iOS (swipe down to close); slides up on Android. */}
+              <Stack.Screen
+                name="login"
+                options={{
+                  presentation: "modal",
+                  animation: Platform.OS === "android" ? "slide_from_bottom" : "default",
+                  headerShown: false,
+                }}
+              />
               <Stack.Screen name="profile" options={{ title: "Your details" }} />
               <Stack.Screen name="suggest" options={{ title: "Suggest a place" }} />
               <Stack.Screen name="contact" options={{ title: "Contact us" }} />

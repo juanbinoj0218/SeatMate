@@ -1,15 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import Animated from "react-native-reanimated";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { AnimatedNumber } from "@/components/animated-number";
 import { BigIcons, CategoryIcon, CloseIcon, SearchIcon } from "@/components/icons";
 import { PlaceCard } from "@/components/place-card";
 import { PlaceListSkeleton } from "@/components/place-card-skeleton";
-import { Chip, colors, EmptyState, readable, RetryPanel, shadow, space } from "@/components/ui";
+import { Chip, colors, EmptyState, layoutSpring, PressableScale, readable, RetryPanel, shadow, space } from "@/components/ui";
 import { useFeatures } from "@/lib/features";
 import { openNow } from "@/lib/format";
-import { tap } from "@/lib/haptics";
 import { CATEGORIES, inCategory, sortByAvailability, usePlaces, type Category } from "@/lib/places";
 import { useNow } from "@/lib/use-now";
 
@@ -86,11 +87,11 @@ export default function SearchScreen() {
           accessibilityLabel="Search places"
         />
         {text ? (
-          <Pressable accessibilityRole="button" accessibilityLabel="Clear search" hitSlop={10} onPress={() => setText("")}>
+          <PressableScale accessibilityLabel="Clear search" hitSlop={10} scaleTo={0.85} haptic onPress={() => setText("")}>
             <View style={styles.clear}>
               <CloseIcon size={14} color="#fff" />
             </View>
-          </Pressable>
+          </PressableScale>
         ) : null}
       </View>
 
@@ -108,40 +109,41 @@ export default function SearchScreen() {
 
       <View style={styles.sorts}>
         {SORTS.map((option) => (
-          <Pressable
+          <PressableScale
             key={option.value}
-            accessibilityRole="button"
             accessibilityState={{ selected: sort === option.value }}
-            onPress={() => {
-              tap();
-              setSort(option.value);
-            }}
+            haptic
+            onPress={() => setSort(option.value)}
             style={[styles.sort, sort === option.value && styles.sortActive]}
           >
             <Text style={[styles.sortText, sort === option.value && { color: colors.ink }]}>{option.label}</Text>
-          </Pressable>
+          </PressableScale>
         ))}
       </View>
 
       <View style={styles.toolbar}>
-        <Pressable
+        <PressableScale
           accessibilityRole="switch"
           accessibilityState={{ checked: openOnly }}
-          onPress={() => {
-            tap();
-            setOpenOnly((value) => !value);
-          }}
+          haptic
+          onPress={() => setOpenOnly((value) => !value)}
           style={[styles.toggle, openOnly && styles.toggleOn]}
         >
           <View style={[styles.toggleDot, openOnly && { backgroundColor: colors.greenBright }]} />
           <Text style={[styles.toggleText, openOnly && { color: "#fff" }]}>Open now</Text>
-        </Pressable>
+        </PressableScale>
 
         {!loading && !error && (
-          <Text style={styles.count}>
-            {results.length} {results.length === 1 ? "place" : "places"}
-            {filtered ? " match" : ""}
-          </Text>
+          <View
+            style={styles.countRow}
+            accessible
+            accessibilityLabel={`${results.length} ${results.length === 1 ? "place" : "places"}${filtered ? " match" : ""}`}
+          >
+            <AnimatedNumber value={results.length} style={styles.count} />
+            <Text style={styles.count}>
+              {` ${results.length === 1 ? "place" : "places"}${filtered ? " match" : ""}`}
+            </Text>
+          </View>
         )}
       </View>
       {error ? <RetryPanel title="Couldn't load places" text={error} onRetry={retry} style={{ marginBottom: 24 }} /> : null}
@@ -156,8 +158,11 @@ export default function SearchScreen() {
           <PlaceListSkeleton count={2} />
         </View>
       ) : (
-        <FlatList
+        // Cards glide to their new places when a filter, sort or search
+        // changes the results.
+        <Animated.FlatList
           data={results}
+          itemLayoutAnimation={layoutSpring}
           keyExtractor={(place) => place.slug}
           renderItem={({ item }) => <PlaceCard place={item} now={now} />}
           ItemSeparatorComponent={() => <View style={{ height: space.item + 8 }} />}
@@ -236,5 +241,6 @@ const styles = StyleSheet.create({
   sort: { flex: 1, alignItems: "center", paddingHorizontal: 8, paddingVertical: 10, borderRadius: 12 },
   sortActive: { backgroundColor: "#fff" },
   sortText: { fontSize: 14, fontWeight: "800", color: colors.muted },
-  count: { marginLeft: "auto", fontSize: 15, fontWeight: "700", color: colors.muted },
+  countRow: { marginLeft: "auto", flexDirection: "row", alignItems: "center" },
+  count: { fontSize: 15, lineHeight: 20, fontWeight: "700", color: colors.muted },
 });

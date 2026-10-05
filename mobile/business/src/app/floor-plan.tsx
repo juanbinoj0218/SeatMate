@@ -10,7 +10,7 @@ import {
   RotateCw,
   type LucideIcon,
 } from "lucide-react-native";
-import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import { ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
 import {
   addDoc,
@@ -40,11 +40,12 @@ import { MarkerIcon } from "@/components/icons";
 import LiveSeats, { ZoomControls } from "@/components/live-seats";
 import TableWithSeats from "@/components/table-with-seats";
 import UpdateReminder from "@/components/update-reminder";
-import { Banner, Button, Card, colors, Loading, Muted, Screen, Segmented } from "@/components/ui";
+import { Banner, Button, Card, colors, Loading, Muted, PressableScale, Screen, Segmented } from "@/components/ui";
 import { db } from "@/lib/firebase";
 import { CANVAS_HEIGHT, CANVAS_WIDTH, toggleGame, watchMarkers, watchTables, type Table } from "@/lib/floor";
 import { fitScale, useBox, useWide } from "@/lib/layout";
-import { toggleSeat } from "@/lib/seat-updates";
+import { tap, warning } from "@/lib/haptics";
+import { useOptimisticSeats } from "@/lib/optimistic-seats";
 import { useOwner, type Business } from "@/lib/session";
 
 type Mode = "seats" | "layout";
@@ -91,7 +92,7 @@ export default function FloorPlanScreen() {
   const businessId = owner?.business.id;
   const wide = useWide();
 
-  const [tables, setTables] = useState<Table[] | null>(null);
+  const [liveTables, setTables] = useState<Table[] | null>(null);
   const [markers, setMarkers] = useState<FloorMarker[]>([]);
   const [mode, setMode] = useState<Mode>("seats");
   const [selection, setSelection] = useState<Selection>(null);
@@ -100,6 +101,8 @@ export default function FloorPlanScreen() {
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [box, onLayout] = useBox();
+  // Seat taps in "Live seats" show at once; the snapshot catches up behind.
+  const { tables, toggleSeat } = useOptimisticSeats(businessId, liveTables, setMessage);
 
   useEffect(() => {
     if (!businessId) return;
@@ -139,6 +142,7 @@ export default function FloorPlanScreen() {
       await work();
     } catch (error) {
       console.error(error);
+      warning();
       setMessage(failure);
     }
   };
@@ -307,10 +311,14 @@ export default function FloorPlanScreen() {
       <LiveSeats
         tables={tables}
         markers={markers}
-        onSeatPress={(tableId, seatId) =>
-          void save(() => toggleSeat(business.id, tableId, seatId, tables), "Could not update seat.")
-        }
-        onGamePress={(marker) => void save(() => toggleGame(business.id, marker), "Could not update that game.")}
+        onSeatPress={(tableId, seatId) => {
+          setMessage("");
+          toggleSeat(tableId, seatId, "Could not update seat.");
+        }}
+        onGamePress={(marker) => {
+          tap();
+          void save(() => toggleGame(business.id, marker), "Could not update that game.");
+        }}
         header={wide ? <View style={{ width: 280 }}>{modeSwitch}</View> : undefined}
         aside={
           <>
@@ -469,12 +477,12 @@ function AddPanel({
         <Muted style={{ marginTop: 4, fontSize: 14 }}>Tap to add. You can rename and resize it next.</Muted>
         <View style={styles.tiles}>
           {presets.map((preset) => (
-            <Pressable
+            <PressableScale
               key={preset.key}
-              accessibilityRole="button"
               accessibilityLabel={`Add ${preset.label}`}
+              haptic
               onPress={() => onAddTable(preset)}
-              style={({ pressed }) => [styles.tile, pressed && styles.tilePressed]}
+              style={styles.tile}
             >
               <View style={styles.tilePreview} pointerEvents="none">
                 <TableWithSeats
@@ -486,7 +494,7 @@ function AddPanel({
                 />
               </View>
               <Text style={styles.tileLabel}>{preset.label}</Text>
-            </Pressable>
+            </PressableScale>
           ))}
         </View>
       </Card>
@@ -514,18 +522,18 @@ function MarkerChips({ types, onAdd }: { types: MarkerType[]; onAdd: (type: Mark
   return (
     <View style={styles.chips}>
       {types.map((type) => (
-        <Pressable
+        <PressableScale
           key={type}
-          accessibilityRole="button"
           accessibilityLabel={`Add ${MARKERS[type].label}`}
+          haptic
           onPress={() => onAdd(type)}
-          style={({ pressed }) => [styles.chip, pressed && styles.tilePressed]}
+          style={styles.chip}
         >
           <MarkerIcon type={type} size={16} color={colors.ink} />
           <Text style={{ fontWeight: "700", color: colors.ink, fontSize: 15 }}>
             {type === "wall" ? "Wall / divider" : MARKERS[type].label}
           </Text>
-        </Pressable>
+        </PressableScale>
       ))}
     </View>
   );
@@ -724,9 +732,9 @@ function Inspector({
           <Text style={styles.eyebrow}>{kind.toUpperCase()}</Text>
           <Muted style={{ fontSize: 14, marginTop: 2 }}>{subtitle}</Muted>
         </View>
-        <Pressable accessibilityRole="button" onPress={onDone} style={styles.done}>
+        <PressableScale onPress={onDone} style={styles.done}>
           <Text style={{ fontWeight: "800", color: colors.ink }}>Done</Text>
-        </Pressable>
+        </PressableScale>
       </View>
 
       <Text style={[styles.rowLabel, { marginTop: 14, marginBottom: 6 }]}>Name</Text>
@@ -810,15 +818,15 @@ function StepButton({
   disabled?: boolean;
 }) {
   return (
-    <Pressable
-      accessibilityRole="button"
+    <PressableScale
       accessibilityLabel={accessibilityLabel}
       onPress={onPress}
       disabled={disabled}
-      style={({ pressed }) => [styles.stepButton, disabled && { opacity: 0.35 }, pressed && styles.tilePressed]}
+      scaleTo={0.92}
+      style={[styles.stepButton, disabled && { opacity: 0.35 }]}
     >
       <Icon size={20} color={colors.ink} strokeWidth={2.2} />
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -837,7 +845,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#fff",
   },
-  tilePressed: { backgroundColor: "#f3f4f6" },
   tilePreview: { height: 64, alignItems: "center", justifyContent: "center" },
   tileLabel: { fontSize: 12, fontWeight: "700", color: colors.ink, marginTop: 6, textAlign: "center" },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 },

@@ -1,4 +1,4 @@
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, StyleSheet, Text, View } from "react-native";
 import * as Google from "expo-auth-session/providers/google";
 import * as WebBrowser from "expo-web-browser";
 import {
@@ -11,7 +11,7 @@ import {
 } from "firebase/auth";
 import Svg, { Path } from "react-native-svg";
 
-import { colors } from "@/components/ui";
+import { colors, PressableScale } from "@/components/ui";
 import { googleAvailable } from "@/components/google-button";
 import { auth } from "@/lib/firebase";
 
@@ -93,17 +93,18 @@ function NativeGoogleButton({ disabled, reauth, label, onStart, onSignedIn, onEr
 
 function Look({ disabled, label, onPress }: { disabled?: boolean; label?: string; onPress: () => void }) {
   return (
-    <Pressable
-      accessibilityRole="button"
+    <PressableScale
+      accessibilityLabel={label ?? "Continue with Google"}
       disabled={disabled}
+      haptic
       onPress={onPress}
-      style={({ pressed }) => [styles.button, disabled && { opacity: 0.5 }, pressed && { backgroundColor: "#f9fafb" }]}
+      style={[styles.button, disabled && { opacity: 0.5 }]}
     >
       <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
         <GoogleLogo />
         <Text style={styles.text}>{label ?? "Continue with Google"}</Text>
       </View>
-    </Pressable>
+    </PressableScale>
   );
 }
 

@@ -6,7 +6,7 @@ import { auth, db } from "@/lib/firebase";
 import type { Table } from "@/lib/floor";
 import { businessUrl } from "@/lib/site-urls";
 
-type SeatStatus = "available" | "occupied";
+export type SeatStatus = "available" | "occupied";
 
 export { dayKey };
 
@@ -46,7 +46,24 @@ async function notifySeatAlerts(businessId: string) {
 
 // Flips one seat between open and taken (owner's floor plan and the staff
 // screen), then logs occupancy and, when a seat opens, sends seat alerts.
-export async function toggleSeat(businessId: string, tableId: string, seatId: number, tables: Table[]) {
+export function toggleSeat(businessId: string, tableId: string, seatId: number, tables: Table[]) {
+  return writeSeat(businessId, tableId, seatId, tables, null);
+}
+
+// Sets one seat to the status the person saw it change to on screen. Unlike
+// a flip, two quick taps (or two devices) can't cancel each other out: if
+// the seat is already in that state nothing is written.
+export function setSeatStatus(businessId: string, tableId: string, seatId: number, status: SeatStatus, tables: Table[]) {
+  return writeSeat(businessId, tableId, seatId, tables, status);
+}
+
+async function writeSeat(
+  businessId: string,
+  tableId: string,
+  seatId: number,
+  tables: Table[],
+  target: SeatStatus | null
+) {
   const tableRef = doc(db, "businesses", businessId, "tables", tableId);
 
   const newStatus = await runTransaction(db, async (transaction) => {
@@ -60,7 +77,7 @@ export async function toggleSeat(businessId: string, tableId: string, seatId: nu
     let changedTo: SeatStatus | null = null;
 
     const updatedSeats = seats.map((seat) => {
-      if (seat.id !== seatId) return seat;
+      if (seat.id !== seatId || seat.status === target) return seat;
 
       // Remember when the seat was taken so barber chairs can show how long
       // the current cut has been going; clear it again when the seat opens.
@@ -74,12 +91,15 @@ export async function toggleSeat(businessId: string, tableId: string, seatId: nu
       return { ...rest, status: changedTo };
     });
 
+    const result = changedTo as SeatStatus | null;
+    if (!result) return null;
+
     transaction.update(tableRef, {
       seats: updatedSeats,
       occupancyUpdatedAt: serverTimestamp(),
     });
 
-    return changedTo as SeatStatus | null;
+    return result;
   });
 
   if (!newStatus) return;
