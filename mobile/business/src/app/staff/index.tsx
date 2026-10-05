@@ -120,6 +120,15 @@ export default function StaffConsoleScreen() {
           <UpdateReminder businessId={staff.businessId} tables={tables} />
           {error ? <Banner tone="error">{error}</Banner> : null}
           {wide && <Button title="Log out" variant="secondary" onPress={() => void signOut(auth)} />}
+          {wide && (
+            <Text
+              accessibilityRole="button"
+              onPress={() => router.push("/delete-account")}
+              style={{ alignSelf: "center", padding: 6, color: colors.redText, fontWeight: "700", fontSize: 14 }}
+            >
+              Delete account
+            </Text>
+          )}
         </>
       }
     />
@@ -133,6 +142,13 @@ export default function StaffConsoleScreen() {
       {title}
       {live}
       <Button title="Log out" variant="secondary" onPress={() => void signOut(auth)} style={{ marginTop: 28 }} />
+      <Text
+        accessibilityRole="button"
+        onPress={() => router.push("/delete-account")}
+        style={{ alignSelf: "center", marginTop: 18, padding: 6, color: colors.redText, fontWeight: "700", fontSize: 14 }}
+      >
+        Delete account
+      </Text>
     </Screen>
   );
 }

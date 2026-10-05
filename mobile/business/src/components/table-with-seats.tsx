@@ -1,6 +1,14 @@
-import { useEffect, useState } from "react";
-import { Timer } from "lucide-react-native";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Timer } from "lucide-react-native";
+import Animated, {
+  interpolateColor,
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
 
 import {
   elapsed,
@@ -13,6 +21,11 @@ import {
 } from "@seatmate/shared/table-geometry";
 
 import { colors } from "@/components/ui";
+
+// Seat colors on the floor plan, shared with the legend.
+export const SEAT_OPEN = "#22c55e";
+export const SEAT_TAKEN = "#d56b63";
+const TABLE_COLOR = "#1d2620";
 
 // A table drawn from above with its seats around it, laid out exactly like
 // the web portal's TableWithSeats. Seats are buttons when onSeatPress is set.
@@ -62,7 +75,7 @@ export default function TableWithSeats({
             width: tableWidth,
             height: tableHeight,
             borderRadius: chair ? 12 : stool || shape === "round" ? tableWidth / 2 : 16,
-            backgroundColor: chair ? "#2b2f36" : stool ? "#3b2a1c" : colors.ink,
+            backgroundColor: chair ? "#2b2f36" : stool ? "#3b2a1c" : TABLE_COLOR,
             padding: stool ? 0 : 6 * scale,
           },
           chair && {
@@ -89,39 +102,20 @@ export default function TableWithSeats({
       {shown.map((seat, index) => {
         const spot = spots[index];
         const status = seat.status === "available" ? "open" : "taken";
-        const label = stool ? `${name}: ${status}` : `Seat ${seat.id}: ${status}`;
-        const style = [
-          styles.seat,
-          {
-            left: width / 2 + spot.x - seatSize / 2,
-            top: height / 2 + spot.y - seatSize / 2,
-            width: seatSize,
-            height: seatSize,
-            borderRadius: seatSize / 2,
-            backgroundColor: seat.status === "available" ? "#22c55e" : colors.red,
-          },
-        ];
-        const text = (
-          <Text style={[styles.seatText, { fontSize: Math.max(8, 10 * scale) }]}>
-            {stool ? stoolNumber(name) : seat.id}
-          </Text>
-        );
-
-        return onSeatPress ? (
-          <Pressable
+        return (
+          <Seat
             key={seat.id}
-            accessibilityRole="button"
-            accessibilityLabel={label}
-            hitSlop={4}
-            onPress={() => onSeatPress(seat.id)}
-            style={({ pressed }) => [style, pressed && { transform: [{ scale: 0.9 }] }]}
+            open={seat.status === "available"}
+            size={seatSize}
+            left={width / 2 + spot.x - seatSize / 2}
+            top={height / 2 + spot.y - seatSize / 2}
+            label={stool ? `${name}: ${status}` : `Seat ${seat.id}: ${status}`}
+            onPress={onSeatPress ? () => onSeatPress(seat.id) : undefined}
           >
-            {text}
-          </Pressable>
-        ) : (
-          <View key={seat.id} accessibilityLabel={label} style={style}>
-            {text}
-          </View>
+            <Text style={[styles.seatText, { fontSize: Math.max(8, 10 * scale) }]}>
+              {stool ? stoolNumber(name) : seat.id}
+            </Text>
+          </Seat>
         );
       })}
 
@@ -131,6 +125,64 @@ export default function TableWithSeats({
         </View>
       ) : null}
     </View>
+  );
+}
+
+// One seat. When staff change it, the color slides from green to red (or
+// back) and the seat gives a small pulse, so live changes are easy to spot.
+function Seat({
+  open,
+  size,
+  left,
+  top,
+  label,
+  onPress,
+  children,
+}: {
+  open: boolean;
+  size: number;
+  left: number;
+  top: number;
+  label: string;
+  onPress?: () => void;
+  children: ReactNode;
+}) {
+  const progress = useSharedValue(open ? 1 : 0);
+  const pulse = useSharedValue(1);
+  const first = useRef(true);
+
+  useEffect(() => {
+    progress.set(withTiming(open ? 1 : 0, { duration: 420 }));
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    pulse.set(withSequence(withTiming(1.3, { duration: 160 }), withSpring(1, { damping: 9, stiffness: 180 })));
+  }, [open, progress, pulse]);
+
+  const animated = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(progress.get(), [0, 1], [SEAT_TAKEN, SEAT_OPEN]),
+    transform: [{ scale: pulse.get() }],
+  }));
+
+  const box = { left, top, width: size, height: size, borderRadius: size / 2 };
+  if (!onPress) {
+    return (
+      <View accessibilityLabel={label} style={[styles.seatSlot, box]} pointerEvents="none">
+        <Animated.View style={[styles.seatFill, { borderRadius: size / 2 }, animated]}>{children}</Animated.View>
+      </View>
+    );
+  }
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      hitSlop={4}
+      onPress={onPress}
+      style={({ pressed }) => [styles.seatSlot, box, pressed && { transform: [{ scale: 0.9 }] }]}
+    >
+      <Animated.View style={[styles.seatFill, { borderRadius: size / 2 }, animated]}>{children}</Animated.View>
+    </Pressable>
   );
 }
 
@@ -166,17 +218,25 @@ const styles = StyleSheet.create({
     position: "absolute",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
+    shadowColor: "#101811",
+    shadowOpacity: 0.22,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
-  selected: { borderWidth: 3, borderColor: "#93c5fd" },
+  selected: { borderWidth: 3, borderColor: SEAT_OPEN },
   name: { color: "#fff", fontWeight: "800", textAlign: "center" },
   count: { color: "rgba(255,255,255,0.72)", fontWeight: "700", marginTop: 1 },
-  seat: {
+  seatSlot: {
     position: "absolute",
+    shadowColor: "#101811",
+    shadowOpacity: 0.18,
+    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 2,
+  },
+  seatFill: {
+    flex: 1,
     borderWidth: 2,
     borderColor: "#fff",
     alignItems: "center",

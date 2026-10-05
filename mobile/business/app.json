@@ -9,7 +9,12 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.seatmate360.business"
+      "bundleIdentifier": "com.seatmate360.business",
+      "usesAppleSignIn": true,
+      "associatedDomains": [
+        "applinks:seatmate360.net",
+        "applinks:www.seatmate360.net"
+      ]
     },
     "android": {
       "package": "com.seatmate360.business",
@@ -19,14 +24,46 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "seatmate360.net",
+              "pathPrefix": "/staff/join/"
+            },
+            {
+              "scheme": "https",
+              "host": "www.seatmate360.net",
+              "pathPrefix": "/staff/join/"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-router",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#f7f8f5"
+        }
+      ],
+      "expo-apple-authentication"
     ]
   }
 }

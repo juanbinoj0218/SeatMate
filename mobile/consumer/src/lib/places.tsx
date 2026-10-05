@@ -1,5 +1,6 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { collection, onSnapshot, Timestamp } from "firebase/firestore";
+import NetInfo from "@react-native-community/netinfo";
 
 import { getOpenStatus, type Hours } from "@seatmate/shared/business-hours";
 import { isBar, isBarbershop, isBowlingAlley } from "@seatmate/shared/floor-plan";
@@ -129,6 +130,8 @@ type PlacesValue = {
   places: PlaceWithSeats[];
   loading: boolean;
   error: string;
+  // Listens for places again after a failed load.
+  retry: () => void;
 };
 
 const PlacesContext = createContext<PlacesValue | null>(null);
@@ -162,6 +165,15 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
     firebaseConfigured ? "" : "SeatMate isn't connected to its database in this build."
   );
   const tableWatchers = useRef(new Map<string, () => void>());
+  // Bumped by retry() to start a fresh listener.
+  const [attempt, setAttempt] = useState(0);
+
+  const retry = useCallback(() => {
+    if (!firebaseConfigured) return;
+    setError("");
+    setLoading(true);
+    setAttempt((value) => value + 1);
+  }, []);
 
   useEffect(() => {
     if (!firebaseConfigured) return;
@@ -179,7 +191,19 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
         setLoading(false);
       }
     );
-  }, []);
+  }, [attempt]);
+
+  // After a failed load, try again by itself once the phone is back online.
+  useEffect(() => {
+    if (!error || !firebaseConfigured) return;
+
+    let wasOffline = false;
+    return NetInfo.addEventListener((state) => {
+      const offline = state.isConnected === false || state.isInternetReachable === false;
+      if (offline) wasOffline = true;
+      else if (wasOffline) retry();
+    });
+  }, [error, retry]);
 
   // One live listener per business's tables, added and removed as places
   // are listed or unlisted.
@@ -229,8 +253,9 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
       })),
       loading,
       error,
+      retry,
     }),
-    [places, seats, loading, error]
+    [places, seats, loading, error, retry]
   );
 
   return <PlacesContext.Provider value={value}>{children}</PlacesContext.Provider>;
@@ -243,6 +268,6 @@ export function usePlaces() {
 }
 
 export function usePlace(slug: string | undefined) {
-  const { places, loading, error } = usePlaces();
-  return { place: places.find((place) => place.slug === slug) ?? null, loading, error };
+  const { places, loading, error, retry } = usePlaces();
+  return { place: places.find((place) => place.slug === slug) ?? null, loading, error, retry };
 }

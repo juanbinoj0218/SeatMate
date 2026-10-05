@@ -7,9 +7,11 @@ import { onAuthStateChanged, type User } from "firebase/auth";
 import TwoFactorSetup from "@seatmate/shared/components/TwoFactorSetup";
 import { auth } from "@seatmate/shared/firebase";
 
+import DeleteAccount from "@/components/delete-account";
 import PortalHeader from "@/components/portal-header";
 
-// Sign-in security for owners and staff: two-factor sign-in.
+// Sign-in security for owners and staff: two-factor sign-in, and deleting
+// the account.
 export default function SecurityPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
@@ -50,6 +52,12 @@ export default function SecurityPage() {
             Signed in as <span className="font-semibold text-[#101811]">{user.email}</span>.
             Forgot your password? Sign out and choose “Forgot password?” on the sign-in page.
           </p>
+        )}
+
+        {user && (
+          <div className="mt-8">
+            <DeleteAccount user={user} />
+          </div>
         )}
       </div>
     </main>

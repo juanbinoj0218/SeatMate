@@ -13,7 +13,7 @@ import {
 } from "firebase/firestore";
 
 import WrongAccount from "@/components/gate";
-import { Banner, Button, Card, colors, Muted, Screen, Title } from "@/components/ui";
+import { Banner, Button, Card, colors, Muted, Screen, SkeletonCard, Title } from "@/components/ui";
 import { db } from "@/lib/firebase";
 import { useOwner } from "@/lib/session";
 import { businessUrl } from "@/lib/site-urls";
@@ -134,7 +134,10 @@ export default function TeamScreen() {
       </Text>
 
       {staff === null ? (
-        <Muted>Loading…</Muted>
+        <View style={{ gap: 10 }} accessibilityLabel="Loading staff" accessibilityRole="progressbar">
+          <SkeletonCard />
+          <SkeletonCard />
+        </View>
       ) : staff.length === 0 ? (
         <Card>
           <Muted>No staff yet. Create an invite link and send it to someone on your team.</Muted>

@@ -4,7 +4,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 
 import { BigIcons } from "@/components/icons";
-import { Banner, Button, Chip, colors, Field, Muted } from "@/components/ui";
+import { Banner, Button, Chip, colors, Field, Muted, readable } from "@/components/ui";
 import { useAccount } from "@/lib/account";
 import { useFeatures } from "@/lib/features";
 import { db } from "@/lib/firebase";
@@ -85,7 +85,7 @@ export default function SuggestScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={[styles.content, readable]} keyboardShouldPersistTaps="handled">
         <Muted>Know a spot that should show live seats? Tell us and we&apos;ll ask them to join.</Muted>
         {error ? <Banner tone="error">{error}</Banner> : null}
         <Field label="Place name" value={placeName} onChangeText={setPlaceName} placeholder="e.g. Temple Coffee" maxLength={120} />

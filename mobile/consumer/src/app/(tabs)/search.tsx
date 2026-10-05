@@ -5,7 +5,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BigIcons, CategoryIcon, CloseIcon, SearchIcon } from "@/components/icons";
 import { PlaceCard } from "@/components/place-card";
-import { Banner, Chip, colors, EmptyState, Loading, shadow, space } from "@/components/ui";
+import { PlaceListSkeleton } from "@/components/place-card-skeleton";
+import { Chip, colors, EmptyState, readable, RetryPanel, shadow, space } from "@/components/ui";
 import { useFeatures } from "@/lib/features";
 import { openNow } from "@/lib/format";
 import { tap } from "@/lib/haptics";
@@ -29,7 +30,7 @@ export default function SearchScreen() {
   const params = useLocalSearchParams<{ category?: string; focus?: string }>();
   const now = useNow();
   const features = useFeatures();
-  const { places, loading, error } = usePlaces();
+  const { places, loading, error, retry } = usePlaces();
   const input = useRef<TextInput>(null);
 
   const [text, setText] = useState("");
@@ -143,18 +144,16 @@ export default function SearchScreen() {
           </Text>
         )}
       </View>
-      {error ? <Banner tone="error">{error}</Banner> : null}
+      {error ? <RetryPanel title="Couldn't load places" text={error} onRetry={retry} style={{ marginBottom: 24 }} /> : null}
     </View>
   );
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       {loading ? (
-        <View style={styles.pad}>
+        <View style={[styles.pad, readable]}>
           {header}
-          <View style={{ height: 240 }}>
-            <Loading label="Finding open seats…" />
-          </View>
+          <PlaceListSkeleton count={2} />
         </View>
       ) : (
         <FlatList
@@ -182,7 +181,7 @@ export default function SearchScreen() {
           }
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
-          contentContainerStyle={[styles.pad, { paddingBottom: 48 }]}
+          contentContainerStyle={[styles.pad, readable, { paddingBottom: 48 }]}
           showsVerticalScrollIndicator={false}
         />
       )}

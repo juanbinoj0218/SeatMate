@@ -296,6 +296,14 @@ export default function DashboardScreen() {
       </Card>
 
       <Button title="Log out" variant="secondary" onPress={() => void signOut(auth)} style={{ marginTop: 24 }} />
+      <Pressable
+        accessibilityRole="button"
+        hitSlop={8}
+        onPress={() => router.push("/delete-account")}
+        style={({ pressed }) => [styles.deleteAccount, pressed && { opacity: 0.6 }]}
+      >
+        <Text style={styles.deleteAccountText}>Delete account</Text>
+      </Pressable>
     </Screen>
   );
 }
@@ -455,4 +463,6 @@ const styles = StyleSheet.create({
   quickName: { fontWeight: "800", color: colors.ink, fontSize: 15 },
   quickLabel: { flexDirection: "row", alignItems: "center", gap: 6 },
   pressed: { transform: [{ scale: 0.98 }] },
+  deleteAccount: { alignSelf: "center", marginTop: 18, paddingVertical: 6, paddingHorizontal: 10 },
+  deleteAccountText: { color: colors.redText, fontWeight: "700", fontSize: 14 },
 });

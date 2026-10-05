@@ -10,6 +10,7 @@ import {
   type MultiFactorResolver,
 } from "firebase/auth";
 
+import AppleButton, { useAppleAvailable } from "@/components/apple-button";
 import GoogleButton, { googleAvailable } from "@/components/google-button";
 import { BellIcon, CloseIcon, HeartIcon, SeatMateMark } from "@/components/icons";
 import { Banner, Button, colors, Field } from "@/components/ui";
@@ -23,11 +24,12 @@ import { finishTwoFactorSignIn, twoFactorResolver } from "@/lib/two-factor";
 type Mode = "signin" | "signup" | "reset";
 
 // Sign in or create a customer account: the same accounts as seatmate360.com
-// (email and password, Google, and the authenticator-app code for accounts
+// (email and password, Google, Apple on iPhone, and the authenticator-app code for accounts
 // that turned on two-step sign-in).
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const { user, authReady } = useAccount();
+  const appleAvailable = useAppleAvailable();
   const [mode, setMode] = useState<Mode>("signin");
   const [twoFactor, setTwoFactor] = useState<MultiFactorResolver | null>(null);
   const [name, setName] = useState("");
@@ -234,22 +236,34 @@ export default function LoginScreen() {
               style={{ marginTop: 20 }}
             />
 
-            {mode !== "reset" && googleAvailable && (
+            {mode !== "reset" && (googleAvailable || appleAvailable) && (
               <>
                 <View style={styles.or}>
                   <View style={styles.orLine} />
                   <Text style={styles.orText}>or</Text>
                   <View style={styles.orLine} />
                 </View>
-                <GoogleButton
-                  disabled={busy}
-                  onStart={() => {
-                    setError("");
-                    setBusy(true);
-                  }}
-                  onSignedIn={() => setBusy(false)}
-                  onError={fail}
-                />
+                <View style={{ gap: 10 }}>
+                  <AppleButton
+                    disabled={busy}
+                    onStart={() => {
+                      setError("");
+                      setBusy(true);
+                    }}
+                    onSignedIn={() => setBusy(false)}
+                    onCancel={() => setBusy(false)}
+                    onError={fail}
+                  />
+                  <GoogleButton
+                    disabled={busy}
+                    onStart={() => {
+                      setError("");
+                      setBusy(true);
+                    }}
+                    onSignedIn={() => setBusy(false)}
+                    onError={fail}
+                  />
+                </View>
               </>
             )}
 

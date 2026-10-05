@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -12,6 +12,15 @@ import {
   type TextStyle,
   type ViewStyle,
 } from "react-native";
+import Animated, {
+  cancelAnimation,
+  Easing,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from "react-native-reanimated";
 import { SafeAreaView, type Edge } from "react-native-safe-area-context";
 
 // Colors from the web portal.
@@ -197,6 +206,56 @@ export function StatTile({ label, value, color = colors.ink }: { label: string; 
   );
 }
 
+// A neutral block that gently pulses while content loads. Size it with
+// `style` (width, height, borderRadius) to match what it stands in for.
+export function Skeleton({ style }: { style?: StyleProp<ViewStyle> }) {
+  const reduceMotion = useReducedMotion();
+  const pulse = useSharedValue(0);
+
+  useEffect(() => {
+    if (reduceMotion) return;
+    pulse.set(withRepeat(withTiming(1, { duration: 850, easing: Easing.inOut(Easing.quad) }), -1, true));
+    return () => cancelAnimation(pulse);
+  }, [pulse, reduceMotion]);
+
+  const animated = useAnimatedStyle(() => ({ opacity: 1 - pulse.get() * 0.45 }));
+
+  return <Animated.View style={[styles.skeleton, animated, style]} />;
+}
+
+// A whole screen of placeholder blocks (a title, then cards) for screens
+// that are still loading.
+export function SkeletonScreen({
+  cards = 3,
+  edges = ["bottom", "left", "right"],
+}: {
+  cards?: number;
+  edges?: Edge[];
+}) {
+  return (
+    <SafeAreaView style={styles.screen} edges={edges}>
+      <View style={styles.content} accessibilityLabel="Loading" accessibilityRole="progressbar">
+        <Skeleton style={{ height: 30, width: "60%", borderRadius: 8 }} />
+        <Skeleton style={{ height: 16, width: "40%", borderRadius: 6, marginTop: 12 }} />
+        {Array.from({ length: cards }, (_, index) => (
+          <SkeletonCard key={index} style={{ marginTop: index === 0 ? 24 : 14 }} />
+        ))}
+      </View>
+    </SafeAreaView>
+  );
+}
+
+// A card-shaped placeholder: a heading line and two lines of text.
+export function SkeletonCard({ style }: { style?: StyleProp<ViewStyle> }) {
+  return (
+    <View style={[styles.card, style]}>
+      <Skeleton style={{ height: 18, width: "45%", borderRadius: 6 }} />
+      <Skeleton style={{ height: 14, width: "85%", borderRadius: 6, marginTop: 12 }} />
+      <Skeleton style={{ height: 14, width: "65%", borderRadius: 6, marginTop: 8 }} />
+    </View>
+  );
+}
+
 export const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.page },
   content: { padding: 20, paddingBottom: 40 },
@@ -254,4 +313,5 @@ export const styles = StyleSheet.create({
   statLabel: { fontSize: 11, fontWeight: "800", color: colors.faint, textTransform: "uppercase" },
   statValue: { fontSize: 24, fontWeight: "800", marginTop: 6 },
   row: { flexDirection: "row", gap: 10 },
+  skeleton: { backgroundColor: "#e7eae5", borderRadius: 10 },
 });

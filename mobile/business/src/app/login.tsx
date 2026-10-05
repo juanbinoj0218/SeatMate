@@ -20,6 +20,7 @@ import {
   type MultiFactorResolver,
 } from "firebase/auth";
 
+import AppleButton, { useAppleAvailable } from "@/components/apple-button";
 import GoogleButton, { googleAvailable } from "@/components/google-button";
 import { ClockIcon, FloorPlanIcon, SeatIcon, SeatMateMark, StaffIcon } from "@/components/icons";
 import { Banner, Button, colors, Field, Muted, Segmented } from "@/components/ui";
@@ -47,12 +48,15 @@ const safeNext = (next: unknown) =>
 
 // The opening screen: the business portal's sign-in page, laid out for a
 // phone (stacked) or a tablet (side by side). Accounts made on the website
-// sign in here with the same email/password, Google or two-factor code.
+// sign in here with the same email/password, Google or two-factor code, and
+// on iPhone and iPad with Apple (which also creates new accounts, using the
+// name Apple shares the first time).
 export default function LoginScreen() {
   const { next } = useLocalSearchParams<{ next?: string }>();
   const { width } = useWindowDimensions();
   const wide = width >= 900;
   const scroll = useRef<ScrollView>(null);
+  const appleAvailable = useAppleAvailable();
   const [cardY, setCardY] = useState(0);
 
   const [mode, setMode] = useState<Mode>("signin");
@@ -240,9 +244,22 @@ export default function LoginScreen() {
             </Muted>
           </View>
 
-          {googleAvailable && (
+          {(googleAvailable || appleAvailable) && (
             <>
-              <View style={{ marginTop: 20 }}>
+              <View style={{ marginTop: 20, gap: 10 }}>
+                <AppleButton
+                  disabled={busy}
+                  onStart={() => {
+                    clear();
+                    setBusy(true);
+                  }}
+                  onSignedIn={() => {
+                    setBusy(false);
+                    done();
+                  }}
+                  onCancel={() => setBusy(false)}
+                  onError={fail}
+                />
                 <GoogleButton
                   disabled={busy}
                   onStart={() => {

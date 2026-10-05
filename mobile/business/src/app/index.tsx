@@ -2,7 +2,7 @@ import { Redirect } from "expo-router";
 import { signOut } from "firebase/auth";
 import { View } from "react-native";
 
-import { Banner, Button, Loading, Screen } from "@/components/ui";
+import { Banner, Button, Screen, SkeletonScreen } from "@/components/ui";
 import { auth, firebaseConfigured } from "@/lib/firebase";
 import { useSession } from "@/lib/session";
 
@@ -23,7 +23,7 @@ export default function Index() {
 
   switch (session.state) {
     case "loading":
-      return <Loading label="Loading SeatMate…" />;
+      return <SkeletonScreen edges={["top", "bottom", "left", "right"]} />;
     case "signedOut":
       return <Redirect href="/login" />;
     case "owner":

@@ -18,7 +18,7 @@ import {
   UserIcon,
 } from "@/components/icons";
 import { PlaceRow } from "@/components/place-card";
-import { Banner, Button, colors, ListRow, space } from "@/components/ui";
+import { Banner, Button, colors, ListRow, readable, space } from "@/components/ui";
 import { firstName, useAccount } from "@/lib/account";
 import { useFeatures } from "@/lib/features";
 import { businessUrl, consumerUrl } from "@/lib/site-urls";
@@ -46,7 +46,7 @@ export default function AccountScreen() {
   return (
     <ScrollView
       style={styles.screen}
-      contentContainerStyle={[styles.pad, { paddingTop: insets.top + 24, paddingBottom: 56 }]}
+      contentContainerStyle={[styles.pad, readable, { paddingTop: insets.top + 24, paddingBottom: 56 }]}
       showsVerticalScrollIndicator={false}
     >
       <Text style={styles.title}>Account</Text>

@@ -6,7 +6,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BigIcons, CategoryIcon, SearchIcon, SeatMateMark } from "@/components/icons";
 import LiveDot from "@/components/live-dot";
 import { PlaceCard, PlaceRow, PlaceTile } from "@/components/place-card";
-import { Banner, Button, colors, EmptyState, Loading, SectionHeader, shadow, space } from "@/components/ui";
+import { PlaceListSkeleton, PlaceTileSkeleton } from "@/components/place-card-skeleton";
+import { Button, colors, EmptyState, readable, RetryPanel, SectionHeader, shadow, Skeleton, space } from "@/components/ui";
 import { firstName, useAccount } from "@/lib/account";
 import { useFeatures } from "@/lib/features";
 import { greeting, openNow } from "@/lib/format";
@@ -19,7 +20,7 @@ import { useNow } from "@/lib/use-now";
 export default function ExploreScreen() {
   const insets = useSafeAreaInsets();
   const now = useNow();
-  const { places, loading, error } = usePlaces();
+  const { places, loading, error, retry } = usePlaces();
   const { user, profile } = useAccount();
   const features = useFeatures();
 
@@ -38,7 +39,7 @@ export default function ExploreScreen() {
   return (
     <ScrollView
       style={styles.screen}
-      contentContainerStyle={{ paddingTop: insets.top + 12, paddingBottom: 48 }}
+      contentContainerStyle={[readable, { paddingTop: insets.top + 12, paddingBottom: 48 }]}
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.pad}>
@@ -107,12 +108,26 @@ export default function ExploreScreen() {
       </ScrollView>
 
       {loading ? (
-        <View style={{ height: 260 }}>
-          <Loading label="Finding open seats…" />
+        <View accessibilityLabel="Finding open seats" accessibilityRole="progressbar">
+          <View style={styles.pad}>
+            <View style={styles.skeletonHeader}>
+              <Skeleton style={{ height: 24, width: 210, borderRadius: 8 }} />
+            </View>
+          </View>
+          <ScrollView horizontal scrollEnabled={false} showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carousel}>
+            <PlaceTileSkeleton />
+            <PlaceTileSkeleton />
+          </ScrollView>
+          <View style={styles.pad}>
+            <View style={styles.skeletonHeader}>
+              <Skeleton style={{ height: 24, width: 190, borderRadius: 8 }} />
+            </View>
+            <PlaceListSkeleton count={2} />
+          </View>
         </View>
       ) : error ? (
-        <View style={styles.pad}>
-          <Banner tone="error">{error}</Banner>
+        <View style={[styles.pad, { marginTop: space.section }]}>
+          <RetryPanel title="Couldn't load places" text={error} onRetry={retry} />
         </View>
       ) : places.length === 0 ? (
         <EmptyState icon={<BigIcons.chair color={colors.muted} />} title="No places yet" text="SeatMate spots will show up here as soon as they go live." />
@@ -230,6 +245,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   categoryLabel: { fontSize: 14, fontWeight: "800", color: colors.ink, marginTop: 10 },
+  skeletonHeader: { marginTop: 40, marginBottom: 16 },
   carousel: { paddingHorizontal: space.gutter, gap: space.item, paddingBottom: 10 },
   fullCard: { backgroundColor: colors.ink, borderRadius: 24, padding: 24 },
   fullTitle: { color: "#fff", fontSize: 19, fontWeight: "900" },

@@ -4,7 +4,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BigIcons, HeartIcon } from "@/components/icons";
 import { PlaceCard, PlaceRow } from "@/components/place-card";
-import { Banner, Button, colors, EmptyState, Loading, space } from "@/components/ui";
+import { PlaceListSkeleton } from "@/components/place-card-skeleton";
+import { Banner, Button, colors, EmptyState, readable, RetryPanel, space } from "@/components/ui";
 import { useAccount } from "@/lib/account";
 import { usePlaces } from "@/lib/places";
 import { useNow } from "@/lib/use-now";
@@ -15,7 +16,7 @@ export default function SavedScreen() {
   const insets = useSafeAreaInsets();
   const now = useNow();
   const { user, authReady, favorites, profileReady, syncError, toggleFavorite } = useAccount();
-  const { places } = usePlaces();
+  const { places, loading, error, retry } = usePlaces();
 
   const header = (
     <View>
@@ -25,12 +26,19 @@ export default function SavedScreen() {
   );
 
   if (!authReady) {
-    return <Loading />;
+    return (
+      <View style={[styles.screen, styles.pad, readable, { paddingTop: insets.top + 24 }]}>
+        {header}
+        <View style={{ marginTop: 28 }}>
+          <PlaceListSkeleton count={2} />
+        </View>
+      </View>
+    );
   }
 
   if (!user) {
     return (
-      <ScrollView style={styles.screen} contentContainerStyle={[styles.pad, { paddingTop: insets.top + 24, paddingBottom: 48 }]}>
+      <ScrollView style={styles.screen} contentContainerStyle={[styles.pad, readable, { paddingTop: insets.top + 24, paddingBottom: 48 }]}>
         {header}
         <View style={styles.signedOut}>
           <View style={styles.heartBubble}>
@@ -47,13 +55,13 @@ export default function SavedScreen() {
   }
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={[styles.pad, { paddingTop: insets.top + 24, paddingBottom: 48 }]}>
+    <ScrollView style={styles.screen} contentContainerStyle={[styles.pad, readable, { paddingTop: insets.top + 24, paddingBottom: 48 }]}>
       {header}
       {syncError ? <Banner tone="error">{syncError}</Banner> : null}
 
-      {!profileReady ? (
-        <View style={{ height: 240 }}>
-          <Loading />
+      {!profileReady || (loading && favorites.length > 0) ? (
+        <View style={{ marginTop: 28 }}>
+          <PlaceListSkeleton count={Math.min(Math.max(favorites.length, 1), 3)} />
         </View>
       ) : favorites.length === 0 ? (
         <EmptyState
@@ -62,6 +70,13 @@ export default function SavedScreen() {
           text="Tap the heart on any place to keep it here."
           action="Explore places"
           onAction={() => router.navigate("/")}
+        />
+      ) : error && places.length === 0 ? (
+        <RetryPanel
+          title="Couldn't load places"
+          text={error}
+          onRetry={retry}
+          style={{ marginTop: 28 }}
         />
       ) : (
         <View style={{ gap: space.item + 8, marginTop: 28 }}>

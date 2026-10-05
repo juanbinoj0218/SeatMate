@@ -4,6 +4,7 @@ import * as Clipboard from "expo-clipboard";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
+import { ScrollView as GestureScrollView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { isBar, isBarbershop, isBowlingAlley, isGameMarker, type FloorMarker } from "@seatmate/shared/floor-plan";
@@ -14,7 +15,7 @@ import FloorView from "@/components/floor-view";
 import { BackIcon, BigIcons, ClockIcon, DirectionsIcon, FloorPlanIcon, HeartIcon, PinIcon, PlaceTypeIcon, ScissorsIcon, ShareIcon } from "@/components/icons";
 import LiveDot from "@/components/live-dot";
 import SeatAlertButton from "@/components/seat-alert-button";
-import { Button, colors, EmptyState, Loading, shadow, space } from "@/components/ui";
+import { Button, colors, EmptyState, Loading, shadow, Skeleton, space } from "@/components/ui";
 import { useAccount } from "@/lib/account";
 import { countView } from "@/lib/analytics";
 import { useFeatures } from "@/lib/features";
@@ -33,6 +34,10 @@ import { tap } from "@/lib/haptics";
 import { fallbackImageFor, placeImage, usePlace } from "@/lib/places";
 import { consumerUrl } from "@/lib/site-urls";
 import { useNow } from "@/lib/use-now";
+
+// The page scroller takes part in gesture handling, so dragging a zoomed-in
+// floor plan moves the map instead of scrolling the page.
+const PageScroll = Animated.createAnimatedComponent(GestureScrollView);
 
 // One place: live seat count, crowd and games, hours, and the business's
 // live floor plan. Everything updates as staff change seats.
@@ -107,7 +112,7 @@ export default function PlaceScreen() {
   }, [place?.slug]);
 
   if (!place) {
-    if (loading) return <Loading label="Finding open seats…" />;
+    if (loading) return <PlaceSkeleton />;
     return (
       <View style={[styles.screen, { paddingTop: insets.top + 60 }]}>
         <EmptyState
@@ -158,7 +163,7 @@ export default function PlaceScreen() {
 
   return (
     <View style={styles.screen}>
-      <Animated.ScrollView
+      <PageScroll
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: insets.bottom + 48 }}
         scrollEventThrottle={16}
@@ -236,9 +241,7 @@ export default function PlaceScreen() {
             {floorLoaded ? (
               <FloorView tables={tables} markers={markers} width={contentWidth} maxHeight={floorHeight} />
             ) : (
-              <View style={{ height: 240 }}>
-                <Loading label="Loading the floor plan…" />
-              </View>
+              <Skeleton style={{ height: 260, borderRadius: 24 }} />
             )}
           </View>
 
@@ -378,7 +381,7 @@ export default function PlaceScreen() {
 
           <Text style={styles.footnote}>Seats and the floor plan update live as the business makes changes.</Text>
         </View>
-      </Animated.ScrollView>
+      </PageScroll>
 
       <Animated.View
         pointerEvents="none"
@@ -472,6 +475,22 @@ function Section({ title, icon, children }: { title: string; icon: React.ReactNo
       </View>
       <View style={styles.listCard}>{children}</View>
     </>
+  );
+}
+
+// The page's shape while the place loads: photo, name, then the map.
+function PlaceSkeleton() {
+  const insets = useSafeAreaInsets();
+  return (
+    <View style={styles.screen}>
+      <Skeleton style={{ height: 250 + insets.top, borderRadius: 0 }} />
+      <View style={{ paddingHorizontal: space.gutter, paddingTop: 24, gap: 14 }}>
+        <Skeleton style={{ height: 30, width: 130, borderRadius: 999 }} />
+        <Skeleton style={{ height: 28, width: 200, borderRadius: 8, marginTop: 12 }} />
+        <Skeleton style={{ height: 18, width: 240, borderRadius: 6 }} />
+        <Skeleton style={{ height: 260, borderRadius: 24, marginTop: 4 }} />
+      </View>
+    </View>
   );
 }
 

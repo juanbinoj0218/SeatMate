@@ -3,7 +3,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from "re
 import { router } from "expo-router";
 import { updateProfile } from "firebase/auth";
 
-import { Banner, Button, colors, Field, Loading, Muted } from "@/components/ui";
+import { Banner, Button, colors, Field, Loading, Muted, readable } from "@/components/ui";
 import { describeAccountError, useAccount } from "@/lib/account";
 import { success } from "@/lib/haptics";
 
@@ -57,7 +57,7 @@ function ProfileForm({ initialName, initialZip }: { initialName: string; initial
 
   return (
     <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={[styles.content, readable]} keyboardShouldPersistTaps="handled">
         <Muted>These show on the app and on seatmate360.com.</Muted>
         {error ? <Banner tone="error">{error}</Banner> : null}
         <Field label="Name" value={name} onChangeText={setName} autoComplete="name" maxLength={80} placeholder="Your name" />

@@ -9,6 +9,8 @@ import { useRouter } from "next/navigation";
 
 import {
   GoogleAuthProvider,
+  OAuthProvider,
+  type AuthProvider,
   type MultiFactorResolver,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -94,6 +96,15 @@ function SeatPreview() {
 }
 
 type Mode = "signin" | "signup";
+
+// Sign in with Apple. Needs the Apple provider switched on in Firebase
+// Authentication (with an Apple Services ID for the web).
+function appleProvider() {
+  const provider = new OAuthProvider("apple.com");
+  provider.addScope("email");
+  provider.addScope("name");
+  return provider;
+}
 
 export default function BusinessLoginPage() {
   const router = useRouter();
@@ -290,14 +301,14 @@ export default function BusinessLoginPage() {
         code ===
         "auth/popup-closed-by-user"
       ) {
-        return "Google sign-in was cancelled.";
+        return "Sign-in was cancelled.";
       }
 
       if (
         code ===
         "auth/popup-blocked"
       ) {
-        return "Your browser blocked the Google sign-in popup.";
+        return "Your browser blocked the sign-in popup.";
       }
 
       if (
@@ -507,16 +518,13 @@ export default function BusinessLoginPage() {
   // GOOGLE LOGIN
   // --------------------------------
 
-  const handleGoogleSignIn =
-    async () => {
+  const handlePopupSignIn =
+    async (provider: AuthProvider) => {
       setError("");
       setMessage("");
 
       try {
         setLoading(true);
-
-        const provider =
-          new GoogleAuthProvider();
 
         const result =
           await signInWithPopup(
@@ -534,7 +542,7 @@ export default function BusinessLoginPage() {
         }
 
         console.error(
-          "Google sign-in error:",
+          "Popup sign-in error:",
           err
         );
 
@@ -734,8 +742,10 @@ export default function BusinessLoginPage() {
 
             <button
               type="button"
-              onClick={
-                handleGoogleSignIn
+              onClick={() =>
+                handlePopupSignIn(
+                  new GoogleAuthProvider()
+                )
               }
               disabled={loading}
               className="w-full mt-7 border border-gray-200 hover:bg-gray-50 rounded-xl py-3.5 px-4 font-semibold flex items-center justify-center gap-3 transition disabled:opacity-50"
@@ -773,6 +783,33 @@ export default function BusinessLoginPage() {
               </svg>
 
               Continue with Google
+
+            </button>
+
+            {/* APPLE */}
+
+            <button
+              type="button"
+              onClick={() =>
+                handlePopupSignIn(
+                  appleProvider()
+                )
+              }
+              disabled={loading}
+              className="w-full mt-3 border border-gray-200 hover:bg-gray-50 rounded-xl py-3.5 px-4 font-semibold flex items-center justify-center gap-3 transition disabled:opacity-50"
+            >
+
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path d="M16.37 12.6c-.02-2.3 1.88-3.4 1.96-3.46-1.07-1.56-2.73-1.77-3.32-1.8-1.41-.14-2.76.83-3.47.83-.72 0-1.82-.81-2.99-.79-1.54.02-2.96.9-3.75 2.27-1.6 2.78-.41 6.88 1.15 9.13.76 1.1 1.67 2.34 2.86 2.3 1.15-.05 1.58-.74 2.97-.74 1.38 0 1.78.74 2.99.72 1.24-.02 2.02-1.12 2.77-2.23.87-1.28 1.23-2.52 1.25-2.58-.03-.01-2.4-.92-2.42-3.65ZM14.1 5.86c.63-.77 1.06-1.83.94-2.9-.91.04-2.02.61-2.67 1.37-.58.67-1.09 1.76-.96 2.8 1.02.08 2.06-.52 2.69-1.27Z" />
+              </svg>
+
+              Continue with Apple
 
             </button>
 

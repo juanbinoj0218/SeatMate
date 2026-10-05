@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { doc, getDoc } from "firebase/firestore";
 
 import WrongAccount from "@/components/gate";
-import { Banner, Card, colors, Loading, Muted, Screen, Segmented, StatTile, Title } from "@/components/ui";
+import { Banner, Card, colors, Muted, Screen, Segmented, Skeleton, SkeletonCard, StatTile, Title } from "@/components/ui";
 import { db } from "@/lib/firebase";
 import { dayKey } from "@/lib/seat-updates";
 import { useOwner } from "@/lib/session";
@@ -123,7 +123,24 @@ export default function AnalyticsScreen() {
   }
 
   if (!days) {
-    return <Loading label="Loading analytics…" />;
+    return (
+      <Screen scroll={false}>
+        <View accessibilityLabel="Loading analytics" accessibilityRole="progressbar">
+          <Title>{owner.business.name}</Title>
+          <Skeleton style={{ height: 44, borderRadius: 12, marginTop: 14 }} />
+          <View style={[styles.row, { marginTop: 16 }]}>
+            <Skeleton style={styles.statSkeleton} />
+            <Skeleton style={styles.statSkeleton} />
+          </View>
+          <View style={[styles.row, { marginTop: 10 }]}>
+            <Skeleton style={styles.statSkeleton} />
+            <Skeleton style={styles.statSkeleton} />
+          </View>
+          <SkeletonCard style={{ marginTop: 16, height: 200 }} />
+          <SkeletonCard style={{ marginTop: 16, height: 200 }} />
+        </View>
+      </Screen>
+    );
   }
 
   const live = owner.business.status === "approved" && Boolean(owner.business.slug);
@@ -243,6 +260,7 @@ function Bars({
 
 const styles = StyleSheet.create({
   row: { flexDirection: "row", gap: 10 },
+  statSkeleton: { flex: 1, height: 78, borderRadius: 16 },
   heading: { fontSize: 17, fontWeight: "800", color: colors.ink },
   empty: { marginTop: 24, marginBottom: 12, textAlign: "center" },
   chart: { flexDirection: "row", alignItems: "flex-end", gap: 3, marginTop: 16, height: 180 },
