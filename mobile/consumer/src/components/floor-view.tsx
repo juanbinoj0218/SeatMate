@@ -359,16 +359,18 @@ export default function FloorView({
             </View>
           )}
 
-          {selected && (
-            <Animated.View entering={FadeInDown.springify().damping(18)} exiting={FadeOutDown.duration(150)} style={styles.card}>
-              <SwipeAway onDismiss={() => setSelectedId(null)}>
-                <TableCard table={selected} onClose={() => setSelectedId(null)} />
-              </SwipeAway>
-            </Animated.View>
-          )}
         </View>
       ) : (
         <TableList tables={tables} width={width} />
+      )}
+
+      {/* The tapped table's seats, under the map so it never covers the room. */}
+      {mode === "map" && selected && (
+        <Animated.View entering={FadeInDown.duration(180)} exiting={FadeOutDown.duration(120)} style={styles.card}>
+          <SwipeAway onDismiss={() => setSelectedId(null)}>
+            <TableCard table={selected} onClose={() => setSelectedId(null)} />
+          </SwipeAway>
+        </Animated.View>
       )}
 
       {!empty && (
@@ -672,7 +674,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  card: { position: "absolute", left: 12, right: 12, bottom: 12 },
+  card: { marginTop: 12 },
   cardInner: {
     flexDirection: "row",
     alignItems: "flex-start",
