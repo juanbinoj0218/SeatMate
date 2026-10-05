@@ -4,30 +4,41 @@ import { router } from "expo-router";
 
 import type { DoorCount } from "@seatmate/shared/door-crowd";
 
+import { AnimatedNumber } from "@/components/animated-number";
 import { Button, Card, colors, Muted } from "@/components/ui";
 import { setBouncerMode, watchDoor } from "@/lib/door";
+import { success, warning } from "@/lib/haptics";
 
 // Dashboard card for bars: turn bouncer mode on or off and open the door
 // counter. Same switch as the web dashboard.
 export default function BouncerCard({ businessId }: { businessId: string }) {
   const [door, setDoor] = useState<DoorCount | null>(null);
-  const [saving, setSaving] = useState(false);
+  // What the owner just switched to, shown until the save finishes. Turning
+  // it on first reads the door document, so without this the switch would
+  // sit still for a round trip.
+  const [wanted, setWanted] = useState<boolean | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => watchDoor(businessId, setDoor, (err) => console.error(err)), [businessId]);
 
-  const enabled = door?.enabled === true;
+  const enabled = wanted ?? door?.enabled === true;
 
   const toggle = async () => {
+    if (wanted !== null) return;
+    const next = !enabled;
     try {
-      setSaving(true);
+      setWanted(next);
       setError("");
-      await setBouncerMode(businessId, !enabled);
+      await setBouncerMode(businessId, next);
+      success();
     } catch (err) {
       console.error(err);
+      warning();
       setError("Could not change bouncer mode.");
     } finally {
-      setSaving(false);
+      // The live snapshot already has the new value: Firestore applies the
+      // write locally before the save resolves.
+      setWanted(null);
     }
   };
 
@@ -43,7 +54,7 @@ export default function BouncerCard({ businessId }: { businessId: string }) {
         <Switch
           accessibilityLabel="Bouncer mode"
           value={enabled}
-          disabled={!door || saving}
+          disabled={!door}
           onValueChange={() => void toggle()}
           trackColor={{ true: "#10b981", false: "#d1d5db" }}
         />
@@ -51,10 +62,10 @@ export default function BouncerCard({ businessId }: { businessId: string }) {
 
       {enabled && door && (
         <View style={{ marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: "#f3f4f6" }}>
-          <Text style={{ fontSize: 30, fontWeight: "800", color: colors.ink }}>
-            {door.count}
-            <Text style={{ color: colors.faint, fontSize: 20, fontWeight: "700" }}> inside</Text>
-          </Text>
+          <View style={{ flexDirection: "row", alignItems: "flex-end" }} accessible accessibilityLabel={`${door.count} inside`}>
+            <AnimatedNumber value={door.count} style={{ fontSize: 30, lineHeight: 36, fontWeight: "800", color: colors.ink }} />
+            <Text style={{ color: colors.faint, fontSize: 20, lineHeight: 30, fontWeight: "700" }}> inside</Text>
+          </View>
           <Button title="Open door counter" onPress={() => router.push("/door")} style={{ marginTop: 12 }} />
         </View>
       )}

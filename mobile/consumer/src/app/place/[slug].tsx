@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Animated, Linking, Platform, Pressable, Share, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { Animated, Linking, Platform, Share, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
@@ -10,12 +10,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { isBar, isBarbershop, isBowlingAlley, isGameMarker, type FloorMarker } from "@seatmate/shared/floor-plan";
 import { elapsed } from "@seatmate/shared/table-geometry";
 
+import { AnimatedNumber, SpringFill } from "@/components/animated-number";
 import CrowdMeter from "@/components/crowd-meter";
 import FloorView from "@/components/floor-view";
 import { BackIcon, BigIcons, ClockIcon, DirectionsIcon, FloorPlanIcon, HeartIcon, PinIcon, PlaceTypeIcon, ScissorsIcon, ShareIcon } from "@/components/icons";
 import LiveDot from "@/components/live-dot";
 import SeatAlertButton from "@/components/seat-alert-button";
-import { Button, colors, EmptyState, Loading, shadow, Skeleton, space } from "@/components/ui";
+import { Button, colors, EmptyState, Loading, PressableScale, shadow, Skeleton, space } from "@/components/ui";
 import { useAccount } from "@/lib/account";
 import { countView } from "@/lib/analytics";
 import { useFeatures } from "@/lib/features";
@@ -225,14 +226,19 @@ export default function PlaceScreen() {
           </View>
           {floorLoaded && summary.totalSeats > 0 ? (
             <View style={styles.floorSummary}>
-              <View style={[styles.legendDot, { backgroundColor: TONE_COLORS[tone].dot }]} />
-              <Text style={styles.floorSummaryText}>
-                <Text style={styles.floorSummaryStrong}>
-                  {summary.availableSeats} of {summary.totalSeats} seats open
+              <View style={[styles.legendDot, { backgroundColor: TONE_COLORS[tone].dot, marginTop: 6 }]} />
+              <View
+                style={styles.floorSummaryLine}
+                accessible
+                accessibilityLabel={`${summary.availableSeats} of ${summary.totalSeats} seats open, ${freshnessLabel(summary.latestUpdateMs, now)}`}
+              >
+                <AnimatedNumber value={summary.availableSeats} style={[styles.floorSummaryText, styles.floorSummaryStrong]} />
+                <Text style={[styles.floorSummaryText, { flex: 1 }]}>
+                  <Text style={styles.floorSummaryStrong}>{` of ${summary.totalSeats} seats open`}</Text>
+                  {" · "}
+                  {freshnessLabel(summary.latestUpdateMs, now)}
                 </Text>
-                {" · "}
-                {freshnessLabel(summary.latestUpdateMs, now)}
-              </Text>
+              </View>
             </View>
           ) : (
             <Text style={styles.sectionText}>The live floor plan, straight from the staff. Green seats are open.</Text>
@@ -257,7 +263,10 @@ export default function PlaceScreen() {
               label={saved ? "Remove from saved" : "Save"}
               active={saved}
               icon={<HeartIcon size={22} color={saved ? colors.red : colors.ink} filled={saved} />}
-              onPress={() => placeSummary && toggleFavorite(placeSummary)}
+              onPress={() => {
+                tap();
+                if (placeSummary) toggleFavorite(placeSummary);
+              }}
             />
             {features.shareButton && <ActionButton label="Share" icon={<ShareIcon size={22} />} onPress={share} />}
           </View>
@@ -272,8 +281,13 @@ export default function PlaceScreen() {
                 <View style={styles.liveTop}>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.liveEyebrow}>Available now</Text>
-                    <View style={styles.bigRow}>
-                      <Text style={styles.big}>{summary.availableSeats}</Text>
+                    <View
+                      style={styles.bigRow}
+                      accessible
+                      accessibilityLabel={`${summary.availableSeats} of ${summary.totalSeats} seats available`}
+                      accessibilityLiveRegion="polite"
+                    >
+                      <AnimatedNumber value={summary.availableSeats} style={styles.big} />
                       <Text style={styles.bigOf}>of {summary.totalSeats} seats</Text>
                     </View>
                   </View>
@@ -285,7 +299,7 @@ export default function PlaceScreen() {
                 {summary.totalSeats > 0 && (
                   <View style={styles.seatBarWrap}>
                     <View style={styles.seatBar}>
-                      <View style={[styles.seatBarFill, { width: `${percentage}%`, backgroundColor: TONE_COLORS[tone].dot }]} />
+                      <SpringFill percent={percentage} color={TONE_COLORS[tone].dot} style={styles.seatBarFill} />
                     </View>
                     <View style={styles.legend}>
                       <View style={styles.legendItem}>
@@ -422,8 +436,11 @@ export default function PlaceScreen() {
 // Percentage of seats open, as a ring.
 function Ring({ percentage, color }: { percentage: number; color: string }) {
   return (
-    <View style={[styles.ring, { borderColor: `${color}55` }]}>
-      <Text style={styles.ringValue}>{percentage}%</Text>
+    <View style={[styles.ring, { borderColor: `${color}55` }]} accessible accessibilityLabel={`${percentage}% open`}>
+      <View style={{ flexDirection: "row" }}>
+        <AnimatedNumber value={percentage} style={styles.ringValue} />
+        <Text style={styles.ringValue}>%</Text>
+      </View>
       <Text style={styles.ringLabel}>OPEN</Text>
     </View>
   );
@@ -431,15 +448,9 @@ function Ring({ percentage, color }: { percentage: number; color: string }) {
 
 function RoundButton({ label, icon, onPress }: { label: string; icon: React.ReactNode; onPress: () => void }) {
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={onPress}
-      hitSlop={6}
-      style={({ pressed }) => [styles.round, pressed && { transform: [{ scale: 0.92 }] }]}
-    >
+    <PressableScale accessibilityLabel={label} onPress={onPress} hitSlop={6} scaleTo={0.9} style={styles.round}>
       {icon}
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -455,14 +466,14 @@ function ActionButton({
   active?: boolean;
 }) {
   return (
-    <Pressable
-      accessibilityRole="button"
+    <PressableScale
       accessibilityLabel={label}
+      accessibilityState={{ selected: active }}
       onPress={onPress}
-      style={({ pressed }) => [styles.action, active && { borderColor: "#fecaca", backgroundColor: colors.redSoft }, pressed && { transform: [{ scale: 0.96 }] }]}
+      style={[styles.action, active && { borderColor: "#fecaca", backgroundColor: colors.redSoft }]}
     >
       {icon}
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -527,7 +538,7 @@ const styles = StyleSheet.create({
   big: { color: "#fff", fontSize: 72, lineHeight: 74, fontWeight: "900", letterSpacing: -2.5 },
   bigOf: { color: "rgba(255,255,255,0.72)", fontSize: 17, fontWeight: "700", paddingBottom: 12 },
   ring: { width: 96, height: 96, borderRadius: 48, borderWidth: 7, alignItems: "center", justifyContent: "center" },
-  ringValue: { color: "#fff", fontSize: 24, fontWeight: "900" },
+  ringValue: { color: "#fff", fontSize: 24, lineHeight: 29, fontWeight: "900" },
   ringLabel: { color: "rgba(255,255,255,0.72)", fontSize: 11, fontWeight: "900", letterSpacing: 1 },
   availability: { color: "#fff", fontSize: 22, lineHeight: 28, fontWeight: "900", marginTop: 20 },
   seatBarWrap: { marginTop: 20 },
@@ -544,8 +555,9 @@ const styles = StyleSheet.create({
   freshText: { fontSize: 15, fontWeight: "700" },
   freshNote: { color: "rgba(254,243,199,0.75)", fontSize: 14, lineHeight: 20, marginTop: 6 },
   actions: { flexDirection: "row", gap: 12, marginTop: 20 },
-  floorSummary: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 10 },
-  floorSummaryText: { flex: 1, fontSize: 16, lineHeight: 22, color: colors.muted },
+  floorSummary: { flexDirection: "row", alignItems: "flex-start", gap: 10, marginTop: 10 },
+  floorSummaryLine: { flex: 1, flexDirection: "row", alignItems: "flex-start" },
+  floorSummaryText: { fontSize: 16, lineHeight: 22, color: colors.muted },
   floorSummaryStrong: { color: colors.ink, fontWeight: "800" },
   action: {
     width: 56,

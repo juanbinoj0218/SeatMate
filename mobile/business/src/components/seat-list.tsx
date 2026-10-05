@@ -1,11 +1,12 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 import type { FloorMarker } from "@seatmate/shared/floor-plan";
 import { isSingleSeat } from "@seatmate/shared/table-geometry";
 
+import { AnimatedNumber } from "@/components/animated-number";
 import { MarkerIcon } from "@/components/icons";
 import { ChairTimer } from "@/components/table-with-seats";
-import { colors } from "@/components/ui";
+import { colors, PressableScale } from "@/components/ui";
 import type { Table } from "@/lib/floor";
 
 // Every table as a row of big seat buttons: quicker than the floor plan on
@@ -37,23 +38,18 @@ export default function SeatList({
             {sortedGames.map((marker) => {
               const open = marker.status !== "occupied";
               return (
-                <Pressable
+                <PressableScale
                   key={marker.id}
-                  accessibilityRole="button"
                   accessibilityLabel={`${marker.label}: ${open ? "open" : "in use"}`}
                   onPress={() => onGamePress?.(marker)}
-                  style={({ pressed }) => [
-                    styles.game,
-                    { backgroundColor: open ? "#22c55e" : colors.red },
-                    pressed && styles.pressed,
-                  ]}
+                  style={[styles.game, { backgroundColor: open ? "#22c55e" : colors.red }]}
                 >
                   <View style={styles.gameLabel}>
                     <MarkerIcon type={marker.type} size={16} color="#fff" />
                     <Text style={styles.gameText}>{marker.label}</Text>
                   </View>
                   <Text style={[styles.gameText, { fontSize: 12, opacity: 0.85 }]}>{open ? "Open" : "In use"}</Text>
-                </Pressable>
+                </PressableScale>
               );
             })}
           </View>
@@ -69,32 +65,29 @@ export default function SeatList({
               {table.shape === "barberChair" && table.seats[0] ? (
                 <ChairTimer seat={table.seats[0]} fontSize={13} />
               ) : (
-                <Text style={styles.count}>
-                  {open}/{table.seats.length} open
-                </Text>
+                <View style={{ flexDirection: "row" }} accessible accessibilityLabel={`${open} of ${table.seats.length} open`}>
+                  <AnimatedNumber value={open} style={styles.count} />
+                  <Text style={styles.count}>/{table.seats.length} open</Text>
+                </View>
               )}
             </View>
             <View style={styles.seats}>
               {table.seats.map((seat) => {
                 const available = seat.status === "available";
                 return (
-                  <Pressable
+                  <PressableScale
                     key={seat.id}
-                    accessibilityRole="button"
                     accessibilityLabel={`${table.name}, seat ${seat.id}: ${available ? "open" : "taken"}`}
+                    scaleTo={0.9}
                     onPress={() => onSeatPress(table.id, seat.id)}
-                    style={({ pressed }) => [
-                      styles.seat,
-                      { backgroundColor: available ? "#22c55e" : colors.red },
-                      pressed && styles.pressed,
-                    ]}
+                    style={[styles.seat, { backgroundColor: available ? "#22c55e" : colors.red }]}
                   >
                     {isSingleSeat(table.shape) ? (
                       <View style={styles.seatDot} />
                     ) : (
                       <Text style={styles.seatText}>{seat.id}</Text>
                     )}
-                  </Pressable>
+                  </PressableScale>
                 );
               })}
             </View>
@@ -109,12 +102,11 @@ const styles = StyleSheet.create({
   card: { backgroundColor: "#fff", borderColor: colors.border, borderWidth: 1, borderRadius: 16, padding: 14 },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" },
   name: { fontSize: 16, fontWeight: "800", color: colors.ink },
-  count: { fontSize: 13, color: colors.muted, fontWeight: "600" },
+  count: { fontSize: 13, lineHeight: 18, color: colors.muted, fontWeight: "600" },
   seats: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 },
   seat: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center" },
   seatText: { color: "#fff", fontWeight: "800", fontSize: 16 },
   seatDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: "#fff" },
-  pressed: { transform: [{ scale: 0.96 }] },
   game: { borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10, minWidth: 110 },
   gameLabel: { flexDirection: "row", alignItems: "center", gap: 6 },
   gameText: { color: "#fff", fontWeight: "800", fontSize: 15 },

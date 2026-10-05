@@ -1,5 +1,5 @@
 import { useEffect, useState, type ComponentType, type ReactNode } from "react";
-import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { Linking, StyleSheet, Text, View } from "react-native";
 import { router, type Href } from "expo-router";
 import { signOut } from "firebase/auth";
 import { doc, onSnapshot } from "firebase/firestore";
@@ -13,6 +13,7 @@ import {
   type FloorMarker,
 } from "@seatmate/shared/floor-plan";
 
+import { AnimatedNumber, SpringFill } from "@/components/animated-number";
 import BouncerCard from "@/components/bouncer-card";
 import WrongAccount from "@/components/gate";
 import {
@@ -29,10 +30,12 @@ import {
 } from "@/components/icons";
 import { ChairTimer } from "@/components/table-with-seats";
 import UpdateReminder from "@/components/update-reminder";
-import { Banner, Button, Card, colors, Muted, Screen, StatTile, Title } from "@/components/ui";
+import { Banner, Button, Card, colors, Muted, PressableScale, Screen, StatTile, Title } from "@/components/ui";
 import { auth, db } from "@/lib/firebase";
 import { seatCounts, toggleGame, watchMarkers, watchTables, type Table } from "@/lib/floor";
-import { dayKey, toggleSeat } from "@/lib/seat-updates";
+import { tap, warning } from "@/lib/haptics";
+import { useOptimisticSeats } from "@/lib/optimistic-seats";
+import { dayKey } from "@/lib/seat-updates";
 import type { BusinessStatus } from "@/lib/session";
 import { useOwner } from "@/lib/session";
 import { businessUrl, consumerUrl } from "@/lib/site-urls";
@@ -49,10 +52,13 @@ export default function DashboardScreen() {
   const owner = useOwner();
   const businessId = owner?.business.id;
   const slug = owner?.business.slug;
-  const [tables, setTables] = useState<Table[]>([]);
+  const [liveTables, setTables] = useState<Table[]>([]);
   const [markers, setMarkers] = useState<FloorMarker[]>([]);
   const [today, setToday] = useState({ views: 0, scans: 0, updates: 0 });
   const [error, setError] = useState("");
+  // Chair taps show at once; the snapshot catches up behind them.
+  const optimistic = useOptimisticSeats(businessId, liveTables, setError);
+  const tables = optimistic.tables ?? liveTables;
 
   useEffect(() => {
     if (!businessId) return;
@@ -111,6 +117,7 @@ export default function DashboardScreen() {
       await work();
     } catch (err) {
       console.error(err);
+      warning();
       setError(failure);
     }
   };
@@ -180,16 +187,18 @@ export default function DashboardScreen() {
             if (!seat) return null;
             const open = seat.status === "available";
             return (
-              <Pressable
+              <PressableScale
                 key={chair.id}
-                accessibilityRole="button"
                 accessibilityLabel={`${chair.name}: ${open ? "open" : "taken"}`}
-                onPress={() => void run(() => toggleSeat(business.id, chair.id, seat.id, tables), "Could not update that chair.")}
-                style={({ pressed }) => [styles.quick, pressed && styles.pressed]}
+                onPress={() => {
+                  setError("");
+                  optimistic.toggleSeat(chair.id, seat.id, "Could not update that chair.");
+                }}
+                style={styles.quick}
               >
                 <Text style={styles.quickName}>{chair.name}</Text>
                 <ChairTimer seat={seat} fontSize={13} />
-              </Pressable>
+              </PressableScale>
             );
           })}
         </QuickPanel>
@@ -205,15 +214,17 @@ export default function DashboardScreen() {
             .map((marker) => {
               const open = marker.status !== "occupied";
               return (
-                <Pressable
+                <PressableScale
                   key={marker.id}
-                  accessibilityRole="button"
                   accessibilityLabel={`${marker.label}: ${open ? "open" : "in use"}`}
-                  onPress={() => void run(() => toggleGame(business.id, marker), "Could not update that game.")}
-                  style={({ pressed }) => [
+                  onPress={() => {
+                    // A plain update: Firestore shows it locally at once.
+                    tap();
+                    void run(() => toggleGame(business.id, marker), "Could not update that game.");
+                  }}
+                  style={[
                     styles.quick,
                     { backgroundColor: open ? colors.greenSoft : colors.redSoft, borderColor: open ? "#a7f3d0" : "#fecaca" },
-                    pressed && styles.pressed,
                   ]}
                 >
                   <View style={styles.quickLabel}>
@@ -223,7 +234,7 @@ export default function DashboardScreen() {
                   <Text style={{ fontWeight: "800", color: open ? colors.greenText : colors.redText }}>
                     {open ? "Open" : "In use"}
                   </Text>
-                </Pressable>
+                </PressableScale>
               );
             })}
         </QuickPanel>
@@ -296,14 +307,9 @@ export default function DashboardScreen() {
       </Card>
 
       <Button title="Log out" variant="secondary" onPress={() => void signOut(auth)} style={{ marginTop: 24 }} />
-      <Pressable
-        accessibilityRole="button"
-        hitSlop={8}
-        onPress={() => router.push("/delete-account")}
-        style={({ pressed }) => [styles.deleteAccount, pressed && { opacity: 0.6 }]}
-      >
+      <PressableScale hitSlop={8} onPress={() => router.push("/delete-account")} style={styles.deleteAccount}>
         <Text style={styles.deleteAccountText}>Delete account</Text>
-      </Pressable>
+      </PressableScale>
     </Screen>
   );
 }
@@ -382,14 +388,17 @@ function SeatSummary({ open, total, noun }: { open: number; total: number; noun:
     <Card>
       <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
         <Text style={{ color: colors.muted, fontWeight: "700" }}>{noun} right now</Text>
-        <Text style={{ color: colors.muted }}>{percent}% open</Text>
+        <View style={{ flexDirection: "row" }} accessible accessibilityLabel={`${percent}% open`}>
+          <AnimatedNumber value={percent} style={styles.percent} />
+          <Text style={styles.percent}>% open</Text>
+        </View>
       </View>
-      <Text style={{ marginTop: 6, fontSize: 30, fontWeight: "800", color: "#059669" }}>
-        {open}
-        <Text style={{ color: colors.faint, fontSize: 20, fontWeight: "700" }}> / {total} open</Text>
-      </Text>
+      <View style={styles.summaryRow} accessible accessibilityLabel={`${open} of ${total} open`}>
+        <AnimatedNumber value={open} style={styles.summaryOpen} />
+        <Text style={styles.summaryTotal}> / {total} open</Text>
+      </View>
       <View style={styles.meter}>
-        <View style={[styles.meterFill, { width: `${percent}%` }]} />
+        <SpringFill percent={percent} color="#10b981" style={styles.meterFill} />
       </View>
     </Card>
   );
@@ -413,10 +422,12 @@ function MenuLink({
   last?: boolean;
 }) {
   return (
-    <Pressable
-      accessibilityRole="button"
+    <PressableScale
+      accessibilityLabel={title}
+      scaleTo={0.98}
+      haptic
       onPress={onPress ?? (() => href && router.push(href))}
-      style={({ pressed }) => [styles.link, !last && styles.linkBorder, pressed && { backgroundColor: "#f9fafb" }]}
+      style={[styles.link, !last && styles.linkBorder]}
     >
       <View style={[styles.tile, { backgroundColor: tile[0] }]}>
         <Icon size={21} color={tile[1]} />
@@ -426,7 +437,7 @@ function MenuLink({
         <Text style={{ color: colors.muted, marginTop: 2 }}>{text}</Text>
       </View>
       <ChevronRightIcon size={20} color="#d1d5db" />
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -444,7 +455,11 @@ const styles = StyleSheet.create({
   badgeDot: { width: 6, height: 6, borderRadius: 3 },
   notice: { marginTop: 20, borderWidth: 1, borderRadius: 16, padding: 16 },
   meter: { marginTop: 12, height: 10, borderRadius: 5, backgroundColor: "#ffe4e6", overflow: "hidden" },
-  meterFill: { height: "100%", borderRadius: 5, backgroundColor: "#10b981" },
+  meterFill: { height: "100%", borderRadius: 5 },
+  percent: { color: colors.muted, fontSize: 15, lineHeight: 20 },
+  summaryRow: { flexDirection: "row", alignItems: "flex-end", marginTop: 6 },
+  summaryOpen: { fontSize: 30, lineHeight: 36, fontWeight: "800", color: "#059669" },
+  summaryTotal: { color: colors.faint, fontSize: 20, lineHeight: 30, fontWeight: "700" },
   link: { flexDirection: "row", alignItems: "center", gap: 14, paddingHorizontal: 16, paddingVertical: 14 },
   linkBorder: { borderBottomWidth: 1, borderBottomColor: "#e5e7eb" },
   tile: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
@@ -462,7 +477,6 @@ const styles = StyleSheet.create({
   },
   quickName: { fontWeight: "800", color: colors.ink, fontSize: 15 },
   quickLabel: { flexDirection: "row", alignItems: "center", gap: 6 },
-  pressed: { transform: [{ scale: 0.98 }] },
   deleteAccount: { alignSelf: "center", marginTop: 18, paddingVertical: 6, paddingHorizontal: 10 },
   deleteAccountText: { color: colors.redText, fontWeight: "700", fontSize: 14 },
 });

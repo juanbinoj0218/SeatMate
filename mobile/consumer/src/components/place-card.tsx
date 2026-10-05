@@ -1,10 +1,11 @@
-import { Pressable, StyleSheet, Text, View, type StyleProp, type TextStyle } from "react-native";
+import { StyleSheet, Text, View, type StyleProp, type TextStyle } from "react-native";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 
+import { AnimatedNumber, SpringFill } from "@/components/animated-number";
 import { HeartIcon, PlaceTypeIcon } from "@/components/icons";
-import { colors, shadow } from "@/components/ui";
+import { colors, PressableScale, shadow } from "@/components/ui";
 import { useAccount } from "@/lib/account";
 import {
   availabilityLabel,
@@ -35,9 +36,18 @@ export function SeatPill({ place, onDark = false }: { place: PlaceWithSeats; onD
   return (
     <View style={[styles.pill, { backgroundColor: onDark ? "rgba(255,255,255,0.95)" : look.soft }]}>
       <View style={[styles.dot, { backgroundColor: look.dot }]} />
-      <Text style={[styles.pillText, { color: look.text }]}>
-        {place.totalSeats === 0 ? "No seats listed" : `${place.availableSeats} of ${place.totalSeats} open`}
-      </Text>
+      {place.totalSeats === 0 ? (
+        <Text style={[styles.pillText, { color: look.text }]}>No seats listed</Text>
+      ) : (
+        <View
+          style={styles.pillCount}
+          accessible
+          accessibilityLabel={`${place.availableSeats} of ${place.totalSeats} open`}
+        >
+          <AnimatedNumber value={place.availableSeats} style={[styles.pillText, { color: look.text }]} />
+          <Text style={[styles.pillText, { color: look.text }]}>{` of ${place.totalSeats} open`}</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -48,11 +58,11 @@ export function SaveHeart({ place, size = 36 }: { place: PlaceWithSeats; size?: 
   const saved = isFavorite(place.slug);
 
   return (
-    <Pressable
-      accessibilityRole="button"
+    <PressableScale
       accessibilityLabel={saved ? `Remove ${place.name} from saved` : `Save ${place.name}`}
       accessibilityState={{ selected: saved }}
       hitSlop={8}
+      scaleTo={0.88}
       onPress={() => {
         tap();
         toggleFavorite({
@@ -63,14 +73,10 @@ export function SaveHeart({ place, size = 36 }: { place: PlaceWithSeats; size?: 
           imageUrl: place.imageUrl,
         });
       }}
-      style={({ pressed }) => [
-        styles.heart,
-        { width: size, height: size, borderRadius: size / 2 },
-        pressed && { transform: [{ scale: 0.9 }] },
-      ]}
+      style={[styles.heart, { width: size, height: size, borderRadius: size / 2 }]}
     >
       <HeartIcon size={size * 0.55} color={saved ? colors.red : colors.ink} filled={saved} />
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -115,11 +121,12 @@ export function PlaceCard({ place, now }: { place: PlaceWithSeats; now: number }
   const age = shortAge(place.latestUpdateMs, now);
 
   return (
-    <Pressable
-      accessibilityRole="button"
+    <PressableScale
       accessibilityLabel={`${place.name}, ${availabilityLabel(place)}`}
+      scaleTo={0.97}
+      haptic
       onPress={() => openPlace(place.slug)}
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      style={styles.card}
     >
       <View style={styles.photoWrap}>
         <Image
@@ -156,7 +163,7 @@ export function PlaceCard({ place, now }: { place: PlaceWithSeats; now: number }
         </View>
         {place.totalSeats > 0 ? <SeatBar place={place} /> : null}
       </View>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -167,7 +174,7 @@ export function SeatBar({ place, dark = false }: { place: PlaceWithSeats; dark?:
 
   return (
     <View style={[styles.bar, dark && { backgroundColor: "rgba(255,255,255,0.12)" }]}>
-      <View style={[styles.barFill, { width: `${Math.round(share * 100)}%`, backgroundColor: look.dot }]} />
+      <SpringFill percent={Math.round(share * 100)} color={look.dot} style={styles.barFill} />
     </View>
   );
 }
@@ -175,11 +182,12 @@ export function SeatBar({ place, dark = false }: { place: PlaceWithSeats; dark?:
 // Smaller card for horizontal carousels on the Explore tab.
 export function PlaceTile({ place, now }: { place: PlaceWithSeats; now: number }) {
   return (
-    <Pressable
-      accessibilityRole="button"
+    <PressableScale
       accessibilityLabel={`${place.name}, ${availabilityLabel(place)}`}
+      scaleTo={0.97}
+      haptic
       onPress={() => openPlace(place.slug)}
-      style={({ pressed }) => [styles.tile, pressed && styles.pressed]}
+      style={styles.tile}
     >
       <View style={styles.tilePhoto}>
         <Image
@@ -205,7 +213,7 @@ export function PlaceTile({ place, now }: { place: PlaceWithSeats; now: number }
       <View style={styles.tileFooter}>
         <SeatPill place={place} />
       </View>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -227,11 +235,7 @@ export function PlaceRow({
   right?: React.ReactNode;
 }) {
   return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={() => openPlace(slug)}
-      style={({ pressed }) => [styles.row, pressed && { backgroundColor: colors.chip }]}
-    >
+    <PressableScale accessibilityLabel={name} scaleTo={0.98} haptic onPress={() => openPlace(slug)} style={styles.row}>
       <Image
         source={{ uri: imageUrl || fallbackImageFor(name || slug) }}
         contentFit="cover"
@@ -244,7 +248,7 @@ export function PlaceRow({
         <TypeLine type={type} address={address} style={styles.rowMeta} color={colors.muted} size={14} />
       </View>
       {right}
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -257,7 +261,6 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     ...shadow,
   },
-  pressed: { transform: [{ scale: 0.985 }] },
   photoWrap: { height: 196, backgroundColor: "#e5e7eb" },
   photoTop: { position: "absolute", top: 14, left: 14, right: 14, flexDirection: "row", alignItems: "center" },
   photoBottom: { position: "absolute", left: 14, bottom: 14 },
@@ -280,7 +283,8 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
   },
   dot: { width: 8, height: 8, borderRadius: 4 },
-  pillText: { fontSize: 14, fontWeight: "800" },
+  pillText: { fontSize: 14, lineHeight: 18, fontWeight: "800" },
+  pillCount: { flexDirection: "row", alignItems: "center" },
   heart: {
     backgroundColor: "rgba(255,255,255,0.95)",
     alignItems: "center",

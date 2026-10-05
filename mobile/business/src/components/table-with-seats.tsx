@@ -38,6 +38,7 @@ export default function TableWithSeats({
   onSeatPress,
   selected = false,
   preview = false,
+  magnify = 1,
 }: {
   name: string;
   shape: TableShape;
@@ -48,18 +49,23 @@ export default function TableWithSeats({
   selected?: boolean;
   // A small picture in the "Add" panel: no name, no chair timer.
   preview?: boolean;
+  // Draw everything this many times larger. The floor plan draws at its
+  // most zoomed-in size and shrinks to fit, so zooming in stays sharp.
+  magnify?: number;
 }) {
   const stool = isSingleSeat(shape);
   const chair = shape === "barberChair";
   const shown = stool ? seats.slice(0, 1) : seats;
-  const { width, height, tableWidth, tableHeight, seatSize, spots } = tableGeometry(
-    shape,
-    shown.length,
-    scale,
-    rotation
-  );
+  const geometry = tableGeometry(shape, shown.length, scale, rotation);
+  const m = magnify;
+  const width = geometry.width * m;
+  const height = geometry.height * m;
+  const tableWidth = geometry.tableWidth * m;
+  const tableHeight = geometry.tableHeight * m;
+  const seatSize = geometry.seatSize * m;
+  const spots = geometry.spots.map((spot) => ({ x: spot.x * m, y: spot.y * m }));
   const open = shown.filter((seat) => seat.status === "available").length;
-  const fontSize = Math.max(9, Math.min(14, 12.5 * scale));
+  const fontSize = Math.max(9, Math.min(14, 12.5 * scale)) * m;
 
   return (
     <View
@@ -74,17 +80,19 @@ export default function TableWithSeats({
             top: (height - tableHeight) / 2,
             width: tableWidth,
             height: tableHeight,
-            borderRadius: chair ? 12 : stool || shape === "round" ? tableWidth / 2 : 16,
+            borderRadius: chair ? 12 * m : stool || shape === "round" ? tableWidth / 2 : 16 * m,
             backgroundColor: chair ? "#2b2f36" : stool ? "#3b2a1c" : TABLE_COLOR,
-            padding: stool ? 0 : 6 * scale,
+            padding: stool ? 0 : 6 * scale * m,
+            shadowRadius: 8 * m,
+            shadowOffset: { width: 0, height: 4 * m },
           },
           chair && {
             borderTopLeftRadius: tableWidth * 0.4,
             borderTopRightRadius: tableWidth * 0.4,
-            borderTopWidth: 5,
+            borderTopWidth: 5 * m,
             borderTopColor: "#8b1e2d",
           },
-          selected && styles.selected,
+          selected && { borderWidth: 3 * m, borderColor: SEAT_OPEN },
         ]}
       >
         {!stool && !preview && (
@@ -109,10 +117,11 @@ export default function TableWithSeats({
             size={seatSize}
             left={width / 2 + spot.x - seatSize / 2}
             top={height / 2 + spot.y - seatSize / 2}
+            ring={2 * m}
             label={stool ? `${name}: ${status}` : `Seat ${seat.id}: ${status}`}
             onPress={onSeatPress ? () => onSeatPress(seat.id) : undefined}
           >
-            <Text style={[styles.seatText, { fontSize: Math.max(8, 10 * scale) }]}>
+            <Text style={[styles.seatText, { fontSize: Math.max(8, 10 * scale) * m }]}>
               {stool ? stoolNumber(name) : seat.id}
             </Text>
           </Seat>
@@ -120,8 +129,8 @@ export default function TableWithSeats({
       })}
 
       {chair && shown[0] && !preview ? (
-        <View pointerEvents="none" style={styles.timerRow}>
-          <ChairTimer seat={shown[0]} fontSize={Math.max(9, 10 * scale)} />
+        <View pointerEvents="none" style={[styles.timerRow, { left: -40 * m, right: -40 * m, marginTop: 4 * m }]}>
+          <ChairTimer seat={shown[0]} fontSize={Math.max(9, 10 * scale) * m} magnify={m} />
         </View>
       ) : null}
     </View>
@@ -135,6 +144,7 @@ function Seat({
   size,
   left,
   top,
+  ring = 2,
   label,
   onPress,
   children,
@@ -143,6 +153,7 @@ function Seat({
   size: number;
   left: number;
   top: number;
+  ring?: number;
   label: string;
   onPress?: () => void;
   children: ReactNode;
@@ -165,11 +176,11 @@ function Seat({
     transform: [{ scale: pulse.get() }],
   }));
 
-  const box = { left, top, width: size, height: size, borderRadius: size / 2 };
+  const box = { left, top, width: size, height: size, borderRadius: size / 2, shadowRadius: ring, shadowOffset: { width: 0, height: ring / 2 } };
   if (!onPress) {
     return (
       <View accessibilityLabel={label} style={[styles.seatSlot, box]} pointerEvents="none">
-        <Animated.View style={[styles.seatFill, { borderRadius: size / 2 }, animated]}>{children}</Animated.View>
+        <Animated.View style={[styles.seatFill, { borderRadius: size / 2, borderWidth: ring }, animated]}>{children}</Animated.View>
       </View>
     );
   }
@@ -181,14 +192,14 @@ function Seat({
       onPress={onPress}
       style={({ pressed }) => [styles.seatSlot, box, pressed && { transform: [{ scale: 0.9 }] }]}
     >
-      <Animated.View style={[styles.seatFill, { borderRadius: size / 2 }, animated]}>{children}</Animated.View>
+      <Animated.View style={[styles.seatFill, { borderRadius: size / 2, borderWidth: ring }, animated]}>{children}</Animated.View>
     </Pressable>
   );
 }
 
 // Pill under a barber chair: "Open" while free, and a running timer of how
 // long the current customer has been in the chair once it is taken.
-export function ChairTimer({ seat, fontSize }: { seat: TableSeat; fontSize: number }) {
+export function ChairTimer({ seat, fontSize, magnify = 1 }: { seat: TableSeat; fontSize: number; magnify?: number }) {
   const occupied = seat.status === "occupied";
   const since = occupied && typeof seat.occupiedSince === "number" ? seat.occupiedSince : null;
   const [now, setNow] = useState(() => Date.now());
@@ -204,8 +215,20 @@ export function ChairTimer({ seat, fontSize }: { seat: TableSeat; fontSize: numb
     : { backgroundColor: colors.greenSoft, color: "#15803d", borderColor: "#bbf7d0" };
 
   return (
-    <View style={[styles.timer, { backgroundColor: look.backgroundColor, borderColor: look.borderColor }]}>
-      {since !== null && <Timer size={fontSize + 1} color={look.color} strokeWidth={2.2} />}
+    <View
+      style={[
+        styles.timer,
+        {
+          backgroundColor: look.backgroundColor,
+          borderColor: look.borderColor,
+          gap: 4 * magnify,
+          borderWidth: magnify,
+          paddingHorizontal: 8 * magnify,
+          paddingVertical: 2 * magnify,
+        },
+      ]}
+    >
+      {since !== null && <Timer size={fontSize + magnify} color={look.color} strokeWidth={2.2} />}
       <Text style={[styles.timerText, { fontSize, color: look.color }]}>
         {!occupied ? "Open" : since === null ? "In chair" : elapsed(since, Math.max(now, since))}
       </Text>
@@ -224,7 +247,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,
   },
-  selected: { borderWidth: 3, borderColor: SEAT_OPEN },
   name: { color: "#fff", fontWeight: "800", textAlign: "center" },
   count: { color: "rgba(255,255,255,0.72)", fontWeight: "700", marginTop: 1 },
   seatSlot: {
@@ -247,7 +269,7 @@ const styles = StyleSheet.create({
   timer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 3,
     borderWidth: 1,
     borderRadius: 999,
     paddingHorizontal: 8,

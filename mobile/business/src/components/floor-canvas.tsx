@@ -26,6 +26,8 @@ const MARKER_LOOKS: Partial<Record<MarkerType, MarkerLook>> = {
 const DEFAULT_LOOK: MarkerLook = { background: "#fff", border: "#d1d5db", text: colors.ink, radius: 12 };
 
 // The floor plan: a 1000 × 700 canvas drawn at `scale` inside a scroll view.
+// Everything is laid out at its final size (not stretched with a transform),
+// so it stays sharp at every zoom.
 // In "seats" mode seats are tappable; in "layout" mode tables and markers
 // can be tapped to select them and dragged to move them.
 export default function FloorCanvas({
@@ -66,14 +68,11 @@ export default function FloorCanvas({
     >
       <ScrollView scrollEnabled={!dragging} nestedScrollEnabled contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}>
         <View style={{ width: CANVAS_WIDTH * scale, height: CANVAS_HEIGHT * scale, overflow: "hidden" }}>
-          <View
-            style={[
-              styles.canvas,
-              { transform: [{ scale }], transformOrigin: "top left" },
-            ]}
-          >
-            <Grid />
-            <Text style={styles.floorLabel}>MAIN FLOOR</Text>
+          <View style={[styles.canvas, { width: CANVAS_WIDTH * scale, height: CANVAS_HEIGHT * scale }]}>
+            <Grid scale={scale} />
+            <Text style={[styles.floorLabel, { top: 20 * scale, left: 24 * scale, fontSize: 12 * scale, letterSpacing: 2 * scale }]}>
+              MAIN FLOOR
+            </Text>
             {/* Tapping the empty floor clears the selection. A sibling behind
                 the tables, not their parent, so a tap on a table never
                 reaches it. */}
@@ -87,8 +86,8 @@ export default function FloorCanvas({
 
             {tables.length === 0 && markers.length === 0 && (
               <View style={styles.empty}>
-                <Text style={styles.emptyTitle}>No seating layout yet</Text>
-                <Text style={styles.emptyText}>
+                <Text style={[styles.emptyTitle, { fontSize: 26 * scale }]}>No seating layout yet</Text>
+                <Text style={[styles.emptyText, { fontSize: 18 * scale, marginTop: 8 * scale }]}>
                   {layout ? "Add a table to get started." : "The owner hasn't added any tables yet."}
                 </Text>
               </View>
@@ -97,8 +96,8 @@ export default function FloorCanvas({
             {markers.map((marker) => {
               const info = MARKERS[marker.type];
               const look = MARKER_LOOKS[marker.type] ?? DEFAULT_LOOK;
-              const width = info.width * marker.scale;
-              const height = info.height * marker.scale;
+              const width = info.width * marker.scale * scale;
+              const height = info.height * marker.scale * scale;
               const selected = selection?.kind === "marker" && selection.id === marker.id;
               const game = isGameMarker(marker.type);
 
@@ -132,25 +131,25 @@ export default function FloorCanvas({
                         height,
                         backgroundColor: look.background,
                         borderColor: look.border,
-                        borderWidth: look.borderWidth ?? 1,
-                        borderRadius: Math.min(look.radius ?? 0, Math.min(width, height) / 2),
+                        borderWidth: (look.borderWidth ?? 1) * scale,
+                        borderRadius: Math.min((look.radius ?? 0) * scale, Math.min(width, height) / 2),
                         transform: [{ rotate: `${marker.rotation}deg` }, { scale: pressed ? 0.95 : 1 }],
                       },
-                      selected && styles.selected,
+                      selected && { borderWidth: 3 * scale, borderColor: "#93c5fd" },
                     ]}
                   >
                     {marker.type !== "wall" && (
                       <View style={{ transform: [{ rotate: `${-marker.rotation}deg` }], alignItems: "center" }}>
-                        <MarkerIcon type={marker.type} size={Math.max(14, 19 * marker.scale)} color={look.text} />
+                        <MarkerIcon type={marker.type} size={Math.max(14, 19 * marker.scale) * scale} color={look.text} />
                         {marker.scale >= 0.75 && (
                           <Text
                             numberOfLines={1}
-                            style={{ fontSize: Math.max(9, 11 * marker.scale), fontWeight: "700", color: look.text }}
+                            style={{ fontSize: Math.max(9, 11 * marker.scale) * scale, fontWeight: "700", color: look.text }}
                           >
                             {marker.label}
                           </Text>
                         )}
-                        {game && <GameStatus status={marker.status ?? "available"} />}
+                        {game && <GameStatus status={marker.status ?? "available"} scale={scale} />}
                       </View>
                     )}
                   </Pressable>
@@ -167,8 +166,8 @@ export default function FloorCanvas({
                   key={table.id}
                   xPct={table.xPct}
                   yPct={table.yPct}
-                  width={box.width}
-                  height={box.height}
+                  width={box.width * scale}
+                  height={box.height * scale}
                   scale={scale}
                   enabled={layout}
                   bounds={{ x: [5, 95], y: [7, 93] }}
@@ -185,6 +184,7 @@ export default function FloorCanvas({
                     scale={table.scale}
                     rotation={table.rotation}
                     selected={selected}
+                    magnify={scale}
                     onSeatPress={layout ? undefined : (seatId) => onSeatPress?.(table.id, seatId)}
                   />
                 </Draggable>
@@ -291,8 +291,8 @@ function Draggable({
       {...(enabled ? responder.panHandlers : {})}
       style={{
         position: "absolute",
-        left: (x / 100) * CANVAS_WIDTH - width / 2,
-        top: (y / 100) * CANVAS_HEIGHT - height / 2,
+        left: (x / 100) * CANVAS_WIDTH * scale - width / 2,
+        top: (y / 100) * CANVAS_HEIGHT * scale - height / 2,
         width,
         height,
         alignItems: "center",
@@ -300,27 +300,45 @@ function Draggable({
         zIndex: offset ? 60 : selected ? zIndex + 20 : zIndex,
       }}
     >
-      {selected && <View pointerEvents="none" style={styles.ring} />}
+      {selected && (
+        <View
+          pointerEvents="none"
+          style={[styles.ring, { top: -10 * scale, left: -10 * scale, right: -10 * scale, bottom: -10 * scale, borderRadius: 18 * scale }]}
+        />
+      )}
       {children}
     </View>
   );
 }
 
 // "Open" / "In use" pill on pool tables, darts and bowling lanes.
-function GameStatus({ status }: { status: "available" | "occupied" }) {
+function GameStatus({ status, scale }: { status: "available" | "occupied"; scale: number }) {
   const open = status === "available";
   return (
-    <Text style={[styles.game, { backgroundColor: open ? "#22c55e" : colors.red }]}>{open ? "Open" : "In use"}</Text>
+    <Text
+      style={[
+        styles.game,
+        {
+          backgroundColor: open ? "#22c55e" : colors.red,
+          marginTop: 3 * scale,
+          paddingHorizontal: 7 * scale,
+          paddingVertical: scale,
+          fontSize: 10 * scale,
+        },
+      ]}
+    >
+      {open ? "Open" : "In use"}
+    </Text>
   );
 }
 
-function Grid() {
+function Grid({ scale }: { scale: number }) {
   const lines = [];
   for (let x = 32; x < CANVAS_WIDTH; x += 32) {
-    lines.push(<View key={`x${x}`} style={[styles.gridLine, { left: x, top: 0, bottom: 0, width: 1 }]} />);
+    lines.push(<View key={`x${x}`} style={[styles.gridLine, { left: x * scale, top: 0, bottom: 0, width: 1 }]} />);
   }
   for (let y = 32; y < CANVAS_HEIGHT; y += 32) {
-    lines.push(<View key={`y${y}`} style={[styles.gridLine, { top: y, left: 0, right: 0, height: 1 }]} />);
+    lines.push(<View key={`y${y}`} style={[styles.gridLine, { top: y * scale, left: 0, right: 0, height: 1 }]} />);
   }
   return <View pointerEvents="none" style={StyleSheet.absoluteFill}>{lines}</View>;
 }
@@ -349,7 +367,6 @@ const styles = StyleSheet.create({
   emptyTitle: { fontSize: 26, fontWeight: "800", color: colors.ink },
   emptyText: { fontSize: 18, color: colors.faint, marginTop: 8 },
   marker: { alignItems: "center", justifyContent: "center" },
-  selected: { borderWidth: 3, borderColor: "#93c5fd" },
   ring: {
     position: "absolute",
     top: -10,

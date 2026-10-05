@@ -1,17 +1,28 @@
 import { useMemo } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { AnimatedNumber } from "@/components/animated-number";
 import { BigIcons, CategoryIcon, SearchIcon, SeatMateMark } from "@/components/icons";
 import LiveDot from "@/components/live-dot";
 import { PlaceCard, PlaceRow, PlaceTile } from "@/components/place-card";
 import { PlaceListSkeleton, PlaceTileSkeleton } from "@/components/place-card-skeleton";
-import { Button, colors, EmptyState, readable, RetryPanel, SectionHeader, shadow, Skeleton, space } from "@/components/ui";
+import {
+  Button,
+  colors,
+  EmptyState,
+  PressableScale,
+  readable,
+  RetryPanel,
+  SectionHeader,
+  shadow,
+  Skeleton,
+  space,
+} from "@/components/ui";
 import { firstName, useAccount } from "@/lib/account";
 import { useFeatures } from "@/lib/features";
 import { greeting, openNow } from "@/lib/format";
-import { tap } from "@/lib/haptics";
 import { CATEGORIES, sortByAvailability, usePlaces } from "@/lib/places";
 import { useNow } from "@/lib/use-now";
 
@@ -48,14 +59,14 @@ export default function ExploreScreen() {
             <SeatMateMark size={32} />
             <Text style={styles.brandText}>SeatMate</Text>
           </View>
-          <Pressable
-            accessibilityRole="button"
+          <PressableScale
             accessibilityLabel={user ? "Your account" : "Sign in"}
+            haptic
             onPress={() => (user ? router.navigate("/account") : router.push("/login"))}
-            style={({ pressed }) => [styles.avatar, pressed && { transform: [{ scale: 0.95 }] }]}
+            style={styles.avatar}
           >
             <Text style={styles.avatarText}>{user ? (name[0] || user.email?.[0] || "?").toUpperCase() : "Sign in"}</Text>
-          </Pressable>
+          </PressableScale>
         </View>
 
         <Text style={styles.hello}>
@@ -64,25 +75,31 @@ export default function ExploreScreen() {
         </Text>
         <Text style={styles.headline}>Find a seat{"\n"}before you go.</Text>
 
-        <Pressable
+        <PressableScale
           accessibilityRole="search"
           accessibilityLabel="Search places"
-          onPress={() => {
-            tap();
-            router.navigate({ pathname: "/search", params: { focus: String(Date.now()) } });
-          }}
-          style={({ pressed }) => [styles.search, pressed && { borderColor: colors.faint }]}
+          scaleTo={0.98}
+          haptic
+          onPress={() => router.navigate({ pathname: "/search", params: { focus: String(Date.now()) } })}
+          style={styles.search}
         >
           <SearchIcon size={22} color={colors.muted} />
           <Text style={styles.searchText}>Cafés, bars, barbershops…</Text>
-        </Pressable>
+        </PressableScale>
 
         {!loading && !error && places.length > 0 && (
-          <View style={styles.liveStrip}>
-            <LiveDot />
+          <View
+            style={styles.liveStrip}
+            accessible
+            accessibilityLabel={`${totalOpen} open seats across ${places.length} ${places.length === 1 ? "place" : "places"} right now`}
+          >
+            <View style={styles.liveDotWrap}>
+              <LiveDot />
+            </View>
+            <AnimatedNumber value={totalOpen} style={styles.liveCount} />
             <Text style={styles.liveText}>
-              <Text style={{ fontWeight: "900", color: colors.ink }}>{totalOpen} open seats</Text> across{" "}
-              {places.length} {places.length === 1 ? "place" : "places"} right now
+              <Text style={{ fontWeight: "900", color: colors.ink }}>open seats</Text> across {places.length}{" "}
+              {places.length === 1 ? "place" : "places"} right now
             </Text>
           </View>
         )}
@@ -90,20 +107,18 @@ export default function ExploreScreen() {
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categories}>
         {CATEGORIES.filter((category) => category.value !== "all").map((category) => (
-          <Pressable
+          <PressableScale
             key={category.value}
-            accessibilityRole="button"
-            onPress={() => {
-              tap();
-              router.navigate({ pathname: "/search", params: { category: category.value } });
-            }}
-            style={({ pressed }) => [styles.category, pressed && { transform: [{ scale: 0.96 }] }]}
+            accessibilityLabel={category.label}
+            haptic
+            onPress={() => router.navigate({ pathname: "/search", params: { category: category.value } })}
+            style={styles.category}
           >
             <View style={styles.categoryIcon}>
               <CategoryIcon category={category.value} size={24} />
             </View>
             <Text style={styles.categoryLabel}>{category.label}</Text>
-          </Pressable>
+          </PressableScale>
         ))}
       </ScrollView>
 
@@ -224,7 +239,9 @@ const styles = StyleSheet.create({
     ...shadow,
   },
   searchText: { fontSize: 17, color: colors.faint, fontWeight: "600" },
-  liveStrip: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 20 },
+  liveStrip: { flexDirection: "row", alignItems: "flex-start", gap: 5, marginTop: 20 },
+  liveDotWrap: { height: 21, justifyContent: "center", marginRight: 5 },
+  liveCount: { fontSize: 15, lineHeight: 21, fontWeight: "900", color: colors.ink },
   liveText: { fontSize: 15, lineHeight: 21, color: colors.muted, flex: 1 },
   categories: { paddingHorizontal: space.gutter, gap: 12, paddingTop: 32, paddingBottom: 6 },
   category: {

@@ -1,7 +1,8 @@
 import { Platform } from "react-native";
 import * as Haptics from "expo-haptics";
 
-// Light taps on buttons and toggles. Phones only; a browser has no haptics.
+// Haptics for meaningful actions: seat and door taps, toggles, saves, and a
+// warning when a change didn't go through. Phones only; a browser has none.
 const enabled = Platform.OS === "ios" || Platform.OS === "android";
 
 export function tap() {
@@ -10,11 +11,6 @@ export function tap() {
 
 export function success() {
   if (enabled) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-}
-
-// A soft knock for physical moments: a swipe action snapping open.
-export function impact() {
-  if (enabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
 }
 
 export function warning() {

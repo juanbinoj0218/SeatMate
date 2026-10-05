@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Minus, Plus, type LucideIcon } from "lucide-react-native";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { isGameMarker, type FloorMarker } from "@seatmate/shared/floor-plan";
 
 import FloorCanvas from "@/components/floor-canvas";
 import SeatList from "@/components/seat-list";
-import { colors, Segmented, StatTile } from "@/components/ui";
+import { colors, PressableScale, Segmented, StatTile } from "@/components/ui";
 import { seatCounts, type Table } from "@/lib/floor";
 import { fitScale, useBox, useWide } from "@/lib/layout";
 
@@ -174,15 +174,15 @@ function ZoomButton({
   disabled?: boolean;
 }) {
   return (
-    <Pressable
-      accessibilityRole="button"
+    <PressableScale
       accessibilityLabel={accessibilityLabel}
       onPress={onPress}
       disabled={disabled}
+      scaleTo={0.92}
       style={[styles.zoomButton, disabled && { opacity: 0.35 }]}
     >
       {Icon ? <Icon size={18} color={colors.ink} strokeWidth={2.2} /> : <Text style={styles.zoomButtonText}>{label}</Text>}
-    </Pressable>
+    </PressableScale>
   );
 }
 

@@ -15,6 +15,7 @@ import {
 import WrongAccount from "@/components/gate";
 import { Banner, Button, Card, colors, Muted, Screen, SkeletonCard, Title } from "@/components/ui";
 import { db } from "@/lib/firebase";
+import { tap, warning } from "@/lib/haptics";
 import { useOwner } from "@/lib/session";
 import { businessUrl } from "@/lib/site-urls";
 
@@ -84,6 +85,7 @@ export default function TeamScreen() {
       }).catch(() => {});
     } catch (err) {
       console.error(err);
+      warning();
       setError("Could not create the invite link.");
     } finally {
       setCreating(false);
@@ -92,9 +94,13 @@ export default function TeamScreen() {
 
   const toggle = async (member: StaffMember) => {
     try {
+      // A plain update: the list shows the change at once (Firestore applies
+      // it locally) and puts it back if the server refuses.
+      tap();
       await updateDoc(doc(db, "staffUsers", member.id), { active: !member.active });
     } catch (err) {
       console.error(err);
+      warning();
       setError("Could not update this staff member.");
     }
   };

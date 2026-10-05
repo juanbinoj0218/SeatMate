@@ -18,7 +18,8 @@ import {
   UserIcon,
 } from "@/components/icons";
 import { PlaceRow } from "@/components/place-card";
-import { Banner, Button, colors, ListRow, readable, space } from "@/components/ui";
+import { AnimatedNumber } from "@/components/animated-number";
+import { Banner, Button, colors, ListRow, PressableScale, readable, space } from "@/components/ui";
 import { firstName, useAccount } from "@/lib/account";
 import { useFeatures } from "@/lib/features";
 import { businessUrl, consumerUrl } from "@/lib/site-urls";
@@ -69,12 +70,12 @@ export default function AccountScreen() {
 
           <View style={styles.stats}>
             <View style={styles.stat}>
-              <Text style={styles.statValue}>{favorites.length}</Text>
+              <AnimatedNumber value={favorites.length} style={styles.statValue} />
               <Text style={styles.statLabel}>Saved</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.stat}>
-              <Text style={styles.statValue}>{profile.recentlyViewed.length}</Text>
+              <AnimatedNumber value={profile.recentlyViewed.length} style={styles.statValue} />
               <Text style={styles.statLabel}>Viewed</Text>
             </View>
             <View style={styles.statDivider} />
@@ -90,17 +91,18 @@ export default function AccountScreen() {
             <>
               <View style={styles.groupHeader}>
                 <Text style={styles.groupTitle}>Recently viewed</Text>
-                <Text
-                  accessibilityRole="button"
-                  style={styles.groupAction}
+                <PressableScale
+                  accessibilityLabel="Clear recently viewed"
+                  hitSlop={10}
+                  haptic
                   onPress={() =>
                     clearRecentlyViewed()
                       .then(() => showToast("Cleared your history"))
                       .catch(() => showToast("Couldn't clear your history. Try again."))
                   }
                 >
-                  Clear
-                </Text>
+                  <Text style={styles.groupAction}>Clear</Text>
+                </PressableScale>
               </View>
               <View style={[styles.group, { paddingHorizontal: 18, paddingVertical: 8 }]}>
                 {profile.recentlyViewed.map((item) => (
@@ -219,7 +221,7 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   stat: { flex: 1, alignItems: "center" },
-  statValue: { fontSize: 24, fontWeight: "900", color: colors.ink },
+  statValue: { fontSize: 24, lineHeight: 30, fontWeight: "900", color: colors.ink },
   statLabel: { fontSize: 14, fontWeight: "700", color: colors.muted, marginTop: 4 },
   statDivider: { width: 1, backgroundColor: colors.line },
   groupHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", marginTop: space.section, marginBottom: 14 },
