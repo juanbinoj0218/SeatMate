@@ -6,7 +6,6 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSequence,
-  withSpring,
   withTiming,
 } from "react-native-reanimated";
 
@@ -170,7 +169,7 @@ function Seat({
     }
     // A small pop that stays inside the gap around the seat, so it never
     // runs into the table or the next seat.
-    pulse.set(withSequence(withTiming(1.1, { duration: 140 }), withSpring(1, { damping: 14, stiffness: 260 })));
+    pulse.set(withSequence(withTiming(1.06, { duration: 120 }), withTiming(1, { duration: 180 })));
   }, [open, progress, pulse]);
 
   const animated = useAnimatedStyle(() => ({
