@@ -7,7 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 
 import SeatMateMark from "@seatmate/shared/components/SeatMateMark";
-import { businessUrl, consumerUrl } from "@seatmate/shared/site-urls";
+import { businessUrl, consumerUrl, WAITLIST_SITE_URL } from "@seatmate/shared/site-urls";
 
 import { signOutAdmin, useAdminSession } from "@/lib/admin-session";
 
@@ -15,6 +15,7 @@ const NAV = [
   { href: "/", label: "Overview", icon: "M4 13h6V4H4v9Zm0 7h6v-5H4v5Zm10 0h6v-9h-6v9Zm0-16v5h6V4h-6Z" },
   { href: "/businesses", label: "Businesses", icon: "M4 10 5.5 4h13L20 10M4 10a2.7 2.7 0 0 0 5.3 0 2.7 2.7 0 0 0 5.4 0 2.7 2.7 0 0 0 5.3 0M5.5 12v8h13v-8" },
   { href: "/inbox", label: "Inbox", icon: "M4 13h4l1.5 3h5L16 13h4M5 5h14l1 8v6H4v-6l1-8Z" },
+  { href: "/waitlist", label: "Waitlist", icon: "M9 2h6a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1Zm7 2h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2m4 7h4m-4 5h4m-8-5h.01M8 16h.01" },
   { href: "/customers", label: "Customers", icon: "M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm-5.5 8a5.5 5.5 0 0 1 11 0M17 11a2.3 2.3 0 1 0 0-4.6M16 14.2a4.5 4.5 0 0 1 4.5 4.8" },
   { href: "/admins", label: "Admins", icon: "M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6l-7-3Zm-3 9 2 2 4-4" },
   { href: "/activity", label: "Activity", icon: "M12 7v5l3 2M3.5 12a8.5 8.5 0 1 0 2.5-6M3 4v4h4" },
@@ -90,6 +91,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
           <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-white/60">
             <a href={consumerUrl("/")} className="hover:text-white">Customer site<ArrowUpRight aria-hidden className="ml-0.5 inline h-4 w-4 align-[-3px]" /></a>
             <a href={businessUrl("/business")} className="hover:text-white">Business site<ArrowUpRight aria-hidden className="ml-0.5 inline h-4 w-4 align-[-3px]" /></a>
+            <a href={WAITLIST_SITE_URL} className="hover:text-white">Waitlist site<ArrowUpRight aria-hidden className="ml-0.5 inline h-4 w-4 align-[-3px]" /></a>
           </div>
           <button type="button" onClick={() => signOutAdmin()} className="mt-4 w-full rounded-xl border border-white/20 py-2 font-semibold hover:bg-white/10">
             Sign out

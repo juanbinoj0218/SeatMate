@@ -1,4 +1,5 @@
 import SeatMateMark from "@seatmate/shared/components/SeatMateMark";
+import { consumerUrl } from "@seatmate/shared/site-urls";
 
 import WaitlistFlow from "@/components/waitlist-flow";
 
@@ -46,7 +47,11 @@ export default function WaitlistPage() {
       <footer className="border-t border-line">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-5 py-6 text-sm text-gray-500 sm:px-8">
           <span>&copy; {new Date().getFullYear()} SeatMate LLC</span>
-          <span>We only email you about SeatMate opening near you.</span>
+          <nav className="flex gap-5">
+            <a href={consumerUrl("/privacy")} className="hover:text-ink">Privacy</a>
+            <a href={consumerUrl("/terms")} className="hover:text-ink">Terms</a>
+            <a href={consumerUrl("/contact")} className="hover:text-ink">Contact</a>
+          </nav>
         </div>
       </footer>
     </main>

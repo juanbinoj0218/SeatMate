@@ -415,27 +415,10 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
-    // Waitlist signups from the waitlist site. One per email: the
-    // document id is the email, and nobody but admins can change or read
-    // an entry once it exists.
+    // Waitlist signups from the waitlist site, one per email (the document
+    // id). The site's /api/join route writes them with the service
+    // account after its bot checks, so nobody else can create one.
     match /waitlist/{emailId} {
-
-      allow create: if request.resource.data.keys().hasOnly(
-          ["name", "email", "venueType", "waitMinutes", "spotName", "spotArea", "status", "createdAt"]
-        )
-        && request.resource.data.status == "new"
-        && request.resource.data.createdAt == request.time
-        && textField("name", 1, 100)
-        && textField("email", 5, 200)
-        && request.resource.data.email == emailId
-        && request.resource.data.email.matches('^[^@\\s/]+@[^@\\s/]+[.][^@\\s/]+$')
-        && request.resource.data.venueType in ["barbershop", "bar", "cafe", "restaurant"]
-        && request.resource.data.waitMinutes is int
-        && request.resource.data.waitMinutes >= 0
-        && request.resource.data.waitMinutes <= 60
-        && textField("spotName", 0, 120)
-        && textField("spotArea", 0, 160);
-
       allow read, update, delete: if isAdmin();
     }
 

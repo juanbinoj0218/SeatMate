@@ -1,6 +1,7 @@
 import "server-only";
 
 import { cert, getApps, initializeApp, type App } from "firebase-admin/app";
+import { getAppCheck } from "firebase-admin/app-check";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 
@@ -53,4 +54,9 @@ export function adminDb() {
 export function adminAuth() {
   const app = adminApp();
   return app ? getAuth(app) : null;
+}
+
+export function adminAppCheck() {
+  const app = adminApp();
+  return app ? getAppCheck(app) : null;
 }

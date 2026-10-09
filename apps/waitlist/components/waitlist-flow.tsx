@@ -1,7 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import { doc, serverTimestamp, setDoc } from "firebase/firestore";
+import { FormEvent, useEffect, useState } from "react";
 import {
   ArrowRight,
   Beer,
@@ -16,12 +15,14 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import { db } from "@seatmate/shared/firebase";
+import { consumerUrl } from "@seatmate/shared/site-urls";
 
 import SeatTable from "@/components/seat-table";
+import { appCheckHeaders, startAppCheck } from "@/lib/app-check";
 import { WAITLIST_SITE_URL } from "@/lib/site";
+import { EMAIL_PATTERN } from "@/lib/waitlist";
 
-// Must match the venueType list in firestore.rules.
+// Types must match VENUE_TYPES in lib/waitlist.ts.
 const VENUES: { type: string; label: string; icon: LucideIcon; example: string }[] = [
   { type: "barbershop", label: "Barbershop", icon: Scissors, example: "e.g. Fresh Cuts on J St" },
   { type: "bar", label: "Bar", icon: Beer, example: "e.g. The Corner Tap" },
@@ -40,8 +41,6 @@ function waitLine(minutes: number) {
   return "An hour you won't get back.";
 }
 
-const EMAIL_PATTERN = /^[^@\s/]+@[^@\s/]+\.[^@\s/]+$/;
-
 export default function WaitlistFlow() {
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState<"forward" | "back">("forward");
@@ -52,10 +51,15 @@ export default function WaitlistFlow() {
   const [spotArea, setSpotArea] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  // Hidden from people; only bots fill it in.
+  const [company, setCompany] = useState("");
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [alreadyIn, setAlreadyIn] = useState(false);
+
+  // Start the invisible bot check early so it's ready by the last step.
+  useEffect(() => startAppCheck(), []);
 
   const go = (next: number) => {
     setDirection(next > step ? "forward" : "back");
@@ -84,28 +88,31 @@ export default function WaitlistFlow() {
     setBusy(true);
 
     try {
-      // One entry per email: the email is the document id, and the rules
-      // only allow creating, so a second signup with it is refused.
-      await setDoc(doc(db, "waitlist", cleanEmail), {
-        name: cleanName.slice(0, 100),
-        email: cleanEmail,
-        venueType: venue,
-        waitMinutes: wait,
-        spotName: spotName.trim().slice(0, 120),
-        spotArea: spotArea.trim().slice(0, 160),
-        status: "new",
-        createdAt: serverTimestamp(),
+      const response = await fetch("/api/join", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(await appCheckHeaders()) },
+        body: JSON.stringify({
+          name: cleanName,
+          email: cleanEmail,
+          venueType: venue,
+          waitMinutes: wait,
+          spotName,
+          spotArea,
+          company,
+        }),
       });
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok || !result.joined) {
+        setError(result.error || "We couldn't save that. Check your connection and try again.");
+        return;
+      }
+
+      setAlreadyIn(Boolean(result.already));
       go(STEPS);
     } catch (caught) {
-      const code = (caught as { code?: string }).code;
-      if (code === "permission-denied") {
-        setAlreadyIn(true);
-        go(STEPS);
-      } else {
-        console.error("Could not join the waitlist:", caught);
-        setError("We couldn't save that. Check your connection and try again.");
-      }
+      console.error("Could not join the waitlist:", caught);
+      setError("We couldn't save that. Check your connection and try again.");
     } finally {
       setBusy(false);
     }
@@ -251,6 +258,16 @@ export default function WaitlistFlow() {
                 inputMode="email"
                 className="w-full"
               />
+              <input
+                type="text"
+                name="company"
+                value={company}
+                onChange={(event) => setCompany(event.target.value)}
+                tabIndex={-1}
+                autoComplete="off"
+                aria-hidden
+                className="absolute -left-[9999px] h-px w-px opacity-0"
+              />
               {error && (
                 <p role="alert" className="text-sm font-medium text-red-600">
                   {error}
@@ -267,6 +284,18 @@ export default function WaitlistFlow() {
                   "Join the waitlist"
                 )}
               </button>
+              <p className="pt-1 text-center text-sm text-gray-500">
+                We only email you about SeatMate opening near you. See our{" "}
+                <a
+                  href={consumerUrl("/privacy")}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-ink underline underline-offset-2"
+                >
+                  privacy policy
+                </a>
+                .
+              </p>
             </form>
           </Step>
         )}
