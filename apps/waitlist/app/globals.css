@@ -1,0 +1,108 @@
+@import "tailwindcss";
+@import "@seatmate/shared/globals.css";
+
+/* Tailwind only scans this app by default; include shared components. */
+@source "../../../packages/shared/src";
+
+@theme {
+  --font-display: var(--font-headline), Georgia, serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --color-ink: #101811;
+  --color-paper: #f7f8f5;
+  --color-line: #e3e7e2;
+  --color-moss: #15803d;
+  --color-seat-open: #22a55b;
+  --color-seat-taken: #e5534b;
+}
+
+/* Headline face: Young Serif comes in one weight, so no faux bold. */
+.font-display {
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+/* Each step of the waitlist flow slides in from the side it came from. */
+@keyframes step-in-forward {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes step-in-back {
+  from { opacity: 0; transform: translateX(-24px); }
+  to { opacity: 1; transform: none; }
+}
+
+.step-forward { animation: step-in-forward 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.step-back { animation: step-in-back 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+/* A seat that just opened pops once. */
+@keyframes seat-pop {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.28); }
+  100% { transform: scale(1); }
+}
+
+.seat-pop {
+  animation: seat-pop 420ms cubic-bezier(0.3, 1.6, 0.5, 1);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* The wait slider: a thick track filled up to the thumb. */
+.wait-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 10px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--color-ink) var(--fill),
+    var(--color-line) var(--fill)
+  );
+  cursor: pointer;
+}
+
+.wait-slider:focus {
+  box-shadow: none;
+}
+
+.wait-slider:focus-visible {
+  outline: 2px solid var(--color-moss);
+  outline-offset: 6px;
+}
+
+.wait-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: white;
+  border: 2px solid var(--color-ink);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.15);
+  transition: transform 150ms ease;
+}
+
+.wait-slider:active::-webkit-slider-thumb {
+  transform: scale(1.12);
+}
+
+.wait-slider::-moz-range-thumb {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: white;
+  border: 2px solid var(--color-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .step-forward,
+  .step-back,
+  .seat-pop {
+    animation: none;
+  }
+}

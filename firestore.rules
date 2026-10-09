@@ -415,6 +415,13 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
+    // Waitlist signups from the waitlist site, one per email (the document
+    // id). The site's /api/join route writes them with the service
+    // account after its bot checks, so nobody else can create one.
+    match /waitlist/{emailId} {
+      allow read, update, delete: if isAdmin();
+    }
+
     // -------------------------
     // SITE SETTINGS
     // -------------------------
