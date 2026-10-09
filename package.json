@@ -11,7 +11,8 @@
     "dev:business": "npm run dev --workspace=@seatmate/business",
     "build": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
-    "dev:admin": "npm run dev --workspace=@seatmate/admin"
+    "dev:admin": "npm run dev --workspace=@seatmate/admin",
+    "dev:waitlist": "npm run dev --workspace=@seatmate/waitlist"
   },
   "engines": {
     "node": "22.x"
