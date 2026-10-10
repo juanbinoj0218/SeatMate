@@ -23,10 +23,10 @@ export const ADMIN_SITE_URL = trimTrailingSlash(
     (isDev ? "http://localhost:3002" : "https://seatmate360.info")
 );
 
-// The waitlist site (seatmate360.online). NEXT_PUBLIC_WAITLIST_SITE_URL overrides it.
+// The waitlist site (seatmate360.store). NEXT_PUBLIC_WAITLIST_SITE_URL overrides it.
 export const WAITLIST_SITE_URL = trimTrailingSlash(
   process.env.NEXT_PUBLIC_WAITLIST_SITE_URL ||
-    (isDev ? "http://localhost:3003" : "https://seatmate360.online")
+    (isDev ? "http://localhost:3003" : "https://seatmate360.store")
 );
 
 export const consumerUrl = (path: string) =>
