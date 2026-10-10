@@ -4,13 +4,19 @@ export const VENUE_TYPES = ["cafe", "restaurant", "bar", "barbershop"] as const;
 
 export const EMAIL_PATTERN = /^[^@\s/]+@[^@\s/]+\.[^@\s/]+$/;
 
-export const MAX_WAIT_MINUTES = 60;
+// How much each place's problem bugs them. Asked once per place they pick.
+export const FEELINGS = ["often", "sometimes", "rarely"] as const;
+
+export type VenueType = (typeof VENUE_TYPES)[number];
+export type Feeling = (typeof FEELINGS)[number];
 
 export type Signup = {
   name: string;
   email: string;
-  venueType: (typeof VENUE_TYPES)[number];
-  waitMinutes: number;
+  // The places they'd use SeatMate at, in VENUE_TYPES order.
+  venueTypes: VenueType[];
+  // Their answer to each place's question.
+  feelings: Partial<Record<VenueType, Feeling>>;
   spotName: string;
   spotArea: string;
   // E.164 ("+19165550123"), or "" when they skipped it.
@@ -39,27 +45,30 @@ const text = (value: unknown, max: number) =>
 export function readSignup(body: Record<string, unknown>): Signup | string {
   const name = text(body.name, 100);
   const email = text(body.email, 200).toLowerCase();
-  const venueType = VENUE_TYPES.find((type) => type === body.venueType);
-  const waitMinutes = Number(body.waitMinutes);
+  const picked = Array.isArray(body.venueTypes) ? body.venueTypes : [];
+  const venueTypes = VENUE_TYPES.filter((type) => picked.includes(type));
+  const sent = (body.feelings && typeof body.feelings === "object" ? body.feelings : {}) as Record<string, unknown>;
+  const feelings: Partial<Record<VenueType, Feeling>> = {};
+  for (const type of venueTypes) {
+    const feeling = FEELINGS.find((value) => value === sent[type]);
+    if (feeling) feelings[type] = feeling;
+  }
 
   if (!name) return "Add your name.";
   if (!EMAIL_PATTERN.test(email)) return "That email doesn't look right.";
-  if (!venueType) return "Pick the kind of place you wait at.";
+  if (venueTypes.length === 0) return "Pick at least one place.";
+  if (Object.keys(feelings).length !== venueTypes.length) return "Answer the question for each place you picked.";
   const typedPhone = text(body.phone, 30);
   const phone = typedPhone ? normalizePhone(typedPhone) : "";
   if (phone === null) return "That phone number doesn't look right.";
   // We only keep a number we're allowed to text.
   if (phone && body.smsConsent !== true) return "Tick the box to get texts, or leave the number blank.";
 
-  if (!Number.isInteger(waitMinutes) || waitMinutes < 0 || waitMinutes > MAX_WAIT_MINUTES) {
-    return "Pick how long you usually wait.";
-  }
-
   return {
     name,
     email,
-    venueType,
-    waitMinutes,
+    venueTypes,
+    feelings,
     spotName: text(body.spotName, 120),
     spotArea: text(body.spotArea, 160),
     phone,
