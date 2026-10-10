@@ -13,12 +13,12 @@ export default function WaitlistPage() {
   return (
     <main className="flex min-h-screen flex-col bg-paper text-ink">
       <header className="mx-auto flex h-16 w-full max-w-6xl items-center px-5 sm:px-8">
-        <span className="flex items-center gap-2.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-ink text-white">
-            <SeatMateMark className="h-5 w-5" />
-          </span>
+        {/* A full load on purpose: it takes people back to the first step. */}
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+        <a href="/" className="flex items-center gap-2.5" aria-label="SeatMate home">
+          <SeatMateMark className="h-8 w-8 text-ink" />
           <span className="text-lg font-semibold tracking-tight">SeatMate</span>
-        </span>
+        </a>
       </header>
 
       <section className="mx-auto grid w-full max-w-6xl flex-1 items-start gap-8 px-5 pb-16 pt-4 sm:px-8 md:pt-14 lg:grid-cols-[1fr_460px] lg:gap-20">
@@ -27,7 +27,7 @@ export default function WaitlistPage() {
             Know if there&rsquo;s a seat before you go.
           </h1>
           <p className="mt-4 max-w-md text-gray-600 sm:mt-5 sm:text-lg">
-            SeatMate shows live seats and wait times at barbershops, bars and cafés
+            SeatMate shows live seats and wait times at cafés, restaurants, bars and barbershops
             near you. We&rsquo;re opening it one neighborhood at a time.
           </p>
 

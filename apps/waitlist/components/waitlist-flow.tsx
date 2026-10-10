@@ -24,10 +24,10 @@ import { EMAIL_PATTERN, normalizePhone } from "@/lib/waitlist";
 
 // Types must match VENUE_TYPES in lib/waitlist.ts.
 const VENUES: { type: string; label: string; icon: LucideIcon; example: string }[] = [
-  { type: "barbershop", label: "Barbershop", icon: Scissors, example: "e.g. Fresh Cuts on J St" },
-  { type: "bar", label: "Bar", icon: Beer, example: "e.g. The Corner Tap" },
   { type: "cafe", label: "Café", icon: Coffee, example: "e.g. Blue Door Café" },
   { type: "restaurant", label: "Restaurant", icon: UtensilsCrossed, example: "e.g. Luigi's Trattoria" },
+  { type: "bar", label: "Bar", icon: Beer, example: "e.g. The Corner Tap" },
+  { type: "barbershop", label: "Barbershop", icon: Scissors, example: "e.g. Fresh Cuts on J St" },
 ];
 
 const STEPS = 4;
@@ -271,17 +271,31 @@ export default function WaitlistFlow() {
                 inputMode="email"
                 className="w-full"
               />
-              <input
-                type="tel"
-                value={phone}
-                onChange={(event) => setPhone(event.target.value)}
-                maxLength={30}
-                placeholder="Phone (optional)"
-                aria-label="Phone number, optional"
-                autoComplete="tel"
-                inputMode="tel"
-                className="w-full"
-              />
+              <div className="relative">
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(event) => setPhone(event.target.value)}
+                  maxLength={30}
+                  placeholder="Phone number"
+                  aria-label="Phone number, optional"
+                  aria-describedby={phone.trim() ? undefined : "phone-note"}
+                  autoComplete="tel"
+                  inputMode="tel"
+                  className="w-full !pr-24"
+                />
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-md bg-paper px-2 py-1 text-xs font-semibold text-gray-500"
+                >
+                  Optional
+                </span>
+              </div>
+              {!phone.trim() && (
+                <p id="phone-note" className="-mt-1 px-1 text-sm text-gray-500">
+                  Skip it if you&rsquo;d rather hear from us by email only.
+                </p>
+              )}
               {phone.trim() && (
                 <label className="flex cursor-pointer items-start gap-3 rounded-xl bg-paper px-3.5 py-3 text-sm text-gray-600">
                   <input

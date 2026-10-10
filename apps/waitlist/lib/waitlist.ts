@@ -1,6 +1,6 @@
 // What a waitlist signup may contain. Shared by the form and /api/join.
 
-export const VENUE_TYPES = ["barbershop", "bar", "cafe", "restaurant"] as const;
+export const VENUE_TYPES = ["cafe", "restaurant", "bar", "barbershop"] as const;
 
 export const EMAIL_PATTERN = /^[^@\s/]+@[^@\s/]+\.[^@\s/]+$/;
 
