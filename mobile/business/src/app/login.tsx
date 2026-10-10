@@ -363,28 +363,41 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.page} edges={["top", "left", "right"]}>
-      <View style={styles.header}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-          <SeatMateMark size={34} />
-          <View>
-            <Text style={{ fontWeight: "800", fontSize: 16, color: colors.ink }}>SeatMate</Text>
-            <Text style={{ fontSize: 12, color: colors.faint }}>Business Portal</Text>
+      <View style={styles.headerWrap}>
+        <View style={styles.header}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flexShrink: 1 }}>
+            <SeatMateMark size={30} />
+            <View style={{ flexShrink: 1 }}>
+              <Text style={styles.brand} numberOfLines={1}>SeatMate</Text>
+              <Text style={styles.brandSub} numberOfLines={1}>Business Portal</Text>
+            </View>
           </View>
-        </View>
-        <View style={{ flexDirection: "row", gap: 16 }}>
-          {!wide && (
-            <PressableScale onPress={() => scroll.current?.scrollTo({ y: cardY - 12 })}>
-              <Text style={styles.nav}>Sign in</Text>
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            {wide && (
+              <PressableScale
+                accessibilityRole="link"
+                onPress={() => void Linking.openURL(consumerUrl("/"))}
+                style={[styles.navButton, styles.navSecondary]}
+              >
+                <Text style={styles.navSecondaryText}>Customer site</Text>
+              </PressableScale>
+            )}
+            <PressableScale
+              accessibilityRole="link"
+              onPress={() => void Linking.openURL(businessUrl("/about"))}
+              style={[styles.navButton, styles.navSecondary]}
+            >
+              <Text style={styles.navSecondaryText}>How it works</Text>
             </PressableScale>
-          )}
-          <PressableScale accessibilityRole="link" onPress={() => void Linking.openURL(businessUrl("/about"))}>
-            <Text style={styles.nav}>How it works</Text>
-          </PressableScale>
-          {wide && (
-            <PressableScale accessibilityRole="link" onPress={() => void Linking.openURL(consumerUrl("/"))}>
-              <Text style={styles.nav}>Customer site</Text>
-            </PressableScale>
-          )}
+            {!wide && (
+              <PressableScale
+                onPress={() => scroll.current?.scrollTo({ y: cardY - 12 })}
+                style={[styles.navButton, styles.navPrimary]}
+              >
+                <Text style={styles.navPrimaryText}>Sign in</Text>
+              </PressableScale>
+            )}
+          </View>
         </View>
       </View>
 
@@ -426,18 +439,35 @@ function SeatPreview() {
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.page },
+  // The header is its own rounded tile, with buttons styled like the
+  // sign-in card's.
+  headerWrap: { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 4 },
   header: {
     backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
-    height: 64,
-    paddingHorizontal: 20,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    borderRadius: 20,
+    minHeight: 60,
+    paddingLeft: 14,
+    paddingRight: 8,
+    paddingVertical: 8,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    gap: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 1 },
   },
-  nav: { fontWeight: "700", color: colors.muted, fontSize: 14 },
-  content: { padding: 22, paddingTop: 30, paddingBottom: 48 },
+  brand: { fontWeight: "800", fontSize: 16, color: colors.ink },
+  brandSub: { fontSize: 12, color: colors.faint },
+  navButton: { height: 42, borderRadius: 12, paddingHorizontal: 14, alignItems: "center", justifyContent: "center", borderWidth: 1 },
+  navPrimary: { backgroundColor: colors.ink, borderColor: colors.ink },
+  navPrimaryText: { fontWeight: "700", fontSize: 14, color: "#fff" },
+  navSecondary: { backgroundColor: "#fff", borderColor: "#e5e7eb" },
+  navSecondaryText: { fontWeight: "700", fontSize: 14, color: colors.ink },
+  content: { padding: 22, paddingTop: 22, paddingBottom: 48 },
   hero: { fontSize: 42, lineHeight: 45, fontWeight: "800", color: colors.ink, letterSpacing: -1.2 },
   lead: { fontSize: 17, lineHeight: 27, color: colors.muted, marginTop: 16 },
   feature: { flexDirection: "row", alignItems: "center", gap: 14 },
