@@ -152,6 +152,15 @@ export default function WaitlistFlow() {
 
       <div key={step} className={`pt-6 ${direction === "forward" ? "step-forward" : "step-back"}`}>
         {step === 0 && (
+          <div className="mb-6 rounded-2xl bg-paper px-4 py-3.5">
+            <p className="font-semibold">Join the SeatMate waitlist</p>
+            <p className="mt-0.5 text-sm text-gray-600">
+              Four quick questions and you&rsquo;re on the list. We&rsquo;ll invite you when SeatMate opens near you.
+            </p>
+          </div>
+        )}
+
+        {step === 0 && (
           <Step title="Where do you end up waiting the most?">
             <div className="grid grid-cols-2 gap-3">
               {VENUES.map((option) => {

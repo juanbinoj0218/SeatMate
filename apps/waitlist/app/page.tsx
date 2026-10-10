@@ -28,7 +28,7 @@ export default function WaitlistPage() {
           </h1>
           <p className="mt-4 max-w-md text-gray-600 sm:mt-5 sm:text-lg">
             SeatMate shows live seats and wait times at cafés, restaurants, bars and barbershops
-            near you. We&rsquo;re opening it one neighborhood at a time.
+            near you.
           </p>
 
           <ul className="mt-8 hidden max-w-md space-y-3 lg:block">
