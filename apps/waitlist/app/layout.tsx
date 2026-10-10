@@ -30,7 +30,7 @@ const plexMono = IBM_Plex_Mono({
 
 const title = "SeatMate – Join the waitlist";
 const description =
-  "See open seats and short waits at barbershops, bars and cafés before you leave. Join the SeatMate waitlist.";
+  "See open seats and short waits at cafés, restaurants, bars and barbershops before you leave. Join the SeatMate waitlist.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(WAITLIST_SITE_URL),
