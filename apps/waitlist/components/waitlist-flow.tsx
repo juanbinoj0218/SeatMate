@@ -20,7 +20,7 @@ import { consumerUrl } from "@seatmate/shared/site-urls";
 import SeatTable from "@/components/seat-table";
 import { appCheckHeaders, startAppCheck } from "@/lib/app-check";
 import { WAITLIST_SITE_URL } from "@/lib/site";
-import { EMAIL_PATTERN } from "@/lib/waitlist";
+import { EMAIL_PATTERN, normalizePhone } from "@/lib/waitlist";
 
 // Types must match VENUE_TYPES in lib/waitlist.ts.
 const VENUES: { type: string; label: string; icon: LucideIcon; example: string }[] = [
@@ -51,6 +51,8 @@ export default function WaitlistFlow() {
   const [spotArea, setSpotArea] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [smsConsent, setSmsConsent] = useState(false);
   // Hidden from people; only bots fill it in.
   const [company, setCompany] = useState("");
 
@@ -85,6 +87,15 @@ export default function WaitlistFlow() {
       return;
     }
 
+    if (phone.trim() && !normalizePhone(phone)) {
+      setError("That phone number doesn't look right.");
+      return;
+    }
+    if (phone.trim() && !smsConsent) {
+      setError("Tick the box to get texts, or leave the number blank.");
+      return;
+    }
+
     setBusy(true);
 
     try {
@@ -98,6 +109,8 @@ export default function WaitlistFlow() {
           waitMinutes: wait,
           spotName,
           spotArea,
+          phone: phone.trim(),
+          smsConsent,
           company,
         }),
       });
@@ -259,6 +272,34 @@ export default function WaitlistFlow() {
                 className="w-full"
               />
               <input
+                type="tel"
+                value={phone}
+                onChange={(event) => setPhone(event.target.value)}
+                maxLength={30}
+                placeholder="Phone (optional)"
+                aria-label="Phone number, optional"
+                autoComplete="tel"
+                inputMode="tel"
+                className="w-full"
+              />
+              {phone.trim() && (
+                <label className="flex cursor-pointer items-start gap-3 rounded-xl bg-paper px-3.5 py-3 text-sm text-gray-600">
+                  <input
+                    type="checkbox"
+                    checked={smsConsent}
+                    onChange={(event) => {
+                      setSmsConsent(event.target.checked);
+                      setError("");
+                    }}
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-[#101811]"
+                  />
+                  <span>
+                    Text me when SeatMate opens near me. Up to a few texts about the launch, msg and data
+                    rates may apply. Reply STOP to opt out.
+                  </span>
+                </label>
+              )}
+              <input
                 type="text"
                 name="company"
                 value={company}
@@ -285,7 +326,7 @@ export default function WaitlistFlow() {
                 )}
               </button>
               <p className="pt-1 text-center text-sm text-gray-500">
-                We only email you about SeatMate opening near you. See our{" "}
+                We only contact you about SeatMate opening near you. See our{" "}
                 <a
                   href={consumerUrl("/privacy")}
                   target="_blank"
@@ -305,6 +346,7 @@ export default function WaitlistFlow() {
             alreadyIn={alreadyIn}
             firstName={firstName}
             email={email.trim().toLowerCase()}
+            texting={Boolean(phone.trim())}
             spotName={spotName.trim()}
           />
         )}
@@ -349,11 +391,13 @@ function Done({
   alreadyIn,
   firstName,
   email,
+  texting,
   spotName,
 }: {
   alreadyIn: boolean;
   firstName: string;
   email: string;
+  texting: boolean;
   spotName: string;
 }) {
   const [copied, setCopied] = useState(false);
@@ -385,8 +429,8 @@ function Done({
         {alreadyIn ? "You're already on the list." : `You're on the list, ${firstName}.`}
       </h2>
       <p className="mt-2 text-gray-600">
-        We&rsquo;ll email <span className="font-semibold text-ink">{email}</span> when
-        SeatMate opens near you.
+        We&rsquo;ll email <span className="font-semibold text-ink">{email}</span>
+        {texting && !alreadyIn && " and text you"} when SeatMate opens near you.
         {spotName && !alreadyIn && ` We'll also let ${spotName} know people want live seats there.`}
       </p>
 

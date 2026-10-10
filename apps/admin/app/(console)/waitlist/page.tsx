@@ -20,6 +20,7 @@ type Signup = {
   waitMinutes: number;
   spotName: string;
   spotArea: string;
+  phone: string;
   createdMs: number;
 };
 
@@ -62,6 +63,7 @@ export default function AdminWaitlistPage() {
                 waitMinutes: Number(data.waitMinutes) || 0,
                 spotName: String(data.spotName || ""),
                 spotArea: String(data.spotArea || ""),
+                phone: String(data.phone || ""),
                 createdMs: toMs(data.createdAt),
               };
             })
@@ -106,7 +108,7 @@ export default function AdminWaitlistPage() {
     const needle = search.trim().toLowerCase();
     if (!needle) return signups;
     return signups.filter((signup) =>
-      [signup.name, signup.email, signup.spotName, signup.spotArea, venueLabel(signup.venueType)]
+      [signup.name, signup.email, signup.phone, signup.spotName, signup.spotArea, venueLabel(signup.venueType)]
         .some((value) => value.toLowerCase().includes(needle))
     );
   }, [signups, search]);
@@ -119,10 +121,11 @@ export default function AdminWaitlistPage() {
       return `"${safe.replace(/"/g, '""')}"`;
     };
     const rows = [
-      ["Name", "Email", "Place type", "Usual wait (min)", "Spot to add", "Spot area", "Joined"],
+      ["Name", "Email", "Phone (agreed to texts)", "Place type", "Usual wait (min)", "Spot to add", "Spot area", "Joined"],
       ...signups.map((signup) => [
         signup.name,
         signup.email,
+        signup.phone,
         venueLabel(signup.venueType),
         signup.waitMinutes,
         signup.spotName,
@@ -226,7 +229,7 @@ export default function AdminWaitlistPage() {
               type="search"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search name, email or spot"
+              placeholder="Search name, email, phone or spot"
               aria-label="Search the waitlist"
               className="w-full !pl-9"
             />
@@ -257,6 +260,11 @@ export default function AdminWaitlistPage() {
                       <a href={`mailto:${signup.email}`} className="text-gray-500 hover:text-[#101811]">
                         {signup.email}
                       </a>
+                      {signup.phone && (
+                        <a href={`sms:${signup.phone}`} className="block text-gray-500 hover:text-[#101811]">
+                          {signup.phone}
+                        </a>
+                      )}
                     </td>
                     <td className="px-5 py-3">{venueLabel(signup.venueType)}</td>
                     <td className="px-5 py-3 tabular-nums">{waitLabel(signup.waitMinutes)}</td>

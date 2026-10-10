@@ -27,7 +27,8 @@
     "./slug": "./src/slug.ts",
     "./floor-docs": "./src/floor-docs.ts",
     "./day-key": "./src/day-key.ts",
-    "./app-links": "./src/app-links.ts"
+    "./app-links": "./src/app-links.ts",
+    "./sms": "./src/sms.ts"
   },
   "peerDependencies": {
     "firebase": "^12.19.0",

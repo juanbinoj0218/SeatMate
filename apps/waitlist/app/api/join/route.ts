@@ -2,11 +2,13 @@ import { FieldValue } from "firebase-admin/firestore";
 
 import { emailConfigured, escapeHtml, sendEmail } from "@seatmate/shared/email";
 import { adminAppCheck, adminDb } from "@seatmate/shared/firebase-admin";
+import { sendSms, smsConfigured } from "@seatmate/shared/sms";
 
 import { WAITLIST_SITE_URL } from "@/lib/site";
 import { readSignup, type Signup } from "@/lib/waitlist";
 
-// Adds someone to the waitlist and emails them a confirmation.
+// Adds someone to the waitlist, emails them a confirmation and, if they
+// gave a phone number and agreed to texts, texts them one too.
 //
 // Signups go through here instead of straight to Firestore so the
 // confirmation email can't be triggered for any address at will:
@@ -73,7 +75,21 @@ export async function POST(request: Request) {
     );
   }
 
+  if (signup.phone && signup.smsConsent && smsConfigured()) {
+    await sendSms(confirmationText(signup)).catch((error) =>
+      console.error("Waitlist: confirmation text failed:", error)
+    );
+  }
+
   return json({ joined: true });
+}
+
+function confirmationText(signup: Signup) {
+  const firstName = signup.name.split(/\s+/)[0];
+  return {
+    to: signup.phone,
+    body: `SeatMate: You're on the waitlist, ${firstName}. We'll text you when SeatMate opens near you. Reply STOP to opt out.`,
+  };
 }
 
 function confirmationEmail(signup: Signup) {

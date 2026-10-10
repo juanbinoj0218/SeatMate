@@ -106,3 +106,13 @@
     animation: none;
   }
 }
+
+/* The shared stylesheet sizes text inputs but not phone ones. */
+input[type="tel"] {
+  min-height: 48px;
+  padding: 0 14px;
+}
+
+input[type="checkbox"]:focus {
+  box-shadow: none;
+}
