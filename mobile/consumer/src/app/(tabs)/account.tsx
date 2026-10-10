@@ -181,7 +181,9 @@ export default function AccountScreen() {
         </>
       )}
 
-      <Text style={styles.version}>SeatMate {Constants.expoConfig?.version ?? ""}</Text>
+      <Text style={styles.version}>
+        © {new Date().getFullYear()} SeatMate LLC · Version {Constants.expoConfig?.version ?? ""}
+      </Text>
     </ScrollView>
   );
 }

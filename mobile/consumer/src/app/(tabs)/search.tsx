@@ -1,31 +1,101 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { StyleSheet, Text, TextInput, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AnimatedNumber } from "@/components/animated-number";
-import { BigIcons, CategoryIcon, CloseIcon, SearchIcon } from "@/components/icons";
+import { BackIcon, BigIcons, CategoryIcon, CloseIcon, ForwardIcon, SearchIcon } from "@/components/icons";
 import { PlaceCard } from "@/components/place-card";
 import { PlaceListSkeleton } from "@/components/place-card-skeleton";
-import { Chip, colors, EmptyState, layoutSpring, PressableScale, readable, RetryPanel, shadow, space } from "@/components/ui";
+import { colors, EmptyState, layoutSpring, PressableScale, readable, RetryPanel, shadow, space } from "@/components/ui";
 import { useFeatures } from "@/lib/features";
 import { openNow } from "@/lib/format";
-import { CATEGORIES, inCategory, sortByAvailability, usePlaces, type Category } from "@/lib/places";
+import { inCategory, openShare, sortByAvailability, usePlaces, type Category, type PlaceWithSeats } from "@/lib/places";
 import { useNow } from "@/lib/use-now";
 
-type Sort = "availability" | "recent" | "name";
+// Search starts from what you're up to ("Need to study?", "Going out?") and
+// shows the places that fit right now. Typing searches every spot by name,
+// type, street or ZIP instead.
 
-const SORTS: { value: Sort; label: string }[] = [
-  { value: "availability", label: "Most open" },
-  { value: "recent", label: "Just updated" },
-  { value: "name", label: "A–Z" },
+type Question = {
+  id: string;
+  category: Exclude<Category, "all">;
+  title: string;
+  detail: string;
+  // What the result count reads as, e.g. "3 with a table open".
+  countLabel: string;
+  pick: (place: PlaceWithSeats, now: number) => boolean;
+  order: (places: PlaceWithSeats[], now: number) => PlaceWithSeats[];
+};
+
+const isOpen = (place: PlaceWithSeats, now: number) => openNow(place, now)?.open !== false;
+const hasSeat = (place: PlaceWithSeats, now: number) => place.availableSeats > 0 && isOpen(place, now);
+
+// Fullest first, so the liveliest bars lead; places without seat data last.
+const busiestFirst = (places: PlaceWithSeats[]) =>
+  [...places].sort((a, b) => (openShare(a) ?? 2) - (openShare(b) ?? 2) || a.name.localeCompare(b.name));
+
+const QUESTIONS: Question[] = [
+  {
+    id: "study",
+    category: "cafe",
+    title: "Need to study or work?",
+    detail: "Cafés with a table open right now",
+    countLabel: "with a table open",
+    pick: (place, now) => inCategory(place, "cafe") && hasSeat(place, now),
+    order: sortByAvailability,
+  },
+  {
+    id: "eat",
+    category: "restaurant",
+    title: "Grabbing a bite?",
+    detail: "Restaurants where you can sit down now",
+    countLabel: "with a table open",
+    pick: (place, now) => inCategory(place, "restaurant") && hasSeat(place, now),
+    order: sortByAvailability,
+  },
+  {
+    id: "out",
+    category: "bar",
+    title: "Want to go out?",
+    detail: "Bars open now, from packed to quiet",
+    countLabel: "open now",
+    pick: (place, now) => inCategory(place, "bar") && isOpen(place, now),
+    order: busiestFirst,
+  },
+  {
+    id: "haircut",
+    category: "barbershop",
+    title: "Need a haircut?",
+    detail: "Barbershops with a chair free for a walk-in",
+    countLabel: "with a chair free",
+    pick: (place, now) => inCategory(place, "barbershop") && hasSeat(place, now),
+    order: sortByAvailability,
+  },
+  {
+    id: "bowling",
+    category: "bowling",
+    title: "Bowling night?",
+    detail: "Bowling alleys open now",
+    countLabel: "open now",
+    pick: (place, now) => inCategory(place, "bowling") && isOpen(place, now),
+    order: sortByAvailability,
+  },
+  {
+    id: "seat",
+    category: "available",
+    title: "Just need a seat?",
+    detail: "Anywhere with a seat open right now",
+    countLabel: "with a seat open",
+    pick: hasSeat,
+    order: sortByAvailability,
+  },
 ];
 
-const isCategory = (value: unknown): value is Category => CATEGORIES.some((option) => option.value === value);
+// Explore's category tiles open the matching question.
+const questionFor = (category: string | undefined) => QUESTIONS.find((question) => question.category === category);
 
-// Every SeatMate spot with live seats: search by name, type, street or ZIP,
-// filter by category or "open now", and sort.
 export default function SearchScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ category?: string; focus?: string }>();
@@ -35,39 +105,53 @@ export default function SearchScreen() {
   const input = useRef<TextInput>(null);
 
   const [text, setText] = useState("");
-  const [category, setCategory] = useState<Category>(isCategory(params.category) ? params.category : "all");
-  const [openOnly, setOpenOnly] = useState(false);
-  const [sort, setSort] = useState<Sort>("availability");
+  const [questionId, setQuestionId] = useState(questionFor(params.category)?.id ?? "");
 
   // Coming from a category tile or the search bar on Explore.
   const [lastCategoryParam, setLastCategoryParam] = useState(params.category);
   if (params.category !== lastCategoryParam) {
     setLastCategoryParam(params.category);
-    if (isCategory(params.category)) setCategory(params.category);
+    const question = questionFor(params.category);
+    if (question) {
+      setQuestionId(question.id);
+      setText("");
+    }
   }
 
   useEffect(() => {
     if (params.focus) input.current?.focus();
   }, [params.focus]);
 
+  const question = QUESTIONS.find((item) => item.id === questionId);
+  const searching = text.trim() !== "";
+
+  // Bowling only shows up once there's a bowling alley on SeatMate.
+  const questions = useMemo(
+    () => QUESTIONS.filter((item) => item.category !== "bowling" || places.some((place) => inCategory(place, "bowling"))),
+    [places]
+  );
+
+  const counts = useMemo(
+    () => Object.fromEntries(QUESTIONS.map((item) => [item.id, places.filter((place) => item.pick(place, now)).length])),
+    [places, now]
+  );
+
   const results = useMemo(() => {
-    const words = text.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    if (searching) {
+      const words = text.trim().toLowerCase().split(/\s+/);
+      return sortByAvailability(
+        places.filter((place) => {
+          const haystack = `${place.name} ${place.type} ${place.address} ${place.zipcode}`.toLowerCase();
+          return words.every((word) => haystack.includes(word));
+        }),
+        now
+      );
+    }
+    if (question) return question.order(places.filter((place) => question.pick(place, now)), now);
+    return [];
+  }, [places, text, searching, question, now]);
 
-    let list = places.filter((place) => {
-      if (!inCategory(place, category)) return false;
-      if (openOnly && openNow(place, now)?.open === false) return false;
-      const haystack = `${place.name} ${place.type} ${place.address} ${place.zipcode}`.toLowerCase();
-      return words.every((word) => haystack.includes(word));
-    });
-
-    if (sort === "availability") list = sortByAvailability(list, now);
-    if (sort === "recent") list = [...list].sort((a, b) => (b.latestUpdateMs ?? 0) - (a.latestUpdateMs ?? 0));
-    if (sort === "name") list = [...list].sort((a, b) => a.name.localeCompare(b.name));
-
-    return list;
-  }, [places, text, category, openOnly, sort, now]);
-
-  const filtered = text.trim() !== "" || category !== "all" || openOnly;
+  const showList = searching || Boolean(question);
 
   const header = (
     <View>
@@ -95,91 +179,108 @@ export default function SearchScreen() {
         ) : null}
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} style={styles.chipsRow}>
-        {CATEGORIES.map((option) => (
-          <Chip
-            key={option.value}
-            label={option.label}
-            icon={<CategoryIcon category={option.value} size={18} color={category === option.value ? "#fff" : colors.ink} strokeWidth={2.1} />}
-            active={category === option.value}
-            onPress={() => setCategory(option.value)}
-          />
-        ))}
-      </ScrollView>
+      {error ? <RetryPanel title="Couldn't load places" text={error} onRetry={retry} style={{ marginTop: 24 }} /> : null}
 
-      <View style={styles.sorts}>
-        {SORTS.map((option) => (
-          <PressableScale
-            key={option.value}
-            accessibilityState={{ selected: sort === option.value }}
-            haptic
-            onPress={() => setSort(option.value)}
-            style={[styles.sort, sort === option.value && styles.sortActive]}
-          >
-            <Text style={[styles.sortText, sort === option.value && { color: colors.ink }]}>{option.label}</Text>
-          </PressableScale>
-        ))}
-      </View>
-
-      <View style={styles.toolbar}>
-        <PressableScale
-          accessibilityRole="switch"
-          accessibilityState={{ checked: openOnly }}
-          haptic
-          onPress={() => setOpenOnly((value) => !value)}
-          style={[styles.toggle, openOnly && styles.toggleOn]}
-        >
-          <View style={[styles.toggleDot, openOnly && { backgroundColor: colors.greenBright }]} />
-          <Text style={[styles.toggleText, openOnly && { color: "#fff" }]}>Open now</Text>
-        </PressableScale>
-
-        {!loading && !error && (
-          <View
-            style={styles.countRow}
-            accessible
-            accessibilityLabel={`${results.length} ${results.length === 1 ? "place" : "places"}${filtered ? " match" : ""}`}
-          >
-            <AnimatedNumber value={results.length} style={styles.count} />
-            <Text style={styles.count}>
-              {` ${results.length === 1 ? "place" : "places"}${filtered ? " match" : ""}`}
-            </Text>
+      {!searching && !question && !error && (
+        <>
+          <Text style={styles.ask}>What are you up to?</Text>
+          <View style={styles.questions}>
+            {questions.map((item) => (
+              <PressableScale
+                key={item.id}
+                accessibilityRole="button"
+                accessibilityLabel={`${item.title} ${item.detail}. ${counts[item.id]} ${counts[item.id] === 1 ? "place" : "places"}.`}
+                haptic
+                scaleTo={0.98}
+                onPress={() => setQuestionId(item.id)}
+                style={styles.question}
+              >
+                <View style={styles.questionIcon}>
+                  <CategoryIcon category={item.category} size={24} color={colors.ink} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.questionTitle}>{item.title}</Text>
+                  <Text style={styles.questionDetail}>{item.detail}</Text>
+                </View>
+                {!loading && (
+                  <Text style={[styles.questionCount, counts[item.id] > 0 && { color: colors.greenText }]}>
+                    {counts[item.id]}
+                  </Text>
+                )}
+                <ForwardIcon size={20} color={colors.faint} />
+              </PressableScale>
+            ))}
           </View>
-        )}
-      </View>
-      {error ? <RetryPanel title="Couldn't load places" text={error} onRetry={retry} style={{ marginBottom: 24 }} /> : null}
+        </>
+      )}
+
+      {showList && !error && (
+        <View style={styles.resultsHead}>
+          {question && !searching && (
+            <>
+              <PressableScale
+                accessibilityLabel="Back to questions"
+                haptic
+                hitSlop={8}
+                onPress={() => setQuestionId("")}
+                style={styles.back}
+              >
+                <BackIcon size={18} color={colors.ink} />
+                <Text style={styles.backText}>All questions</Text>
+              </PressableScale>
+              <Text style={styles.resultsTitle}>{question.title}</Text>
+            </>
+          )}
+          {!loading && (
+            <View
+              style={styles.countRow}
+              accessible
+              accessibilityLabel={`${results.length} ${results.length === 1 ? "place" : "places"}`}
+            >
+              <AnimatedNumber value={results.length} style={styles.count} />
+              <Text style={styles.count}>
+                {` ${results.length === 1 ? "place" : "places"} ${searching ? "match" : question?.countLabel ?? ""}`}
+              </Text>
+            </View>
+          )}
+        </View>
+      )}
     </View>
   );
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      {loading ? (
+      {loading && showList ? (
         <View style={[styles.pad, readable]}>
           {header}
           <PlaceListSkeleton count={2} />
         </View>
       ) : (
-        // Cards glide to their new places when a filter, sort or search
-        // changes the results.
+        // Cards glide to their new places as seats open and fill.
         <Animated.FlatList
-          data={results}
+          data={showList ? results : []}
           itemLayoutAnimation={layoutSpring}
           keyExtractor={(place) => place.slug}
           renderItem={({ item }) => <PlaceCard place={item} now={now} />}
           ItemSeparatorComponent={() => <View style={{ height: space.item + 8 }} />}
           ListHeaderComponent={header}
           ListEmptyComponent={
-            error ? null : (
+            !showList || error ? null : (
               <EmptyState
                 icon={<BigIcons.noResults color={colors.muted} />}
-                title="Nothing matches yet"
+                title={searching ? "Nothing matches yet" : "Nothing open right now"}
                 text={
-                  features.suggestPlace
-                    ? "Try another search, or ask for the place you had in mind."
-                    : "Try another search or a different filter."
+                  searching
+                    ? features.suggestPlace
+                      ? "Try another search, or ask for the place you had in mind."
+                      : "Try another search."
+                    : "Check back soon, or pick another question."
                 }
-                action={features.suggestPlace ? "Suggest a place" : undefined}
+                action={searching && features.suggestPlace ? "Suggest a place" : !searching ? "All questions" : undefined}
                 onAction={() =>
-                  router.push({ pathname: "/suggest", params: text.trim() ? { name: text.trim() } : {} })
+                  searching
+                    ? router.push({ pathname: "/suggest", params: { name: text.trim() } })
+                    : setQuestionId("")
                 }
               />
             )
@@ -220,27 +321,34 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  chipsRow: { marginHorizontal: -space.gutter, marginTop: 20 },
-  chips: { paddingHorizontal: space.gutter, gap: 10 },
-  toolbar: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 16, marginBottom: 24 },
-  toggle: {
+  ask: { fontSize: 22, fontWeight: "900", color: colors.ink, letterSpacing: -0.4, marginTop: 32, marginBottom: 14 },
+  questions: { gap: 10 },
+  question: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    borderRadius: 999,
+    gap: 14,
+    backgroundColor: "#fff",
+    borderRadius: 22,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: "#fff",
     paddingHorizontal: 16,
-    paddingVertical: 11,
+    paddingVertical: 16,
   },
-  toggleOn: { backgroundColor: colors.ink, borderColor: colors.ink },
-  toggleDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: colors.faint },
-  toggleText: { fontSize: 15, fontWeight: "800", color: colors.ink },
-  sorts: { flexDirection: "row", backgroundColor: "#eceee9", borderRadius: 16, padding: 4, marginTop: 20 },
-  sort: { flex: 1, alignItems: "center", paddingHorizontal: 8, paddingVertical: 10, borderRadius: 12 },
-  sortActive: { backgroundColor: "#fff" },
-  sortText: { fontSize: 14, fontWeight: "800", color: colors.muted },
-  countRow: { marginLeft: "auto", flexDirection: "row", alignItems: "center" },
+  questionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.chip,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  questionTitle: { fontSize: 17, fontWeight: "900", color: colors.ink },
+  questionDetail: { fontSize: 14, lineHeight: 19, color: colors.muted, marginTop: 3 },
+  questionCount: { fontSize: 17, fontWeight: "900", color: colors.faint, fontVariant: ["tabular-nums"] },
+  resultsHead: { marginTop: 24, marginBottom: 20 },
+  back: { flexDirection: "row", alignItems: "center", gap: 2, alignSelf: "flex-start", marginLeft: -4, paddingVertical: 4 },
+  backText: { fontSize: 15, fontWeight: "800", color: colors.ink },
+  resultsTitle: { fontSize: 26, fontWeight: "900", color: colors.ink, letterSpacing: -0.6, marginTop: 10 },
+  countRow: { flexDirection: "row", alignItems: "center", marginTop: 6 },
   count: { fontSize: 15, lineHeight: 20, fontWeight: "700", color: colors.muted },
 });

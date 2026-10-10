@@ -15,7 +15,7 @@ import Svg, { Circle, Defs, Pattern, Rect } from "react-native-svg";
 import { isGameMarker, MARKERS, type FloorMarker, type MarkerType } from "@seatmate/shared/floor-plan";
 import { tableSize } from "@seatmate/shared/table-geometry";
 
-import { CloseIcon, FitIcon, FloorPlanIcon, ListIcon, MarkerIcon, MinusIcon, PlusIcon } from "@/components/icons";
+import { CloseIcon, FitIcon, FloorPlanIcon, MarkerIcon, MinusIcon, PlusIcon } from "@/components/icons";
 import TableWithSeats, { SEAT_OPEN, SEAT_TAKEN } from "@/components/table-with-seats";
 import { colors } from "@/components/ui";
 import { tap } from "@/lib/haptics";
@@ -118,7 +118,6 @@ export default function FloorView({
   // Tallest the map may get; it fits the layout to width × maxHeight.
   maxHeight: number;
 }) {
-  const [mode, setMode] = useState<"map" | "list">("map");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [zoomed, setZoomed] = useState(false);
 
@@ -296,7 +295,6 @@ export default function FloorView({
 
   return (
     <View>
-      {mode === "map" ? (
         <View style={[styles.frame, { width, height: frameHeight }]}>
           <GestureDetector gesture={gestures}>
             <View style={styles.stage} collapsable={false}>
@@ -360,12 +358,9 @@ export default function FloorView({
           )}
 
         </View>
-      ) : (
-        <TableList tables={tables} width={width} />
-      )}
 
       {/* The tapped table's seats, under the map so it never covers the room. */}
-      {mode === "map" && selected && (
+      {selected && (
         <Animated.View entering={FadeInDown.duration(180)} exiting={FadeOutDown.duration(120)} style={styles.card}>
           <SwipeAway onDismiss={() => setSelectedId(null)}>
             <TableCard table={selected} onClose={() => setSelectedId(null)} />
@@ -375,28 +370,18 @@ export default function FloorView({
 
       {!empty && (
         <View style={styles.toolbar}>
-          {tables.length > 0 ? (
-            <View style={styles.modes} accessibilityRole="tablist">
-              <ModeButton label="Map" active={mode === "map"} onPress={() => setMode("map")} icon={<FloorPlanIcon size={16} color={colors.ink} />} />
-              <ModeButton label="List" active={mode === "list"} onPress={() => setMode("list")} icon={<ListIcon size={16} color={colors.ink} />} />
-            </View>
-          ) : (
-            <View />
-          )}
-          {mode === "map" && (
-            <View style={styles.controls}>
-              {zoomed && <MapButton label="Show the whole room" onPress={fitMap} icon={<FitIcon size={16} color={colors.ink} />} />}
-              <MapButton label="Zoom out" onPress={() => zoomBy(1 / 1.6)} icon={<MinusIcon size={18} color={colors.ink} />} />
-              <MapButton label="Zoom in" onPress={() => zoomBy(1.6)} icon={<PlusIcon size={18} color={colors.ink} />} />
-            </View>
-          )}
+          <View style={styles.controls}>
+            {zoomed && <MapButton label="Show the whole room" onPress={fitMap} icon={<FitIcon size={16} color={colors.ink} />} />}
+            <MapButton label="Zoom out" onPress={() => zoomBy(1 / 1.6)} icon={<MinusIcon size={18} color={colors.ink} />} />
+            <MapButton label="Zoom in" onPress={() => zoomBy(1.6)} icon={<PlusIcon size={18} color={colors.ink} />} />
+          </View>
         </View>
       )}
 
       <View style={styles.legend}>
         <LegendDot color={SEAT_OPEN} label="Open" />
         <LegendDot color={SEAT_TAKEN} label="Taken" />
-        {mode === "map" && !empty && <Text style={styles.hint}>Pinch to zoom, tap a table</Text>}
+        {!empty && <Text style={styles.hint}>Pinch to zoom, tap a table</Text>}
       </View>
     </View>
   );
@@ -464,41 +449,6 @@ function SeatDots({ table }: { table: Table }) {
           style={[styles.seatDot, { backgroundColor: seat.status === "available" ? SEAT_OPEN : SEAT_TAKEN }]}
         />
       ))}
-    </View>
-  );
-}
-
-// The same tables as rows: easier with a screen reader or in a very big room.
-function TableList({ tables, width }: { tables: Table[]; width: number }) {
-  const sorted = useMemo(
-    () =>
-      [...tables].sort(
-        (a, b) => openSeats(b) - openSeats(a) || a.name.localeCompare(b.name, undefined, { numeric: true })
-      ),
-    [tables]
-  );
-  return (
-    <View style={[styles.list, { width }]}>
-      {sorted.map((table, index) => {
-        const open = openSeats(table);
-        return (
-          <View
-            key={table.id}
-            style={[styles.row, index > 0 && styles.rowBorder]}
-            accessibilityLabel={`${table.name}: ${open} of ${table.seats.length} seats open`}
-          >
-            <View style={{ flex: 1 }}>
-              <Text style={styles.rowTitle} numberOfLines={1}>
-                {table.name}
-              </Text>
-              <SeatDots table={table} />
-            </View>
-            <Text style={[styles.rowCount, { color: open > 0 ? colors.greenText : colors.faint }]}>
-              {open > 0 ? `${open} open` : "Full"}
-            </Text>
-          </View>
-        );
-      })}
     </View>
   );
 }
@@ -572,33 +522,6 @@ function MapButton({ label, icon, onPress }: { label: string; icon: ReactNode; o
   );
 }
 
-function ModeButton({
-  label,
-  icon,
-  active,
-  onPress,
-}: {
-  label: string;
-  icon: ReactNode;
-  active: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="tab"
-      accessibilityState={{ selected: active }}
-      onPress={() => {
-        tap();
-        onPress();
-      }}
-      style={({ pressed }) => [styles.mode, active && styles.modeActive, pressed && { transform: [{ scale: 0.96 }] }]}
-    >
-      {icon}
-      <Text style={styles.modeText}>{label}</Text>
-    </Pressable>
-  );
-}
-
 function LegendDot({ color, label }: { color: string; label: string }) {
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
@@ -662,7 +585,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#fff",
   },
-  toolbar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 12 },
+  toolbar: { flexDirection: "row", alignItems: "center", justifyContent: "flex-end", marginTop: 12 },
   controls: { flexDirection: "row", gap: 8 },
   mapButton: {
     width: 42,
@@ -702,29 +625,7 @@ const styles = StyleSheet.create({
   },
   seatDots: { flexDirection: "row", flexWrap: "wrap", gap: 5, marginTop: 8 },
   seatDot: { width: 12, height: 12, borderRadius: 6 },
-  list: {
-    backgroundColor: "#fff",
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: 18,
-  },
-  row: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 14 },
-  rowBorder: { borderTopWidth: 1, borderTopColor: colors.line },
-  rowTitle: { fontSize: 16, fontWeight: "800", color: colors.ink },
-  rowCount: { fontSize: 15, fontWeight: "800" },
   legend: { flexDirection: "row", flexWrap: "wrap", gap: 16, alignItems: "center", marginTop: 12, paddingLeft: 4 },
   legendText: { fontSize: 15, fontWeight: "700", color: colors.muted },
-  modes: { flexDirection: "row", backgroundColor: colors.chip, borderRadius: 12, padding: 3 },
-  mode: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, height: 36, borderRadius: 9 },
-  modeActive: {
-    backgroundColor: "#fff",
-    shadowColor: "#101811",
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
-  },
-  modeText: { fontSize: 14, fontWeight: "800", color: colors.ink },
   hint: { flex: 1, textAlign: "right", fontSize: 13, color: colors.faint },
 });

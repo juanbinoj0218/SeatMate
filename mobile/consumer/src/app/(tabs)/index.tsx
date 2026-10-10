@@ -203,6 +203,8 @@ export default function ExploreScreen() {
           </View>
         </View>
       )}
+
+      <Text style={styles.legal}>© {new Date(now).getFullYear()} SeatMate LLC</Text>
     </ScrollView>
   );
 }
@@ -278,4 +280,5 @@ const styles = StyleSheet.create({
   suggest: { backgroundColor: colors.ink, borderRadius: 28, padding: 28 },
   suggestTitle: { color: "#fff", fontSize: 24, fontWeight: "900", letterSpacing: -0.5 },
   suggestText: { color: "rgba(255,255,255,0.65)", fontSize: 16, lineHeight: 23, marginTop: 10 },
+  legal: { textAlign: "center", color: colors.faint, fontSize: 13, marginTop: space.section },
 });
