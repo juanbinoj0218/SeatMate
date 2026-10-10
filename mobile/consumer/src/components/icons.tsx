@@ -6,6 +6,7 @@ import {
   Beer,
   Bell,
   ChevronLeft,
+  ChevronRight,
   CircleDot,
   Clock,
   Coffee,
@@ -79,6 +80,7 @@ export const ShareIcon = lucide(Share, 20);
 export const DirectionsIcon = lucide(Navigation, 20);
 export const PinIcon = lucide(MapPin, 16);
 export const BackIcon = lucide(ChevronLeft, 22);
+export const ForwardIcon = lucide(ChevronRight, 20);
 export const CloseIcon = lucide(X, 18);
 export const BellIcon = lucide(Bell, 20);
 export const ClockIcon = lucide(Clock, 20);
