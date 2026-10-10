@@ -20,33 +20,61 @@ import { consumerUrl } from "@seatmate/shared/site-urls";
 import SeatTable from "@/components/seat-table";
 import { appCheckHeaders, startAppCheck } from "@/lib/app-check";
 import { WAITLIST_SITE_URL } from "@/lib/site";
-import { EMAIL_PATTERN, normalizePhone } from "@/lib/waitlist";
+import { EMAIL_PATTERN, normalizePhone, type Feeling, type VenueType } from "@/lib/waitlist";
 
-// Types must match VENUE_TYPES in lib/waitlist.ts.
-const VENUES: { type: string; label: string; icon: LucideIcon; example: string }[] = [
-  { type: "cafe", label: "Café", icon: Coffee, example: "e.g. Blue Door Café" },
-  { type: "restaurant", label: "Restaurant", icon: UtensilsCrossed, example: "e.g. Luigi's Trattoria" },
-  { type: "bar", label: "Bar", icon: Beer, example: "e.g. The Corner Tap" },
-  { type: "barbershop", label: "Barbershop", icon: Scissors, example: "e.g. Fresh Cuts on J St" },
+// Types must match VENUE_TYPES in lib/waitlist.ts. Each place asks its own
+// question about the problem SeatMate fixes there.
+const VENUES: {
+  type: VenueType;
+  label: string;
+  icon: LucideIcon;
+  question: string;
+  example: string;
+}[] = [
+  {
+    type: "cafe",
+    label: "Café",
+    icon: Coffee,
+    question: "Ever wish you knew which tables were free before you took your laptop to a café?",
+    example: "e.g. Blue Door Café",
+  },
+  {
+    type: "restaurant",
+    label: "Restaurant",
+    icon: UtensilsCrossed,
+    question: "Ever wish you could see where you'd sit at a restaurant before you walked in?",
+    example: "e.g. Luigi's Trattoria",
+  },
+  {
+    type: "bar",
+    label: "Bar",
+    icon: Beer,
+    question: "Ever wish you knew how busy a bar was before you went, packed or dead?",
+    example: "e.g. The Corner Tap",
+  },
+  {
+    type: "barbershop",
+    label: "Barbershop",
+    icon: Scissors,
+    question: "Ever wish you could see a barber was free and just walk in, no appointment?",
+    example: "e.g. Fresh Cuts on J St",
+  },
+];
+
+const ANSWERS: { value: Feeling; label: string }[] = [
+  { value: "often", label: "All the time" },
+  { value: "sometimes", label: "Sometimes" },
+  { value: "rarely", label: "Not really" },
 ];
 
 const STEPS = 4;
-
-// One line that reacts to the wait the slider is set to.
-function waitLine(minutes: number) {
-  if (minutes <= 5) return "Lucky you. Let's keep it that way.";
-  if (minutes <= 15) return "Long enough to wish you'd checked first.";
-  if (minutes <= 30) return "That's a whole TV episode, standing up.";
-  if (minutes <= 45) return "Most of a lunch break, gone.";
-  return "An hour you won't get back.";
-}
 
 export default function WaitlistFlow() {
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState<"forward" | "back">("forward");
 
-  const [venue, setVenue] = useState("");
-  const [wait, setWait] = useState(20);
+  const [venues, setVenues] = useState<VenueType[]>([]);
+  const [feelings, setFeelings] = useState<Partial<Record<VenueType, Feeling>>>({});
   const [spotName, setSpotName] = useState("");
   const [spotArea, setSpotArea] = useState("");
   const [name, setName] = useState("");
@@ -69,7 +97,11 @@ export default function WaitlistFlow() {
     setStep(next);
   };
 
-  const chosen = VENUES.find((option) => option.type === venue);
+  const chosen = VENUES.filter((option) => venues.includes(option.type));
+  const allAnswered = chosen.every((option) => feelings[option.type]);
+
+  const toggleVenue = (type: VenueType) =>
+    setVenues((current) => (current.includes(type) ? current.filter((item) => item !== type) : [...current, type]));
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -105,8 +137,8 @@ export default function WaitlistFlow() {
         body: JSON.stringify({
           name: cleanName,
           email: cleanEmail,
-          venueType: venue,
-          waitMinutes: wait,
+          venueTypes: venues,
+          feelings: Object.fromEntries(chosen.map((option) => [option.type, feelings[option.type]])),
           spotName,
           spotArea,
           phone: phone.trim(),
@@ -131,7 +163,6 @@ export default function WaitlistFlow() {
     }
   };
 
-  const fill = `${(wait / 60) * 100}%`;
   const firstName = name.trim().split(/\s+/)[0];
 
   return (
@@ -161,21 +192,18 @@ export default function WaitlistFlow() {
         )}
 
         {step === 0 && (
-          <Step title="Where do you end up waiting the most?">
+          <Step title="Where would SeatMate help you?" hint="Pick as many as you like.">
             <div className="grid grid-cols-2 gap-3">
               {VENUES.map((option) => {
                 const Icon = option.icon;
-                const selected = venue === option.type;
+                const selected = venues.includes(option.type);
                 return (
                   <button
                     key={option.type}
                     type="button"
                     aria-pressed={selected}
-                    onClick={() => {
-                      setVenue(option.type);
-                      go(1);
-                    }}
-                    className={`flex flex-col items-start gap-6 rounded-2xl border p-4 text-left font-semibold transition active:scale-[0.97] ${
+                    onClick={() => toggleVenue(option.type)}
+                    className={`relative flex flex-col items-start gap-6 rounded-2xl border p-4 text-left font-semibold transition active:scale-[0.97] ${
                       selected
                         ? "border-ink bg-ink text-white"
                         : "border-line hover:border-gray-400"
@@ -183,39 +211,56 @@ export default function WaitlistFlow() {
                   >
                     <Icon aria-hidden className="h-6 w-6" strokeWidth={1.75} />
                     {option.label}
+                    <span
+                      aria-hidden
+                      className={`absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full border ${
+                        selected ? "border-white bg-white text-ink" : "border-line"
+                      }`}
+                    >
+                      {selected && <Check className="h-4 w-4" strokeWidth={2.5} />}
+                    </span>
                   </button>
                 );
               })}
             </div>
+            <NextButton onClick={() => go(1)} disabled={venues.length === 0} />
           </Step>
         )}
 
         {step === 1 && (
-          <Step title={`How long do you usually wait at a ${chosen?.label.toLowerCase() ?? "place"}?`}>
-            <p className="font-display text-6xl leading-none">
-              {wait >= 60 ? "60+" : wait}
-              <span className="ml-2 font-sans text-lg text-gray-500">min</span>
-            </p>
-            <p className="mt-3 min-h-[1.6em] text-gray-600" aria-live="polite">
-              {waitLine(wait)}
-            </p>
-            <input
-              type="range"
-              min={0}
-              max={60}
-              step={5}
-              value={wait}
-              onChange={(event) => setWait(Number(event.target.value))}
-              aria-label="Usual wait in minutes"
-              className="wait-slider mt-8"
-              style={{ "--fill": fill } as React.CSSProperties}
-            />
-            <div className="mt-2 flex justify-between font-mono text-xs text-gray-400">
-              <span>0</span>
-              <span>30</span>
-              <span>60+</span>
+          <Step title={chosen.length === 1 ? "One quick question" : "A quick question for each"}>
+            <div className="space-y-6">
+              {chosen.map((option) => {
+                const Icon = option.icon;
+                return (
+                  <fieldset key={option.type}>
+                    <legend className="flex gap-3 font-semibold leading-snug">
+                      <Icon aria-hidden className="mt-0.5 h-5 w-5 shrink-0" strokeWidth={1.75} />
+                      {option.question}
+                    </legend>
+                    <div className="mt-3 grid grid-cols-3 gap-2">
+                      {ANSWERS.map((answer) => {
+                        const selected = feelings[option.type] === answer.value;
+                        return (
+                          <button
+                            key={answer.value}
+                            type="button"
+                            aria-pressed={selected}
+                            onClick={() => setFeelings((current) => ({ ...current, [option.type]: answer.value }))}
+                            className={`rounded-xl border px-2 py-2.5 text-sm font-semibold transition active:scale-[0.97] ${
+                              selected ? "border-ink bg-ink text-white" : "border-line hover:border-gray-400"
+                            }`}
+                          >
+                            {answer.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </fieldset>
+                );
+              })}
             </div>
-            <NextButton onClick={() => go(2)} />
+            <NextButton onClick={() => go(2)} disabled={!allAnswered} />
           </Step>
         )}
 
@@ -236,7 +281,7 @@ export default function WaitlistFlow() {
                 value={spotName}
                 onChange={(event) => setSpotName(event.target.value)}
                 maxLength={120}
-                placeholder={chosen?.example ?? "Place name"}
+                placeholder={chosen[0]?.example ?? "Place name"}
                 aria-label="Place name"
                 className="w-full"
                 autoFocus
@@ -397,12 +442,21 @@ function Step({
   );
 }
 
-function NextButton({ label = "Continue", onClick }: { label?: string; onClick?: () => void }) {
+function NextButton({
+  label = "Continue",
+  onClick,
+  disabled = false,
+}: {
+  label?: string;
+  onClick?: () => void;
+  disabled?: boolean;
+}) {
   return (
     <button
       type={onClick ? "button" : "submit"}
       onClick={onClick}
-      className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-ink px-5 py-3.5 font-semibold text-white transition hover:bg-black active:scale-[0.98]"
+      disabled={disabled}
+      className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-ink px-5 py-3.5 font-semibold text-white transition hover:bg-black active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40"
     >
       {label}
       <ArrowRight aria-hidden className="h-4 w-4" />

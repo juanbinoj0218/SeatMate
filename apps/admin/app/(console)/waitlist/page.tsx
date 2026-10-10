@@ -16,8 +16,10 @@ type Signup = {
   id: string;
   name: string;
   email: string;
-  venueType: string;
-  waitMinutes: number;
+  // Places they'd use SeatMate at. Early signups picked just one.
+  venueTypes: string[];
+  // How often each place's problem bugs them: often, sometimes or rarely.
+  feelings: Record<string, string>;
   spotName: string;
   spotArea: string;
   phone: string;
@@ -25,10 +27,16 @@ type Signup = {
 };
 
 const VENUE_LABELS: Record<string, string> = {
-  barbershop: "Barbershop",
-  bar: "Bar",
   cafe: "Café",
   restaurant: "Restaurant",
+  bar: "Bar",
+  barbershop: "Barbershop",
+};
+
+const FEELING_LABELS: Record<string, string> = {
+  often: "all the time",
+  sometimes: "sometimes",
+  rarely: "not really",
 };
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -38,7 +46,13 @@ const when = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric"
 const toMs = (value: unknown) => (value instanceof Timestamp ? value.toMillis() : 0);
 const key = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 const venueLabel = (type: string) => VENUE_LABELS[type] ?? type;
-const waitLabel = (minutes: number) => (minutes >= 60 ? "60+ min" : `${minutes} min`);
+const placesLabel = (signup: Signup) =>
+  signup.venueTypes
+    .map((type) => {
+      const feeling = FEELING_LABELS[signup.feelings[type]];
+      return feeling ? `${venueLabel(type)} (${feeling})` : venueLabel(type);
+    })
+    .join(", ");
 
 export default function AdminWaitlistPage() {
   const [state, setState] = useState<"loading" | "error" | "ready">("loading");
@@ -59,8 +73,12 @@ export default function AdminWaitlistPage() {
                 id: item.id,
                 name: String(data.name || ""),
                 email: String(data.email || item.id),
-                venueType: String(data.venueType || ""),
-                waitMinutes: Number(data.waitMinutes) || 0,
+                venueTypes: Array.isArray(data.venueTypes)
+                  ? data.venueTypes.map(String)
+                  : data.venueType
+                    ? [String(data.venueType)]
+                    : [],
+                feelings: data.feelings && typeof data.feelings === "object" ? data.feelings : {},
                 spotName: String(data.spotName || ""),
                 spotArea: String(data.spotArea || ""),
                 phone: String(data.phone || ""),
@@ -80,12 +98,14 @@ export default function AdminWaitlistPage() {
 
   const stats = useMemo(() => {
     const thisWeek = signups.filter((signup) => signup.createdMs > loadedAt - WEEK_MS).length;
-    const averageWait = signups.length
-      ? Math.round(signups.reduce((sum, signup) => sum + signup.waitMinutes, 0) / signups.length)
+    // Share of all answers that were "all the time".
+    const answers = signups.flatMap((signup) => Object.values(signup.feelings));
+    const oftenShare = answers.length
+      ? Math.round((answers.filter((feeling) => feeling === "often").length / answers.length) * 100)
       : 0;
 
     const byType = Object.keys(VENUE_LABELS)
-      .map((type) => ({ type, count: signups.filter((signup) => signup.venueType === type).length }))
+      .map((type) => ({ type, count: signups.filter((signup) => signup.venueTypes.includes(type)).length }))
       .sort((a, b) => b.count - a.count);
 
     // Group the same spot typed slightly differently ("Fresh Cuts" vs
@@ -101,14 +121,14 @@ export default function AdminWaitlistPage() {
       .sort((a, b) => b.length - a.length || b[0].createdMs - a[0].createdMs)
       .slice(0, 10);
 
-    return { thisWeek, averageWait, byType, topSpots };
+    return { thisWeek, oftenShare, hasAnswers: answers.length > 0, byType, topSpots };
   }, [signups, loadedAt]);
 
   const visible = useMemo(() => {
     const needle = search.trim().toLowerCase();
     if (!needle) return signups;
     return signups.filter((signup) =>
-      [signup.name, signup.email, signup.phone, signup.spotName, signup.spotArea, venueLabel(signup.venueType)]
+      [signup.name, signup.email, signup.phone, signup.spotName, signup.spotArea, placesLabel(signup)]
         .some((value) => value.toLowerCase().includes(needle))
     );
   }, [signups, search]);
@@ -121,13 +141,12 @@ export default function AdminWaitlistPage() {
       return `"${safe.replace(/"/g, '""')}"`;
     };
     const rows = [
-      ["Name", "Email", "Phone (agreed to texts)", "Place type", "Usual wait (min)", "Spot to add", "Spot area", "Joined"],
+      ["Name", "Email", "Phone (agreed to texts)", "Places (how often it bugs them)", "Spot to add", "Spot area", "Joined"],
       ...signups.map((signup) => [
         signup.name,
         signup.email,
         signup.phone,
-        venueLabel(signup.venueType),
-        signup.waitMinutes,
+        placesLabel(signup),
         signup.spotName,
         signup.spotArea,
         signup.createdMs ? new Date(signup.createdMs).toISOString() : "",
@@ -170,7 +189,7 @@ export default function AdminWaitlistPage() {
       <dl className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Signups" value={signups.length.toLocaleString()} />
         <Stat label="This week" value={stats.thisWeek.toLocaleString()} />
-        <Stat label="Average wait" value={signups.length ? waitLabel(stats.averageWait) : "–"} />
+        <Stat label="Bugs them all the time" value={stats.hasAnswers ? `${stats.oftenShare}%` : "–"} />
         <Stat label="Most common" value={signups.length ? venueLabel(stats.byType[0].type) : "–"} />
       </dl>
 
@@ -188,8 +207,7 @@ export default function AdminWaitlistPage() {
                     <div className="min-w-0">
                       <p className="truncate font-semibold">{original.spotName}</p>
                       <p className="truncate text-sm text-gray-500">
-                        {venueLabel(original.venueType)}
-                        {original.spotArea && ` · ${original.spotArea}`}
+                        {original.spotArea || "No area given"}
                       </p>
                     </div>
                     <span className="shrink-0 tabular-nums text-sm font-semibold">
@@ -203,7 +221,7 @@ export default function AdminWaitlistPage() {
         </section>
 
         <section className="rounded-2xl border border-gray-200 bg-white p-5">
-          <h2 className="font-bold">Where people wait</h2>
+          <h2 className="font-bold">Where they&rsquo;d use it</h2>
           <ul className="mt-4 space-y-3">
             {stats.byType.map((row) => (
               <li key={row.type}>
@@ -246,8 +264,7 @@ export default function AdminWaitlistPage() {
               <thead className="text-xs uppercase tracking-wide text-gray-400">
                 <tr>
                   <th className="px-5 py-3 font-semibold">Name</th>
-                  <th className="px-5 py-3 font-semibold">Place type</th>
-                  <th className="px-5 py-3 font-semibold">Usual wait</th>
+                  <th className="px-5 py-3 font-semibold">Places</th>
                   <th className="px-5 py-3 font-semibold">Spot to add</th>
                   <th className="px-5 py-3 font-semibold">Joined</th>
                 </tr>
@@ -266,8 +283,16 @@ export default function AdminWaitlistPage() {
                         </a>
                       )}
                     </td>
-                    <td className="px-5 py-3">{venueLabel(signup.venueType)}</td>
-                    <td className="px-5 py-3 tabular-nums">{waitLabel(signup.waitMinutes)}</td>
+                    <td className="px-5 py-3">
+                      {signup.venueTypes.map((type) => (
+                        <p key={type}>
+                          {venueLabel(type)}
+                          {FEELING_LABELS[signup.feelings[type]] && (
+                            <span className="text-gray-500"> · {FEELING_LABELS[signup.feelings[type]]}</span>
+                          )}
+                        </p>
+                      ))}
+                    </td>
                     <td className="px-5 py-3">
                       {signup.spotName ? (
                         <>
