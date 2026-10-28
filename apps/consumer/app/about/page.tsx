@@ -1,14 +1,4 @@
-"use client";
-
-import { useRouter } from "next/navigation";
-
-import { businessUrl } from "@seatmate/shared/site-urls";
-
-import {
-  ArrowRightIcon,
-  SiteFooter,
-  SiteHeader,
-} from "@/components/site-chrome";
+import { SiteFooter, SiteHeader } from "@/components/site-chrome";
 
 type Step = {
   time: string;
@@ -48,8 +38,6 @@ const PRINCIPLES = [
 ];
 
 export default function AboutPage() {
-  const router = useRouter();
-
   return (
     <main className="min-h-screen bg-paper text-ink">
       <SiteHeader current="about" />
@@ -163,42 +151,6 @@ export default function AboutPage() {
               </div>
             ))}
           </dl>
-        </div>
-      </section>
-
-      {/* STORY */}
-      <section className="mx-auto max-w-4xl px-5 py-20 text-center sm:px-8 lg:py-28">
-        <p className="text-sm font-medium text-moss">Our story</p>
-
-        <blockquote className="font-display mt-6 text-balance text-3xl leading-[1.15] sm:text-5xl">
-          &ldquo;Why can&apos;t I see if there&apos;s a seat before I
-          go?&rdquo;
-        </blockquote>
-
-        <p className="mx-auto mt-8 max-w-xl text-lg text-gray-600">
-          That&apos;s the question that started SeatMate.
-        </p>
-      </section>
-
-      {/* TWO PATHS */}
-      <section className="mx-auto max-w-6xl px-5 pb-20 sm:px-8 lg:pb-28">
-        <div className="grid gap-4 md:grid-cols-2">
-          <PathCard
-            eyebrow="Looking for a seat"
-            title="See what's open near you."
-            cta="Find a seat"
-            onClick={() => router.push("/search")}
-          />
-
-          <PathCard
-            dark
-            eyebrow="Run a café, restaurant, bar or barbershop"
-            title="Put your seats on SeatMate."
-            cta="SeatMate for Business"
-            onClick={() =>
-              window.location.assign(businessUrl("/business/login"))
-            }
-          />
         </div>
       </section>
 
@@ -366,50 +318,5 @@ function MiniTable({
         {seats.slice(2).map((open, index) => seat(open, index + 2))}
       </div>
     </div>
-  );
-}
-
-function PathCard({
-  eyebrow,
-  title,
-  cta,
-  dark = false,
-  onClick,
-}: {
-  eyebrow: string;
-  title: string;
-  cta: string;
-  dark?: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`group flex min-h-[240px] flex-col justify-between rounded-3xl p-8 text-left transition sm:p-10 ${
-        dark
-          ? "bg-ink text-white hover:bg-black"
-          : "border border-line bg-white hover:border-gray-300"
-      }`}
-    >
-      <div>
-        <p
-          className={`text-sm font-medium ${
-            dark ? "text-green-400" : "text-moss"
-          }`}
-        >
-          {eyebrow}
-        </p>
-
-        <p className="font-display mt-3 text-4xl leading-[1.05]">
-          {title}
-        </p>
-      </div>
-
-      <span className="mt-8 inline-flex items-center gap-2 font-semibold">
-        {cta}
-        <ArrowRightIcon className="h-4 w-4 transition group-hover:translate-x-1" />
-      </span>
-    </button>
   );
 }
