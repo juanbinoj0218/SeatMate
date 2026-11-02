@@ -8,9 +8,10 @@ import { ScrollView as GestureScrollView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { isBar, isBarbershop, isBowlingAlley, isGameMarker, type FloorMarker } from "@seatmate/shared/floor-plan";
-import { elapsed } from "@seatmate/shared/table-geometry";
+import type { Barber } from "@seatmate/shared/barbers";
 
 import { AnimatedNumber, SpringFill } from "@/components/animated-number";
+import Barbers from "@/components/barbers";
 import CrowdMeter from "@/components/crowd-meter";
 import FloorView from "@/components/floor-view";
 import { BackIcon, BigIcons, ClockIcon, DirectionsIcon, FloorPlanIcon, HeartIcon, PinIcon, PlaceTypeIcon, ScissorsIcon, ShareIcon } from "@/components/icons";
@@ -20,7 +21,7 @@ import { Button, colors, EmptyState, Loading, PressableScale, shadow, Skeleton, 
 import { useAccount } from "@/lib/account";
 import { countView } from "@/lib/analytics";
 import { useFeatures } from "@/lib/features";
-import { watchMarkers, watchTables, type Table } from "@/lib/floor";
+import { watchBarbers, watchMarkers, watchTables, type Table } from "@/lib/floor";
 import {
   availabilityLabel,
   availabilityTone,
@@ -54,9 +55,11 @@ export default function PlaceScreen() {
   const [tables, setTables] = useState<Table[]>([]);
   const [markers, setMarkers] = useState<FloorMarker[]>([]);
   const [floorLoaded, setFloorLoaded] = useState(false);
+  const [barbers, setBarbers] = useState<Barber[]>([]);
   // Scroll position, for the header bar that fades in over the photo.
   const [scrollY] = useState(() => new Animated.Value(0));
   const businessId = place?.businessId ?? "";
+  const barbershop = isBarbershop(place?.type);
 
   useEffect(() => {
     if (!businessId) return;
@@ -79,6 +82,11 @@ export default function PlaceScreen() {
       stopMarkers();
     };
   }, [businessId]);
+
+  useEffect(() => {
+    if (!businessId || !barbershop) return;
+    return watchBarbers(businessId, setBarbers, (caught) => console.error("Could not load barbers:", caught));
+  }, [businessId, barbershop]);
 
   const summary = useMemo(() => {
     let available = 0;
@@ -133,7 +141,7 @@ export default function PlaceScreen() {
   const percentage = summary.totalSeats ? Math.round((summary.availableSeats / summary.totalSeats) * 100) : 0;
   const stale = isStale(summary.latestUpdateMs, now);
   const games = markers.filter((marker) => isGameMarker(marker.type));
-  const chairs = isBarbershop(place.type) ? tables.filter((table) => table.shape === "barberChair") : [];
+  const chairs = barbershop ? tables.filter((table) => table.shape === "barberChair") : [];
   const contentWidth = Math.min(width, 760) - space.gutter * 2;
   const pageUrl = consumerUrl(`/place/${place.slug}`);
   const heroHeight = 250 + insets.top;
@@ -333,25 +341,17 @@ export default function PlaceScreen() {
             )}
           </View>
 
-          {chairs.length > 0 && (
-            <Section title="Chairs" icon={<ScissorsIcon />}>
-              {chairs.map((chair) => {
-                const seat = chair.seats[0];
-                const taken = seat?.status === "occupied";
-                return (
-                  <View key={chair.id} style={styles.listItem}>
-                    <Text style={styles.listName}>{chair.name}</Text>
-                    <Text style={[styles.statusPill, taken ? styles.statusTaken : styles.statusOpen]}>
-                      {!taken
-                        ? "Free"
-                        : typeof seat?.occupiedSince === "number"
-                          ? `In chair ${elapsed(seat.occupiedSince, Math.max(now, seat.occupiedSince))}`
-                          : "In chair"}
-                    </Text>
-                  </View>
-                );
-              })}
-            </Section>
+          {(chairs.length > 0 || barbers.length > 0) && (
+            <>
+              <View style={styles.sectionHead}>
+                <ScissorsIcon />
+                <Text style={styles.sectionTitle}>Barbers</Text>
+              </View>
+              <Text style={styles.sectionText}>
+                Each bar fills from red to green as a cut goes on. Head over when it turns green.
+              </Text>
+              <Barbers businessId={place.businessId} barbers={barbers} chairs={chairs} />
+            </>
           )}
 
           {games.length > 0 && (

@@ -1,6 +1,8 @@
 import { doc, increment, runTransaction, serverTimestamp, setDoc } from "firebase/firestore";
 
+import { changeSeat } from "@seatmate/shared/barbers";
 import { dayKey } from "@seatmate/shared/day-key";
+import type { TableSeat } from "@seatmate/shared/table-geometry";
 
 import { auth, db } from "@/lib/firebase";
 import type { Table } from "@/lib/floor";
@@ -73,22 +75,16 @@ async function writeSeat(
       throw new Error("Table not found.");
     }
 
-    const seats: { id: number; status: SeatStatus; occupiedSince?: number }[] = snapshot.data().seats || [];
+    const seats: TableSeat[] = snapshot.data().seats || [];
     let changedTo: SeatStatus | null = null;
 
     const updatedSeats = seats.map((seat) => {
       if (seat.id !== seatId || seat.status === target) return seat;
 
-      // Remember when the seat was taken so barber chairs can show how long
-      // the current cut has been going; clear it again when the seat opens.
-      if (seat.status === "available") {
-        changedTo = "occupied";
-        return { ...seat, status: changedTo, occupiedSince: Date.now() };
-      }
-
-      changedTo = "available";
-      const { occupiedSince, ...rest } = seat;
-      return { ...rest, status: changedTo };
+      // The chair timer starts over on every change; finishing a cut also
+      // records how long it took (barbers.ts).
+      changedTo = seat.status === "available" ? "occupied" : "available";
+      return changeSeat(seat, changedTo, Date.now());
     });
 
     const result = changedTo as SeatStatus | null;
