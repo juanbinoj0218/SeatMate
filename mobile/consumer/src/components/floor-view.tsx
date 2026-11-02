@@ -17,7 +17,9 @@ import { tableSize } from "@seatmate/shared/table-geometry";
 
 import { CloseIcon, FitIcon, FloorPlanIcon, MarkerIcon, MinusIcon, PlusIcon } from "@/components/icons";
 import TableWithSeats, { SEAT_OPEN, SEAT_TAKEN } from "@/components/table-with-seats";
-import type { Barber } from "@seatmate/shared/barbers";
+import { type Barber, barberPhotoPath } from "@seatmate/shared/barbers";
+import { BarberProfile } from "@/components/barbers";
+import { absoluteImage } from "@/lib/places";
 import { colors } from "@/components/ui";
 import { tap } from "@/lib/haptics";
 import { CANVAS_HEIGHT, CANVAS_WIDTH, type Table } from "@/lib/floor";
@@ -112,6 +114,7 @@ export default function FloorView({
   width,
   maxHeight,
   barbers,
+  businessId = "",
 }: {
   tables: Table[];
   markers: FloorMarker[];
@@ -121,6 +124,7 @@ export default function FloorView({
   maxHeight: number;
   // Barbershops: who works at each chair, for the cut progress bars.
   barbers?: Barber[];
+  businessId?: string;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [zoomed, setZoomed] = useState(false);
@@ -134,6 +138,17 @@ export default function FloorView({
   const contentHeight = bounds.height * fit;
   const frameHeight = Math.max(200, contentHeight);
   const selected = tables.find((table) => table.id === selectedId) ?? null;
+  // Barbershops: the barber at a chair, with their profile photo for the
+  // chip under it. Tapping the chair opens their profile below the map.
+  const barberAt = (table: Table) =>
+    barbers && table.shape === "barberChair" ? (barbers.find((barber) => barber.chairId === table.id) ?? null) : undefined;
+  const chairBarber = (table: Table) => {
+    const barber = barberAt(table);
+    if (!barber) return barber;
+    const photo = barber.photos[0];
+    return { ...barber, photoUrl: photo ? absoluteImage(barberPhotoPath(businessId, barber.id, photo)) : undefined };
+  };
+  const selectedBarber = selected ? barberAt(selected) : null;
   const empty = tables.length === 0 && markers.length === 0;
 
   // Zoom and pan, relative to the fitted view and centered on the frame.
@@ -343,11 +358,7 @@ export default function FloorView({
                             rotation={table.rotation}
                             selected={table.id === selectedId}
                             magnify={unit}
-                            barber={
-                              barbers && table.shape === "barberChair"
-                                ? (barbers.find((barber) => barber.chairId === table.id) ?? null)
-                                : undefined
-                            }
+                            barber={chairBarber(table)}
                           />
                         </View>
                       );
@@ -372,7 +383,22 @@ export default function FloorView({
       {selected && (
         <Animated.View entering={FadeInDown.duration(180)} exiting={FadeOutDown.duration(120)} style={styles.card}>
           <SwipeAway onDismiss={() => setSelectedId(null)}>
-            <TableCard table={selected} onClose={() => setSelectedId(null)} />
+            {selectedBarber ? (
+              <View>
+                <BarberProfile businessId={businessId} barber={selectedBarber} chair={selected} />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Close"
+                  hitSlop={10}
+                  onPress={() => setSelectedId(null)}
+                  style={({ pressed }) => [styles.cardClose, styles.profileClose, pressed && { transform: [{ scale: 0.92 }] }]}
+                >
+                  <CloseIcon size={18} color={colors.muted} />
+                </Pressable>
+              </View>
+            ) : (
+              <TableCard table={selected} onClose={() => setSelectedId(null)} />
+            )}
           </SwipeAway>
         </Animated.View>
       )}
@@ -390,7 +416,7 @@ export default function FloorView({
       <View style={styles.legend}>
         <LegendDot color={SEAT_OPEN} label="Open" />
         <LegendDot color={SEAT_TAKEN} label="Taken" />
-        {!empty && <Text style={styles.hint}>Pinch to zoom, tap a table</Text>}
+        {!empty && <Text style={styles.hint}>{barbers ? "Tap a chair to see the barber" : "Pinch to zoom, tap a table"}</Text>}
       </View>
     </View>
   );
@@ -624,6 +650,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: { fontSize: 17, fontWeight: "800", color: colors.ink },
   cardText: { fontSize: 15, fontWeight: "700", marginTop: 2 },
+  profileClose: { position: "absolute", top: 14, right: 14 },
   cardClose: {
     width: 32,
     height: 32,

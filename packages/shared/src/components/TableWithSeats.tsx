@@ -11,7 +11,7 @@ import { Timer } from "lucide-react";
 
 import { useEffect, useState } from "react";
 
-import { chairProgress, PROGRESS_STOPS } from "../barbers";
+import { chairProgress, initials, PROGRESS_STOPS } from "../barbers";
 
 import {
   elapsed,
@@ -45,7 +45,7 @@ function ChairTimer({
 }: {
   seat: TableSeat;
   fontSize: number;
-  barber?: { name: string; cutMinutes: number } | null;
+  barber?: { name: string; cutMinutes: number; photoUrl?: string } | null;
 }) {
   const occupied = seat.status === "occupied";
   const since = occupied && typeof seat.occupiedSince === "number" ? seat.occupiedSince : null;
@@ -100,7 +100,21 @@ function ChairTimer({
         </span>
       )}
       {barber && (
-        <span className="whitespace-nowrap font-semibold text-gray-600" style={{ fontSize: fontSize * 0.95 }}>
+        <span
+          className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-white py-0.5 pl-0.5 pr-2 font-semibold text-gray-700 shadow-sm ring-1 ring-gray-200"
+          style={{ fontSize: fontSize * 0.95 }}
+        >
+          {barber.photoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={barber.photoUrl} alt="" className="rounded-full object-cover" style={{ width: fontSize * 1.6, height: fontSize * 1.6 }} />
+          ) : (
+            <span
+              className="flex items-center justify-center rounded-full bg-[#101811] font-bold text-white"
+              style={{ width: fontSize * 1.6, height: fontSize * 1.6, fontSize: fontSize * 0.7 }}
+            >
+              {initials(barber.name)}
+            </span>
+          )}
           {barber.name.split(/\s+/)[0]}
         </span>
       )}
@@ -129,7 +143,7 @@ export default function TableWithSeats({
   className?: string;
   // Barber chairs on the customer floor plan: the barber at this chair. When
   // set (null for a chair with nobody linked), a cut progress bar shows.
-  barber?: { name: string; cutMinutes: number } | null;
+  barber?: { name: string; cutMinutes: number; photoUrl?: string } | null;
 }) {
   const stool = isSingleSeat(shape);
   const shown = stool ? seats.slice(0, 1) : seats;

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Image } from "expo-image";
 import Animated, {
   interpolateColor,
   useAnimatedStyle,
@@ -20,7 +21,7 @@ import {
 
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 
-import { chairProgress, PROGRESS_STOPS } from "@seatmate/shared/barbers";
+import { chairProgress, initials, PROGRESS_STOPS } from "@seatmate/shared/barbers";
 
 import { TimerIcon } from "@/components/icons";
 import { colors } from "@/components/ui";
@@ -59,7 +60,7 @@ export default function TableWithSeats({
   // Barber chairs on the customer floor plan: the barber at this chair, for
   // their first name and how long their cuts usually take. When set, a cut
   // progress bar shows under the timer.
-  barber?: { name: string; cutMinutes: number } | null;
+  barber?: { name: string; cutMinutes: number; photoUrl?: string } | null;
 }) {
   const stool = isSingleSeat(shape);
   const chair = shape === "barberChair";
@@ -218,7 +219,7 @@ export function ChairTimer({
   seat: TableSeat;
   fontSize: number;
   magnify?: number;
-  barber?: { name: string; cutMinutes: number } | null;
+  barber?: { name: string; cutMinutes: number; photoUrl?: string } | null;
 }) {
   const occupied = seat.status === "occupied";
   const since = occupied && typeof seat.occupiedSince === "number" ? seat.occupiedSince : null;
@@ -288,9 +289,28 @@ export function ChairTimer({
         </View>
       )}
       {barber ? (
-        <Text numberOfLines={1} style={[styles.barber, { fontSize: fontSize * 0.95 }]}>
-          {barber.name.split(/\s+/)[0]}
-        </Text>
+        <View
+          style={[
+            styles.barberChip,
+            { gap: 3 * magnify, paddingLeft: 2 * magnify, paddingRight: 7 * magnify, paddingVertical: 2 * magnify, borderWidth: magnify / 2 },
+          ]}
+        >
+          {barber.photoUrl ? (
+            <Image
+              source={{ uri: barber.photoUrl }}
+              style={{ width: fontSize * 1.6, height: fontSize * 1.6, borderRadius: fontSize * 0.8 }}
+            />
+          ) : (
+            <View
+              style={[styles.barberInitials, { width: fontSize * 1.6, height: fontSize * 1.6, borderRadius: fontSize * 0.8 }]}
+            >
+              <Text style={{ color: "#fff", fontWeight: "800", fontSize: fontSize * 0.7 }}>{initials(barber.name)}</Text>
+            </View>
+          )}
+          <Text numberOfLines={1} style={[styles.barber, { fontSize: fontSize * 0.95 }]}>
+            {barber.name.split(/\s+/)[0]}
+          </Text>
+        </View>
       ) : null}
     </View>
   );
@@ -339,5 +359,7 @@ const styles = StyleSheet.create({
   },
   timerText: { fontWeight: "800", fontVariant: ["tabular-nums"] },
   bar: { backgroundColor: "#e5e7eb", overflow: "hidden" },
-  barber: { color: "#4b5563", fontWeight: "700" },
+  barber: { color: "#374151", fontWeight: "700" },
+  barberChip: { flexDirection: "row", alignItems: "center", backgroundColor: "#fff", borderRadius: 999, borderColor: "#e5e7eb" },
+  barberInitials: { backgroundColor: "#101811", alignItems: "center", justifyContent: "center" },
 });
