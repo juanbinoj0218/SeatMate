@@ -11,6 +11,8 @@ import { Timer } from "lucide-react";
 
 import { useEffect, useState } from "react";
 
+import { chairProgress, PROGRESS_STOPS } from "../barbers";
+
 import {
   elapsed,
   isSingleSeat,
@@ -33,7 +35,18 @@ export {
 
 // Pill under a barber chair: "Open" while free, and a running timer of how
 // long the current customer has been in the chair once it is taken.
-function ChairTimer({ seat, fontSize }: { seat: TableSeat; fontSize: number }) {
+// A cut progress bar is added under it when `barber` is given (the customer
+// floor plan): red to green as the cut nears its usual length, full green
+// while open, with the barber's first name below.
+function ChairTimer({
+  seat,
+  fontSize,
+  barber,
+}: {
+  seat: TableSeat;
+  fontSize: number;
+  barber?: { name: string; cutMinutes: number } | null;
+}) {
   const occupied = seat.status === "occupied";
   const since = occupied && typeof seat.occupiedSince === "number" ? seat.occupiedSince : null;
   const [now, setNow] = useState(() => Date.now());
@@ -45,9 +58,9 @@ function ChairTimer({ seat, fontSize }: { seat: TableSeat; fontSize: number }) {
     return () => window.clearInterval(timer);
   }, [since]);
 
-  return (
+  const pill = (
     <span
-      className={`absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap rounded-full px-2 py-0.5 font-bold tabular-nums shadow-sm ${
+      className={`whitespace-nowrap rounded-full px-2 py-0.5 font-bold tabular-nums shadow-sm ${
         occupied ? "bg-red-50 text-red-600 ring-1 ring-red-200" : "bg-green-50 text-green-700 ring-1 ring-green-200"
       }`}
       style={{ fontSize }}
@@ -65,6 +78,34 @@ function ChairTimer({ seat, fontSize }: { seat: TableSeat; fontSize: number }) {
       )}
     </span>
   );
+
+  const progress = barber === undefined ? null : chairProgress(seat, barber, now);
+  const fraction = progress?.state === "cutting" ? Math.max(0.06, progress.fraction) : 1;
+
+  return (
+    <span className="absolute left-1/2 top-full mt-1 flex -translate-x-1/2 flex-col items-center gap-1">
+      {pill}
+      {progress && progress.state !== "taken" && (
+        <span className="block h-[5px] w-16 overflow-hidden rounded-full bg-gray-200">
+          {progress.state === "cutting" ? (
+            <span className="block h-full overflow-hidden rounded-full" style={{ width: `${fraction * 100}%` }}>
+              <span
+                className="block h-full"
+                style={{ width: `${100 / fraction}%`, backgroundImage: `linear-gradient(90deg, ${PROGRESS_STOPS.join(", ")})` }}
+              />
+            </span>
+          ) : (
+            <span className="block h-full w-full bg-green-500" />
+          )}
+        </span>
+      )}
+      {barber && (
+        <span className="whitespace-nowrap font-semibold text-gray-600" style={{ fontSize: fontSize * 0.95 }}>
+          {barber.name.split(/\s+/)[0]}
+        </span>
+      )}
+    </span>
+  );
 }
 
 export default function TableWithSeats({
@@ -76,6 +117,7 @@ export default function TableWithSeats({
   onSeatClick,
   seatsDisabled = false,
   className = "",
+  barber,
 }: {
   name: string;
   shape: TableShape;
@@ -85,6 +127,9 @@ export default function TableWithSeats({
   onSeatClick?: (seatId: number) => void;
   seatsDisabled?: boolean;
   className?: string;
+  // Barber chairs on the customer floor plan: the barber at this chair. When
+  // set (null for a chair with nobody linked), a cut progress bar shows.
+  barber?: { name: string; cutMinutes: number } | null;
 }) {
   const stool = isSingleSeat(shape);
   const shown = stool ? seats.slice(0, 1) : seats;
@@ -169,7 +214,7 @@ export default function TableWithSeats({
       })}
 
       {shape === "barberChair" && shown[0] && (
-        <ChairTimer seat={shown[0]} fontSize={Math.max(9, 10 * scale)} />
+        <ChairTimer seat={shown[0]} fontSize={Math.max(9, 10 * scale)} barber={barber} />
       )}
     </div>
   );

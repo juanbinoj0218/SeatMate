@@ -44,7 +44,7 @@ import {
 } from "@seatmate/shared/floor-plan";
 
 import AccountMenu from "@/components/account-menu";
-import BarbersSection from "@/components/barbers-section";
+import BarbersSection, { useBarbers } from "@/components/barbers-section";
 import CrowdMeter from "@/components/crowd-meter";
 import { useAccount } from "@/components/account-provider";
 import SeatAlertButton from "@/components/seat-alert-button";
@@ -169,6 +169,9 @@ const [business, setBusiness] =
     useState(false);
   
   const now = useNow();
+
+  const barbershop = isBarbershop(business?.type);
+  const barbers = useBarbers(business?.businessId, barbershop);
 
   useEffect(() => {
     // Set when the page changes place or closes, so a slow first load
@@ -733,9 +736,10 @@ return (
 
         {/* BARBERS: profiles and how far along each chair's cut is */}
 
-        {isBarbershop(business.type) && (
+        {barbershop && (
           <BarbersSection
             businessId={business.businessId}
+            barbers={barbers}
             chairs={tables.filter((table) => table.shape === "barberChair")}
           />
         )}
@@ -996,6 +1000,11 @@ return (
                     seats={table.seats}
                     scale={displayScale}
                     rotation={table.rotation}
+                    barber={
+                      barbershop && table.shape === "barberChair"
+                        ? (barbers.find((barber) => barber.chairId === table.id) ?? null)
+                        : undefined
+                    }
                   />
 
                 </div>

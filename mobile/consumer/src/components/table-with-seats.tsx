@@ -18,6 +18,10 @@ import {
   type TableShape,
 } from "@seatmate/shared/table-geometry";
 
+import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
+
+import { chairProgress, PROGRESS_STOPS } from "@seatmate/shared/barbers";
+
 import { TimerIcon } from "@/components/icons";
 import { colors } from "@/components/ui";
 
@@ -38,6 +42,7 @@ export default function TableWithSeats({
   selected = false,
   preview = false,
   magnify = 1,
+  barber,
 }: {
   name: string;
   shape: TableShape;
@@ -51,6 +56,10 @@ export default function TableWithSeats({
   // Draw everything this many times larger. The floor plan draws at its
   // most zoomed-in size and shrinks to fit, so zooming in stays sharp.
   magnify?: number;
+  // Barber chairs on the customer floor plan: the barber at this chair, for
+  // their first name and how long their cuts usually take. When set, a cut
+  // progress bar shows under the timer.
+  barber?: { name: string; cutMinutes: number } | null;
 }) {
   const stool = isSingleSeat(shape);
   const chair = shape === "barberChair";
@@ -129,7 +138,7 @@ export default function TableWithSeats({
 
       {chair && shown[0] && !preview ? (
         <View pointerEvents="none" style={[styles.timerRow, { left: -40 * m, right: -40 * m, marginTop: 4 * m }]}>
-          <ChairTimer seat={shown[0]} fontSize={Math.max(9, 10 * scale) * m} magnify={m} />
+          <ChairTimer seat={shown[0]} fontSize={Math.max(9, 10 * scale) * m} magnify={m} barber={barber} />
         </View>
       ) : null}
     </View>
@@ -200,7 +209,17 @@ function Seat({
 
 // Pill under a barber chair: "Open" while free, and a running timer of how
 // long the current customer has been in the chair once it is taken.
-export function ChairTimer({ seat, fontSize, magnify = 1 }: { seat: TableSeat; fontSize: number; magnify?: number }) {
+export function ChairTimer({
+  seat,
+  fontSize,
+  magnify = 1,
+  barber,
+}: {
+  seat: TableSeat;
+  fontSize: number;
+  magnify?: number;
+  barber?: { name: string; cutMinutes: number } | null;
+}) {
   const occupied = seat.status === "occupied";
   const since = occupied && typeof seat.occupiedSince === "number" ? seat.occupiedSince : null;
   const [now, setNow] = useState(() => Date.now());
@@ -215,7 +234,7 @@ export function ChairTimer({ seat, fontSize, magnify = 1 }: { seat: TableSeat; f
     ? { backgroundColor: colors.redSoft, color: "#dc2626", borderColor: "#fecaca" }
     : { backgroundColor: colors.greenSoft, color: "#15803d", borderColor: "#bbf7d0" };
 
-  return (
+  const pill = (
     <View
       style={[
         styles.timer,
@@ -233,6 +252,46 @@ export function ChairTimer({ seat, fontSize, magnify = 1 }: { seat: TableSeat; f
       <Text style={[styles.timerText, { fontSize, color: look.color }]}>
         {!occupied ? "Open" : since === null ? "In chair" : elapsed(since, Math.max(now, since))}
       </Text>
+    </View>
+  );
+
+  if (barber === undefined) return pill;
+
+  // Under the pill: a bar that fills red to green as the cut nears its usual
+  // length (full green while open), then the barber's first name.
+  const progress = chairProgress(seat, barber, now);
+  const fraction = progress.state === "cutting" ? Math.max(0.06, progress.fraction) : 1;
+  const barWidth = 64 * magnify;
+  const barHeight = 5 * magnify;
+
+  return (
+    <View style={{ alignItems: "center", gap: 3 * magnify }}>
+      {pill}
+      {progress.state !== "taken" && (
+        <View style={[styles.bar, { width: barWidth, height: barHeight, borderRadius: barHeight / 2 }]}>
+          <View style={{ width: fraction * barWidth, height: barHeight, overflow: "hidden", borderRadius: barHeight / 2 }}>
+            {progress.state === "cutting" ? (
+              <Svg width={barWidth} height={barHeight}>
+                <Defs>
+                  <LinearGradient id="chairbar" x1="0" y1="0" x2="1" y2="0">
+                    {PROGRESS_STOPS.map((color, index) => (
+                      <Stop key={color} offset={index / (PROGRESS_STOPS.length - 1)} stopColor={color} />
+                    ))}
+                  </LinearGradient>
+                </Defs>
+                <Rect x={0} y={0} width={barWidth} height={barHeight} fill="url(#chairbar)" />
+              </Svg>
+            ) : (
+              <View style={{ flex: 1, backgroundColor: SEAT_OPEN }} />
+            )}
+          </View>
+        </View>
+      )}
+      {barber ? (
+        <Text numberOfLines={1} style={[styles.barber, { fontSize: fontSize * 0.95 }]}>
+          {barber.name.split(/\s+/)[0]}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -279,4 +338,6 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   timerText: { fontWeight: "800", fontVariant: ["tabular-nums"] },
+  bar: { backgroundColor: "#e5e7eb", overflow: "hidden" },
+  barber: { color: "#4b5563", fontWeight: "700" },
 });

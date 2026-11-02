@@ -19,22 +19,35 @@ import type { TableSeat } from "@seatmate/shared/table-geometry";
 
 type Chair = { id: string; name: string; seats: TableSeat[] };
 
+// Live barber profiles for a barbershop (none for other places).
+export function useBarbers(businessId: string | undefined, enabled: boolean) {
+  const [barbers, setBarbers] = useState<Barber[]>([]);
+
+  useEffect(() => {
+    if (!businessId || !enabled) return;
+    return onSnapshot(
+      collection(db, "businesses", businessId, BARBERS),
+      (snapshot) => setBarbers(sortBarbers(snapshot.docs.map((item) => readBarber(item.id, item.data())))),
+      (error) => console.error("Could not load barbers:", error)
+    );
+  }, [businessId, enabled]);
+
+  return barbers;
+}
+
 // "Barbers" on a barbershop's page: each barber's profile with a live view
 // of the cut in their chair, so customers can walk in as it finishes.
 // Chairs nobody is linked to still show their timer.
-export default function BarbersSection({ businessId, chairs }: { businessId: string; chairs: Chair[] }) {
-  const [barbers, setBarbers] = useState<Barber[]>([]);
+export default function BarbersSection({
+  businessId,
+  barbers,
+  chairs,
+}: {
+  businessId: string;
+  barbers: Barber[];
+  chairs: Chair[];
+}) {
   const [viewer, setViewer] = useState<{ barber: Barber; index: number } | null>(null);
-
-  useEffect(
-    () =>
-      onSnapshot(
-        collection(db, "businesses", businessId, BARBERS),
-        (snapshot) => setBarbers(sortBarbers(snapshot.docs.map((item) => readBarber(item.id, item.data())))),
-        (error) => console.error("Could not load barbers:", error)
-      ),
-    [businessId]
-  );
 
   const chairById = new Map(chairs.map((chair) => [chair.id, chair]));
   const linked = new Set(barbers.map((barber) => barber.chairId));
