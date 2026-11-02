@@ -253,7 +253,7 @@ export default function PlaceScreen() {
           )}
           <View style={{ marginTop: 16 }}>
             {floorLoaded ? (
-              <FloorView tables={tables} markers={markers} width={contentWidth} maxHeight={floorHeight} barbers={barbershop ? barbers : undefined} />
+              <FloorView tables={tables} markers={markers} width={contentWidth} maxHeight={floorHeight} barbers={barbershop ? barbers : undefined} businessId={place.businessId} />
             ) : (
               <Skeleton style={{ height: 260, borderRadius: 24 }} />
             )}

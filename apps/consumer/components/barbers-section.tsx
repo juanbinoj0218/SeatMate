@@ -287,3 +287,63 @@ function PhotoViewer({
     </div>
   );
 }
+
+// A barber's profile over the page, opened by tapping their chair on the
+// floor plan.
+export function BarberDialog({
+  businessId,
+  barber,
+  chair,
+  onClose,
+}: {
+  businessId: string;
+  barber: Barber;
+  chair: Chair | undefined;
+  onClose: () => void;
+}) {
+  const [photo, setPhoto] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (photo !== null) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose, photo]);
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={barber.name}
+      className="fixed inset-0 z-40 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-6"
+      onClick={onClose}
+    >
+      <div className="relative w-full max-w-lg" onClick={(event) => event.stopPropagation()}>
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200"
+          aria-label="Close"
+        >
+          <X aria-hidden className="h-4 w-4" />
+        </button>
+        <div className="[&>article]:rounded-b-none [&>article]:pr-16 sm:[&>article]:rounded-b-[26px]">
+          <BarberCard businessId={businessId} barber={barber} chair={chair} onPhoto={setPhoto} />
+        </div>
+      </div>
+      {photo !== null && (
+        <div onClick={(event) => event.stopPropagation()}>
+          <PhotoViewer
+            businessId={businessId}
+            barber={barber}
+            index={photo}
+            onIndex={setPhoto}
+            onClose={() => setPhoto(null)}
+          />
+        </div>
+      )}
+    </div>
+  );
+}

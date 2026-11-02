@@ -58,15 +58,18 @@ function BarberCard({
   barber,
   chair,
   onPhoto,
+  closeSpace = false,
 }: {
   businessId: string;
   barber: Barber;
   chair: Table | undefined;
   onPhoto: (index: number) => void;
+  // Leaves room at the top right for a close button.
+  closeSpace?: boolean;
 }) {
   return (
     <View style={styles.card}>
-      <View style={styles.head}>
+      <View style={[styles.head, closeSpace && { paddingRight: 40 }]}>
         {barber.photos.length > 0 ? (
           <Image source={{ uri: photoUrl(businessId, barber, 0) }} style={styles.avatar} transition={200} />
         ) : (
@@ -96,7 +99,7 @@ function BarberCard({
             </PressableScale>
           ) : null}
         </View>
-        {chair && <Text style={styles.chair}>{chair.name}</Text>}
+        {chair && !closeSpace && <Text style={styles.chair}>{chair.name}</Text>}
       </View>
 
       {barber.bio ? <Text style={styles.bio}>{barber.bio}</Text> : null}
@@ -215,3 +218,15 @@ const styles = StyleSheet.create({
   viewerNav: { flexDirection: "row", justifyContent: "center", gap: 18 },
   navButton: { width: 52, height: 52, borderRadius: 26, backgroundColor: "#fff", alignItems: "center", justifyContent: "center" },
 });
+
+// One barber's card with its own photo viewer, for the floor plan's chair
+// card (tap a chair to see who's cutting there).
+export function BarberProfile({ businessId, barber, chair }: { businessId: string; barber: Barber; chair: Table | undefined }) {
+  const [viewer, setViewer] = useState<{ barber: Barber; index: number } | null>(null);
+  return (
+    <>
+      <BarberCard businessId={businessId} barber={barber} chair={chair} onPhoto={(index) => setViewer({ barber, index })} closeSpace />
+      <PhotoViewer businessId={businessId} viewer={viewer} onChange={setViewer} />
+    </>
+  );
+}

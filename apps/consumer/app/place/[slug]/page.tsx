@@ -33,6 +33,7 @@ import TableWithSeats, {
   type TableShape,
 } from "@seatmate/shared/components/TableWithSeats";
 import { db } from "@seatmate/shared/firebase";
+import { barberPhotoPath } from "@seatmate/shared/barbers";
 import { readMarker, readTable } from "@seatmate/shared/floor-docs";
 import {
   type FloorMarker,
@@ -44,7 +45,7 @@ import {
 } from "@seatmate/shared/floor-plan";
 
 import AccountMenu from "@/components/account-menu";
-import BarbersSection, { useBarbers } from "@/components/barbers-section";
+import BarbersSection, { BarberDialog, useBarbers } from "@/components/barbers-section";
 import CrowdMeter from "@/components/crowd-meter";
 import { useAccount } from "@/components/account-provider";
 import SeatAlertButton from "@/components/seat-alert-button";
@@ -172,6 +173,8 @@ const [business, setBusiness] =
 
   const barbershop = isBarbershop(business?.type);
   const barbers = useBarbers(business?.businessId, barbershop);
+  // The barber whose profile is open from the floor plan.
+  const [openBarberId, setOpenBarberId] = useState<string | null>(null);
 
   useEffect(() => {
     // Set when the page changes place or closes, so a slow first load
@@ -843,7 +846,9 @@ return (
             </h2>
 
             <p className="text-gray-500 mt-2">
-              This is the same live floor plan created by the business.
+              {barbershop
+                ? "Tap a chair to see who's cutting there."
+                : "This is the same live floor plan created by the business."}
             </p>
           </div>
 
@@ -979,34 +984,59 @@ return (
 
               const box = tableSize(table.shape, table.seats.length, displayScale, table.rotation);
 
-              return (
+              const chairBarber =
+                barbershop && table.shape === "barberChair"
+                  ? barbers.find((barber) => barber.chairId === table.id) ?? null
+                  : undefined;
+
+              const chairTable = (
+                <TableWithSeats
+                  name={table.name}
+                  shape={table.shape}
+                  seats={table.seats}
+                  scale={displayScale}
+                  rotation={table.rotation}
+                  barber={
+                    chairBarber
+                      ? {
+                          ...chairBarber,
+                          photoUrl: chairBarber.photos[0]
+                            ? barberPhotoPath(business.businessId, chairBarber.id, chairBarber.photos[0])
+                            : undefined,
+                        }
+                      : chairBarber
+                  }
+                />
+              );
+
+              const position = {
+                left: `${table.xPct}%`,
+                top: `${table.yPct}%`,
+                width: `${box.width}px`,
+                height: `${box.height}px`,
+                transform: "translate(-50%, -50%)",
+                zIndex: 20,
+              };
+
+              // Tapping a barber's chair opens their profile.
+              return chairBarber ? (
+                <button
+                  key={table.id}
+                  type="button"
+                  onClick={() => setOpenBarberId(chairBarber.id)}
+                  className="absolute select-none cursor-pointer rounded-xl transition-transform hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#101811]"
+                  style={position}
+                  aria-label={`${table.name}: see ${chairBarber.name}'s profile`}
+                >
+                  {chairTable}
+                </button>
+              ) : (
                 <div
                   key={table.id}
                   className="absolute select-none pointer-events-none"
-                  style={{
-                    left: `${table.xPct}%`,
-                    top: `${table.yPct}%`,
-                    width: `${box.width}px`,
-                    height: `${box.height}px`,
-                    transform:
-                      "translate(-50%, -50%)",
-                    zIndex: 20,
-                  }}
+                  style={position}
                 >
-
-                  <TableWithSeats
-                    name={table.name}
-                    shape={table.shape}
-                    seats={table.seats}
-                    scale={displayScale}
-                    rotation={table.rotation}
-                    barber={
-                      barbershop && table.shape === "barberChair"
-                        ? (barbers.find((barber) => barber.chairId === table.id) ?? null)
-                        : undefined
-                    }
-                  />
-
+                  {chairTable}
                 </div>
               );
             })}
@@ -1020,6 +1050,15 @@ return (
         </p>
 
       </div>
+      {openBarberId && barbers.some((barber) => barber.id === openBarberId) && (
+        <BarberDialog
+          businessId={business.businessId}
+          barber={barbers.find((barber) => barber.id === openBarberId)!}
+          chair={tables.find((table) => table.id === barbers.find((barber) => barber.id === openBarberId)?.chairId)}
+          onClose={() => setOpenBarberId(null)}
+        />
+      )}
+
       <SiteFooter />
     </main>
   );
