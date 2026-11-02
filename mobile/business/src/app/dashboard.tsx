@@ -2,6 +2,7 @@ import { useEffect, useState, type ComponentType, type ReactNode } from "react";
 import { Linking, StyleSheet, Text, View } from "react-native";
 import { router, type Href } from "expo-router";
 import { signOut } from "firebase/auth";
+import { Scissors } from "lucide-react-native";
 import { doc, onSnapshot } from "firebase/firestore";
 
 import {
@@ -30,6 +31,7 @@ import {
 } from "@/components/icons";
 import { ChairTimer } from "@/components/table-with-seats";
 import UpdateReminder from "@/components/update-reminder";
+import { useBarbers } from "@/lib/barbers";
 import { Banner, Button, Card, colors, Muted, PressableScale, Screen, StatTile, Title } from "@/components/ui";
 import { auth, db } from "@/lib/firebase";
 import { seatCounts, toggleGame, watchMarkers, watchTables, type Table } from "@/lib/floor";
@@ -59,6 +61,7 @@ export default function DashboardScreen() {
   // Chair taps show at once; the snapshot catches up behind them.
   const optimistic = useOptimisticSeats(businessId, liveTables, setError);
   const tables = optimistic.tables ?? liveTables;
+  const { barbers } = useBarbers(businessId);
 
   useEffect(() => {
     if (!businessId) return;
@@ -110,6 +113,7 @@ export default function DashboardScreen() {
   const kind = businessKind(business.type);
   const chairs = tables.filter((table) => table.shape === "barberChair");
   const games = markers.filter((marker) => isGameMarker(marker.type));
+  const barberOn = (chairId: string) => barbers?.find((barber) => barber.chairId === chairId)?.name ?? "";
 
   const run = async (work: () => Promise<unknown>, failure: string) => {
     try {
@@ -197,6 +201,7 @@ export default function DashboardScreen() {
                 style={styles.quick}
               >
                 <Text style={styles.quickName}>{chair.name}</Text>
+                {barberOn(chair.id) ? <Text style={styles.quickBarber}>{barberOn(chair.id)}</Text> : null}
                 <ChairTimer seat={seat} fontSize={13} />
               </PressableScale>
             );
@@ -255,6 +260,15 @@ export default function DashboardScreen() {
             title="Door counter"
             text="Tap +1 and −1 at the door. Customers see how busy you are."
             href="/door"
+          />
+        )}
+        {kind.barbershop && (
+          <MenuLink
+            Icon={Scissors}
+            tile={["#f3f4f6", colors.ink]}
+            title="Barbers"
+            text="Profiles, Instagram and photos of each barber's work, linked to their chair."
+            href="/barbers"
           />
         )}
         <MenuLink
@@ -322,6 +336,7 @@ function businessKind(type: string) {
 
   return {
     bar,
+    barbershop,
     bowling,
     seatNoun: barbershop ? "Chairs" : "Seats",
     floorTitle: barbershop ? "Shop layout" : bowling ? "Lanes and seating" : "Floor plan",
@@ -476,6 +491,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   quickName: { fontWeight: "800", color: colors.ink, fontSize: 15 },
+  quickBarber: { color: colors.muted, fontSize: 13, marginTop: -4 },
   quickLabel: { flexDirection: "row", alignItems: "center", gap: 6 },
   deleteAccount: { alignSelf: "center", marginTop: 18, paddingVertical: 6, paddingHorizontal: 10 },
   deleteAccountText: { color: colors.redText, fontWeight: "700", fontSize: 14 },

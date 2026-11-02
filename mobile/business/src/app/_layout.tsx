@@ -68,6 +68,8 @@ export default function RootLayout() {
             <Stack.Screen name="dashboard" options={{ title: "SeatMate Business", headerBackVisible: false }} />
             <Stack.Screen name="floor-plan" options={{ title: "Floor plan" }} />
             <Stack.Screen name="team" options={{ title: "Staff" }} />
+            <Stack.Screen name="barbers" options={{ title: "Barbers" }} />
+            <Stack.Screen name="barber" options={{ title: "Barber" }} />
             <Stack.Screen name="hours" options={{ title: "Business hours" }} />
             <Stack.Screen name="analytics" options={{ title: "Analytics" }} />
             <Stack.Screen name="qr" options={{ title: "QR code" }} />

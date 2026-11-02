@@ -12,6 +12,10 @@ export type TableSeat = {
   status: "available" | "occupied";
   // When the seat was last marked taken (ms since epoch).
   occupiedSince?: number;
+  // When the seat was last marked open (ms since epoch).
+  openSince?: number;
+  // Barber chairs: the last few cut lengths in seconds (see barbers.ts).
+  recentCuts?: number[];
 };
 
 // "4:07" or "1:02:45" since a barber chair was taken.

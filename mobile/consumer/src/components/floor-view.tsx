@@ -17,6 +17,7 @@ import { tableSize } from "@seatmate/shared/table-geometry";
 
 import { CloseIcon, FitIcon, FloorPlanIcon, MarkerIcon, MinusIcon, PlusIcon } from "@/components/icons";
 import TableWithSeats, { SEAT_OPEN, SEAT_TAKEN } from "@/components/table-with-seats";
+import type { Barber } from "@seatmate/shared/barbers";
 import { colors } from "@/components/ui";
 import { tap } from "@/lib/haptics";
 import { CANVAS_HEIGHT, CANVAS_WIDTH, type Table } from "@/lib/floor";
@@ -110,6 +111,7 @@ export default function FloorView({
   markers,
   width,
   maxHeight,
+  barbers,
 }: {
   tables: Table[];
   markers: FloorMarker[];
@@ -117,6 +119,8 @@ export default function FloorView({
   width: number;
   // Tallest the map may get; it fits the layout to width × maxHeight.
   maxHeight: number;
+  // Barbershops: who works at each chair, for the cut progress bars.
+  barbers?: Barber[];
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [zoomed, setZoomed] = useState(false);
@@ -339,6 +343,11 @@ export default function FloorView({
                             rotation={table.rotation}
                             selected={table.id === selectedId}
                             magnify={unit}
+                            barber={
+                              barbers && table.shape === "barberChair"
+                                ? (barbers.find((barber) => barber.chairId === table.id) ?? null)
+                                : undefined
+                            }
                           />
                         </View>
                       );

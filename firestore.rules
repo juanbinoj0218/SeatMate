@@ -240,6 +240,60 @@ service cloud.firestore {
             )
           );
       }
+
+      // -------------------------
+      // BARBERS (barbershops)
+      // -------------------------
+
+      // One profile per barber: name, Instagram handle, a short bio, the
+      // chair they work at and their usual cut length. Public, since
+      // customers see them on the place page; only the owner edits them.
+      match /barbers/{barberId} {
+
+        allow read: if true;
+
+        allow create, update:
+          if (isOwner(businessId) || isAdmin())
+          && request.resource.data.keys().hasOnly([
+            "name", "instagram", "bio", "chairId", "cutMinutes",
+            "photos", "order", "createdAt", "updatedAt"
+          ])
+          && request.resource.data.name is string
+          && request.resource.data.name.size() > 0
+          && request.resource.data.name.size() <= 40
+          && (!("instagram" in request.resource.data)
+            || (request.resource.data.instagram is string
+              && request.resource.data.instagram.matches('^[A-Za-z0-9._]{0,30}$')))
+          && (!("bio" in request.resource.data)
+            || (request.resource.data.bio is string
+              && request.resource.data.bio.size() <= 240))
+          && (!("chairId" in request.resource.data)
+            || request.resource.data.chairId is string)
+          && (!("cutMinutes" in request.resource.data)
+            || (request.resource.data.cutMinutes is int
+              && request.resource.data.cutMinutes >= 5
+              && request.resource.data.cutMinutes <= 240))
+          && (!("photos" in request.resource.data)
+            || (request.resource.data.photos is list
+              && request.resource.data.photos.size() <= 8));
+
+        allow delete: if isOwner(businessId) || isAdmin();
+
+        // Photos of past cuts: one compressed square JPEG each, stored as a
+        // data URL like cover photos.
+        match /photos/{photoId} {
+
+          allow read: if true;
+
+          allow create: if isOwner(businessId)
+            && request.resource.data.keys().hasOnly(["data", "contentType", "createdAt"])
+            && request.resource.data.contentType == "image/jpeg"
+            && request.resource.data.data is string
+            && request.resource.data.data.size() <= 460000;
+
+          allow delete: if isOwner(businessId) || isAdmin();
+        }
+      }
     }
 
     // -------------------------

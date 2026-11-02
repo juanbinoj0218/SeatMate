@@ -1,5 +1,6 @@
 import { collection, onSnapshot, Timestamp } from "firebase/firestore";
 
+import { type Barber, BARBERS, readBarber, sortBarbers } from "@seatmate/shared/barbers";
 import { readMarker, readTable, type TableBase } from "@seatmate/shared/floor-docs";
 import type { FloorMarker } from "@seatmate/shared/floor-plan";
 
@@ -55,3 +56,16 @@ export function watchMarkers(
 }
 
 export { seatCounts } from "@seatmate/shared/floor-docs";
+
+// Live barber profiles for a barbershop (businesses/{id}/barbers).
+export function watchBarbers(
+  businessId: string,
+  onBarbers: (barbers: Barber[]) => void,
+  onError: (error: unknown) => void
+) {
+  return onSnapshot(
+    collection(db, "businesses", businessId, BARBERS),
+    (snapshot) => onBarbers(sortBarbers(snapshot.docs.map((item) => readBarber(item.id, item.data())))),
+    onError
+  );
+}

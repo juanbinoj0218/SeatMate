@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Scissors } from "lucide-react";
 
 import SeatMateMark from "@seatmate/shared/components/SeatMateMark";
 import { useEffect, useState } from "react";
@@ -19,7 +19,7 @@ import {
 } from "firebase/firestore";
 
 import { auth, db } from "@seatmate/shared/firebase";
-import { isBar } from "@seatmate/shared/floor-plan";
+import { isBar, isBarbershop } from "@seatmate/shared/floor-plan";
 import { consumerUrl } from "@seatmate/shared/site-urls";
 
 import BouncerCard from "@/components/bouncer-card";
@@ -304,6 +304,15 @@ export default function BusinessDashboard() {
             description="Arrange tables and update seat occupancy in real time."
             onClick={() => router.push("/business/floor-plan")}
           />
+
+          {isBarbershop(business.type) && (
+            <DashboardLink
+              title="Barbers"
+              Icon={({ className }) => <Scissors aria-hidden className={className} strokeWidth={1.7} />}
+              description="Profiles, Instagram and photos of each barber's work, linked to their chair."
+              onClick={() => router.push("/business/barbers")}
+            />
+          )}
 
           <DashboardLink
             title="Staff"

@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
+import { changeSeat } from "@seatmate/shared/barbers";
+
 import type { Table } from "@/lib/floor";
 import { tap, warning } from "@/lib/haptics";
 import { setSeatStatus, type SeatStatus } from "@/lib/seat-updates";
@@ -91,9 +93,7 @@ function applyPending(tables: Table[], pending: Record<string, PendingSeat>) {
       if (!entry || (entry.settledOn && entry.settledOn !== tables) || seat.status === entry.status) return seat;
 
       changed = true;
-      if (entry.status === "occupied") return { ...seat, status: entry.status, occupiedSince: entry.since };
-      const { occupiedSince, ...rest } = seat;
-      return { ...rest, status: entry.status };
+      return changeSeat(seat, entry.status, entry.since);
     });
     return changed ? { ...table, seats } : table;
   });

@@ -28,7 +28,8 @@
     "./floor-docs": "./src/floor-docs.ts",
     "./day-key": "./src/day-key.ts",
     "./app-links": "./src/app-links.ts",
-    "./sms": "./src/sms.ts"
+    "./sms": "./src/sms.ts",
+    "./barbers": "./src/barbers.ts"
   },
   "peerDependencies": {
     "firebase": "^12.19.0",
